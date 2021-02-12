@@ -1,4 +1,4 @@
-package io.github.liambloom.tests.bjp3;
+package io.github.liambloom.tests.book.bjp3;
 
 import java.lang.annotation.*;
 

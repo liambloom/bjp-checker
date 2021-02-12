@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<book
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../book-tests.xsd">
+    <chapter num="1">
+        <exercise num="1" name="Stewie">
+            <method>
+                <test>
+                    <prints>
+                        //////////////////////
+                        || Victory is mine! ||
+                        \\\\\\\\\\\\\\\\\\\\\\
+                    </prints>
+                </test>
+            </method>
+        </exercise>
+        <exercise num="2" name="Spikey">
+            <method>
+                <test>
+                    <prints>
+                          \/
+                         \\//
+                        \\\///
+                        ///\\\
+                         //\\
+                          /\
+                    </prints>
+                </test>
+            </method>
+        </exercise>
+        <exercise num="3" name="WellFormed">
+            <method>
+                <test>
+                    <prints>
+                        A well–formed Java program has
+                        a main method with { and }
+                        braces.
+                        A System.out.println statement
+                        has ( and ) and usually a
+                        String that starts and ends
+                        with a " character.
+                        (But we type \" instead!)
+                    </prints>
+                </test>
+            </method>
+        </exercise>
+    </chapter>
+</book>
