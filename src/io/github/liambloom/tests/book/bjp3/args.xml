@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<args
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="args.xsd">
+
+    <command>
+        <name>check</name>
+        <help>No help for you</help>
+    </command>
+
+    <arg>
+        <name>--chapter</name>
+        <name>-c</name>
+        <param name="foo" required="true" type="no" />
+    </arg>
+
+</args>

@@ -8,6 +8,7 @@ class Main {
         Arguments args = new Arguments(rawArgs);
 
         // -[x] Load Classes
+        // TODO: maybe make an argument to run tests in another directory
         Class<?>[] classes = DirectoryClassLoader.loadClassesHere();
 
         // -[ ] Search classes to find correct chapter(s) and exercise(s)

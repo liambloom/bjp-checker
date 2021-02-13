@@ -1,103 +1,132 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
-<xs:element name="book">
-    <xs:complexType>
-        <xs:sequence>
-            <xs:element ref="chapter" maxOccurs="unbounded" />
-        </xs:sequence>
-    </xs:complexType>
-</xs:element>
+    <xs:element name="book">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="chapter" maxOccurs="unbounded" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
-<xs:element name="chapter">
-    <xs:complexType>
-        <xs:choice maxOccurs="unbounded">
-            <xs:element name="exercise" type="checked" />
-            <xs:element name="programmingProject" type="checked" />
-        </xs:choice>
-        <xs:attribute name="num" type="positiveInt" use="required" />
-    </xs:complexType>
-</xs:element>
+    <xs:element name="chapter">
+        <xs:complexType>
+            <xs:choice maxOccurs="unbounded">
+                <xs:element name="exercise" type="checked" />
+                <xs:element name="programmingProject" type="checked" />
+            </xs:choice>
+            <xs:attribute name="num" type="positiveInt" use="required" />
+        </xs:complexType>
+    </xs:element>
 
-<xs:element name="class">
-    <xs:complexType>
-        <xs:choice maxOccurs="unbounded">
-            <xs:element ref="method" />
-            <xs:element ref="field" />
-        </xs:choice>
-    </xs:complexType>
-</xs:element>
+    <xs:element name="class">
+        <xs:complexType>
+            <xs:choice maxOccurs="unbounded">
+                <xs:element ref="method" />
+                <xs:element name="field" type="javaValue" />
+            </xs:choice>
+        </xs:complexType>
+    </xs:element>
 
-<xs:element name="method">
-    <xs:complexType>
-        <xs:sequence>
-            <xs:element ref="parameters" />
-            <xs:element ref="test" maxOccurs="unbounded" />
-        </xs:sequence>
-    </xs:complexType>
-</xs:element>
-    
-<xs:element name="parameters">
-    <xs:complexType>
-        <xs:sequence>
-            <xs:element ref="parameter" maxOccurs="unbounded" />
-        </xs:sequence>
-    </xs:complexType>
-</xs:element>
-    
-<xs:element name="parameter" type="type" />
+    <xs:element name="method">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="parameters" minOccurs="0" />
+                <xs:element ref="test" maxOccurs="unbounded" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
-<xs:element name="test">
-    <xs:complexType>
+    <xs:element name="parameters">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="parameter" maxOccurs="unbounded" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="parameter" type="type" />
+
+    <xs:element name="test">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="System.in" type="xs:string" minOccurs="0" />
+                <xs:element ref="arguments" minOccurs="0" />
+                <xs:choice>
+                    <xs:element name="throws" type="xs:string" />
+                    <xs:element name="returns" type="javaValue" />
+                    <xs:element name="prints" type="xs:string" /> <!-- Remove trailing whitespace -->
+                    <!-- replace /(?<=\W)\w+(?=\r?\n)/ with "" -->
+                </xs:choice>
+            </xs:sequence>
+            <!--<xs:attribute name="access" type="accessModifier" />-->
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="arguments">
+        <xs:complexType>
+            <xs:sequence>
+                <!-- Type can be inferred from parameter type -->
+                <!-- Create a method to get the value (using reflection) -->
+                <xs:element name="argument" type="xs:string" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="mutuals">
+        <xs:complexType>
+            <xs:choice maxOccurs="unbounded">
+                <xs:element name="exercise" type="positiveInt" />
+                <xs:element name="programmingProject" type="positiveInt" />
+            </xs:choice>
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Yes, I know xs:positiveInteger exists, xs:integer == java.math.BigInteger while xs:int == int -->
+    <xs:simpleType name="positiveInt">
+        <xs:restriction base="xs:int">
+            <xs:minExclusive value="0" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!--<xs:simpleType name="accessModifier">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="public" />
+            <xs:enumeration value="private" />
+            <xs:enumeration value="protected" />
+            <xs:enumeration value="default" />
+        </xs:restriction>
+    </xs:simpleType>-->
+
+    <xs:simpleType name="type">
+        <xs:restriction base="xs:string">
+            <!-- Note: When implementing java to parse this, make sure to take primitives into account -->
+            <xs:pattern value="(?!\.)(?:@target(?:\.package)?)?(?:(?:^|\.)[a-zA-Z$_][a-zA-Z0-9$_]*)+" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="intList">
+        <xs:list itemType="xs:int" />
+    </xs:simpleType>
+
+    <xs:complexType name="checked">
         <xs:sequence>
-            <!-- TODO: add arguments -->
-            <xs:element ref="args" />
+            <xs:element ref="mutuals" minOccurs="0" maxOccurs="unbounded" />
             <xs:choice>
-                <xs:element name="throws" type="xs:string" />
-                <xs:element name="returns" type="xs:anyType" /> <!-- This will be made more complex at some point -->
-                <xs:element name="prints" type="xs:string" />
+                <xs:element ref="method" />
+                <!-- <xs:element ref="field" /> -->
+                <xs:element ref="class" />
             </xs:choice>
         </xs:sequence>
-        <!--<xs:attribute name="access" type="accessModifier" />-->
+        <xs:attribute name="num" type="positiveInt" use="required" />
+        <xs:attribute name="name" type="xs:string" use="required" />
     </xs:complexType>
-</xs:element>
 
-<xs:element name="field">
-    <!-- TODO: Field element -->
-</xs:element>
-
-<!-- Yes, I know xs:positiveInteger exists, xs:integer == java.math.BigInteger while xs:int == int -->
-<xs:simpleType name="positiveInt">
-    <xs:restriction base="xs:int">
-        <xs:minExclusive value="0" />
-    </xs:restriction>
-</xs:simpleType>
-
-<!--<xs:simpleType name="accessModifier">
-    <xs:restriction base="xs:string">
-        <xs:enumeration value="public" />
-        <xs:enumeration value="private" />
-        <xs:enumeration value="protected" />
-        <xs:enumeration value="default" />
-    </xs:restriction>
-</xs:simpleType>-->
-    
-<xs:simpleType name="type">
-    <xs:restriction base="xs:string">
-        <!-- TODO: Add a way to access the target class or another class in the target package -->
-        <!-- Note: When implementing java to parse this, make sure to take primitives into account -->
-        <xs:pattern value="(?!\.)(?:(?:^|\.)[a-zA-Z$_][a-zA-Z0-9$_]*)+" />
-    </xs:restriction>
-</xs:simpleType>
-
-<xs:complexType name="checked">
-    <xs:choice>
-        <xs:element ref="method" />
-        <xs:element ref="field" />
-        <xs:element ref="class" />
-    </xs:choice>
-    <xs:attribute name="num" type="positiveInt" use="required" />
-    <xs:attribute name="name" type="xs:string" use="required" />
-</xs:complexType>
+    <xs:complexType name="javaValue">
+        <xs:sequence>
+            <xs:element name="type" type="type" />
+            <xs:element name="value" type="xs:string" />
+        </xs:sequence>
+    </xs:complexType>
 
 </xs:schema>
