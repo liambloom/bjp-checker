@@ -23,7 +23,7 @@
         <xs:complexType>
             <xs:choice maxOccurs="unbounded">
                 <xs:element ref="method" />
-                <xs:element name="field" type="javaValue" />
+                <xs:element name="field" type="javaItem" />
             </xs:choice>
         </xs:complexType>
     </xs:element>
@@ -54,13 +54,36 @@
                 <xs:element ref="arguments" minOccurs="0" />
                 <xs:choice>
                     <!-- TODO: There are more things a method can do -->
+                    <!-- It can change the `this` value, it can change a parameter, or it can do multiple things -->
                     <xs:element name="throws" type="xs:string" />
-                    <xs:element name="returns" type="javaValue" />
-                    <xs:element name="prints" type="xs:string" /> <!-- Remove trailing whitespace -->
-                    <!-- replace /(?<=\W)\w+(?=\r?\n)/ with "" -->
+                    <xs:choice maxOccurs="unbounded">
+                        <xs:element name="returns" type="javaItem" />
+                        <xs:element ref="prints" /> <!-- Remove trailing whitespace -->
+                        <!-- replace /(?<=\W)\w+(?=\r?\n)/ with "" -->
+                        <!-- add a sub-element to prints <marker> that marks the left bound -->
+                        <xs:element ref="post" />
+                    </xs:choice>
                 </xs:choice>
             </xs:sequence>
             <!--<xs:attribute name="access" type="accessModifier" />-->
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="prints">
+        <xs:complexType mixed="true">
+            <xs:sequence>
+                <xs:element name="marker" type="xs:string" fixed="" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="post">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="javaValue">
+                    <xs:attribute name="var" type="ident" use="required" />
+                </xs:extension>
+            </xs:complexContent>
         </xs:complexType>
     </xs:element>
 
@@ -106,8 +129,14 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="intList">
+    <!-- <xs:simpleType name="intList">
         <xs:list itemType="xs:int" />
+    </xs:simpleType> -->
+
+    <xs:simpleType name="ident">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="this|arg\d+" />
+        </xs:restriction>
     </xs:simpleType>
 
     <xs:complexType name="checked">
@@ -123,11 +152,17 @@
         <xs:attribute name="name" type="xs:string" use="required" />
     </xs:complexType>
 
-    <xs:complexType name="javaValue">
+    <xs:complexType name="javaItem">
         <xs:sequence>
             <xs:element name="type" type="type" />
-            <xs:element name="value" type="xs:string" />
+            <xs:element name="value" type="javaValue" />
         </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="javaValue">
+        <!-- TODO: add basic functionality (primitives, class types, etc -->
+        <!-- TODO: add support for lists, sets, maps, collections, etc -->
+        <!-- I could entirely remove the <type> element and make elements within javaValue -->
     </xs:complexType>
 
 </xs:schema>
