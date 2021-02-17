@@ -9,6 +9,7 @@
                 <test>
                     <System.in>foo</System.in>
                     <prints>
+                        <marker />
                         //////////////////////
                         || Victory is mine! ||
                         \\\\\\\\\\\\\\\\\\\\\\
@@ -20,6 +21,7 @@
             <method>
                 <test>
                     <prints>
+                        <marker />
                           \/
                          \\//
                         \\\///
@@ -34,6 +36,7 @@
             <method>
                 <test>
                     <prints>
+                        <marker />
                         A well–formed Java program has
                         a main method with { and }
                         braces.

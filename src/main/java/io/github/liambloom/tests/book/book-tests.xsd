@@ -53,6 +53,7 @@
                 <xs:element name="System.in" type="xs:string" minOccurs="0" />
                 <xs:element ref="arguments" minOccurs="0" />
                 <xs:choice>
+                    <!-- TODO: There are more things a method can do -->
                     <xs:element name="throws" type="xs:string" />
                     <xs:element name="returns" type="javaValue" />
                     <xs:element name="prints" type="xs:string" /> <!-- Remove trailing whitespace -->

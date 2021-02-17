@@ -1,6 +1,5 @@
 package io.github.liambloom.tests.book.bjp3;
 
-import java.io.File;
 import java.util.ArrayList;
 
 class Arguments {

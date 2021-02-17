@@ -5,12 +5,12 @@ import java.util.Optional;
 // This is based on rust's core::result::Result
 final class Result<T, E extends Throwable> /* extends SuperResult<T, E> */ {
     @FunctionalInterface
-    public static interface ThrowingSupplier<T, E extends Throwable> {
-        public T get() throws E;
+    public interface ThrowingSupplier<T, E extends Throwable> {
+        T get() throws E;
     }
 
-    private T ok;
-    private E error;
+    private final T ok;
+    private final E error;
 
     private Result(T ok, E error) {
         this.ok = ok;
