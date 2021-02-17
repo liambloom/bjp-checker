@@ -1,10 +1,16 @@
 package io.github.liambloom.tests.book.bjp3;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
+// Add placeholder values for now
 class Arguments {
-    public final String[] commands;
-    public final File targetDir;
+    public final int chapter = 1;
+    public final Integer exercise = 1; // I need an "all" value. I need union types
+    public final Integer programmingProject = null;
+
+    //public final File targetDir;
 
     public Arguments(String[] args) {
         // Parse arguments, but that's it
@@ -27,9 +33,9 @@ class Arguments {
     }
 
     // Default constructor
-    public Arguments() {
+    /*public Arguments() {
         this.commands = null;
-        this.targetDir = new File(System.getProperty("user.dir"));
-    }
+        //this.targetDir = new File(System.getProperty("user.dir"));
+    }*/
 
 }
