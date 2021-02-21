@@ -17,7 +17,7 @@ class Arguments {
         // Don't make things final, initialize them to null
         // Deal with defaults on access
         // Maybe do different things based on the command
-        if (args.length == 0) {
+        /*if (args.length == 0) {
             this.commands = new String[] { "--help" };
             return;
         }
@@ -27,7 +27,7 @@ class Arguments {
 
         for (; i < args.length && (!args[i].startsWith("-") || args[i].equals("--help")); i++)
             commands.add(args[i]);
-        this.commands = commands.toArray(new String[0]);
+        this.commands = commands.toArray(new String[0]);*/
 
         // TODO: Parse other flags (this may be problematic if flags are command-dependent)
     }
