@@ -1,160 +1,246 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" version="1.1">
+
+    <!-- the version attribute isn't required -->
+
+    <!-- NOTE: java does not have a built in xsd 1.1 processor (it does have 1.0),
+        so I'll have to import one. Luckily, the built in processor is meant to
+        be able to pass in checkers. -->
+
+    <!-- XSD 1.1 allows for <assert> and <alternate> -->
+
+    <!-- Intellij doesn't really work with XSD 1.1 -->
 
     <!-- TODO: organize -->
 
-    <xs:element name="book">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element ref="chapter" maxOccurs="unbounded" />
-            </xs:sequence>
-        </xs:complexType>
+    <xs:element name="book" type="bookType">
         <xs:unique name="chapterNumUnique">
             <xs:selector xpath="chapter" />
             <xs:field xpath="@num" />
         </xs:unique>
     </xs:element>
 
-    <xs:element name="chapter">
-        <xs:complexType>
+    <xs:complexType name="bookType">
+        <xs:sequence>
+            <xs:element name="chapter" type="chapterType" maxOccurs="unbounded">
+                <xs:unique name="exerciseNumUnique">
+                    <xs:selector xpath="exercise" />
+                    <xs:field xpath="@num" />
+                </xs:unique>
+                <xs:unique name="ppNumUnique">
+                    <xs:selector xpath="programmingProject" />
+                    <xs:field xpath="@num" />
+                </xs:unique>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="bookId" use="required" >
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:pattern value="BJP-\d+" />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+    </xs:complexType>
+
+
+    <xs:complexType name="chapterType">
+        <xs:choice maxOccurs="unbounded">
+            <xs:element name="exercise" type="checked" />
+            <xs:element name="programmingProject" type="checked" />
+        </xs:choice>
+        <xs:attribute name="num" type="positiveInt" use="required" />
+    </xs:complexType>
+
+    <xs:complexType name="checked">
+        <xs:sequence>
+            <xs:element ref="mutuals" minOccurs="0" />
             <xs:choice maxOccurs="unbounded">
-                <xs:element name="exercise" type="checked" />
-                <xs:element name="programmingProject" type="checked" />
+                <!-- TODO: (in java) if an exercise is a no-arg method then it can be replaced by the main method of a class (of the same name) -->
+                <xs:element name="method" type="methodType" />
+                <!-- <xs:element ref="field" /> -->
+                <xs:element name="class" type="classType" />
             </xs:choice>
-            <xs:attribute name="num" type="positiveInt" use="required" />
-        </xs:complexType>
-        <xs:unique name="exerciseNumUnique">
-            <xs:selector xpath="exercise" />
-            <xs:field xpath="@num" />
-        </xs:unique>
-    </xs:element>
+        </xs:sequence>
+        <xs:attribute name="num" type="positiveInt" use="required" />
+        <!-- <xs:attribute name="name" type="xs:string" use="required" /> -->
+    </xs:complexType>
 
-    <xs:element name="class">
-        <xs:complexType>
-            <xs:choice maxOccurs="unbounded">
-                <!-- ~~There needs to be a way of specifying static or not~~ no there doesn't -->
-                <xs:element ref="method" />
-                <xs:element ref="field" />
-            </xs:choice>
-            <xs:attribute name="name" type="javaIdent" use="required" />
-        </xs:complexType>
-        <xs:unique name="classNameUnique">
-            <xs:selector xpath="class" />
-            <xs:field xpath="@name" />
-        </xs:unique>
-    </xs:element>
+    <xs:complexType name="classType">
+        <xs:choice maxOccurs="unbounded">
+            <!-- TODO: Add modifiers -->
+            <!-- ~~There needs to be a way of specifying static or not~~ no there doesn't -->
+            <xs:element name="method" type="methodType">
+                <!-- Methods (and tests) are different in a class -->
+                <xs:unique name="methodUnique">
+                    <xs:selector xpath="method" />
+                    <xs:field xpath="@name" />
+                    <xs:field xpath="parameters" />
+                </xs:unique>
+            </xs:element>
 
-    <xs:element name="field">
-        <xs:complexType>
-            <xs:group ref="javaValue"/>
-            <xs:attribute name="name" type="javaIdent" use="required" />
-        </xs:complexType>
-        <xs:unique name="methodNameUnique">
-            <xs:selector xpath="method" />
-            <xs:field xpath="@name" />
-        </xs:unique>
-    </xs:element>
+            <xs:element name="constructor">
+                <xs:complexType>
+                    <xs:group ref="methodBody" />
+                </xs:complexType>
 
-    <!-- Methods (and tests) are different in a class -->
-    <!-- TODO: add way to to test constructor -->
-    <xs:element name="method">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element ref="parameters" minOccurs="0" maxOccurs="unbounded" />
-                <xs:element ref="test" maxOccurs="unbounded" />
-            </xs:sequence>
-            <xs:attribute name="name" type="javaIdent" use="required" />
-        </xs:complexType>
+                <xs:unique name="constructorUnique">
+                    <xs:selector xpath="constructor" />
+                    <xs:field xpath="parameters" />
+                </xs:unique>
+            </xs:element>
 
-        <xs:unique name="methodUnique">
-            <xs:selector xpath="method" />
-            <xs:field xpath="@name" />
-            <xs:field xpath="parameters" />
-        </xs:unique>
-    </xs:element>
+            <xs:element name="field">
+                <xs:complexType>
+                    <xs:group ref="javaValue"/>
+                    <xs:attribute name="name" type="javaIdent" use="required" />
+                </xs:complexType>
+                <xs:unique name="methodNameUnique">
+                    <xs:selector xpath="method" />
+                    <xs:field xpath="@name" />
+                </xs:unique>
+            </xs:element>
+        </xs:choice>
+        <xs:attribute name="name" type="javaIdent" use="required" />
+    </xs:complexType>
 
-    <xs:element name="parameters">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element name="parameter" type="type" minOccurs="0" maxOccurs="unbounded" />
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
+    <xs:complexType name="methodType">
+        <xs:group ref="methodBody" />
+        <xs:attribute name="name" type="javaIdent" use="required" />
+    </xs:complexType>
+
+    <xs:group name="methodBody">
+        <xs:sequence>
+            <xs:element name="parameters" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="parameter" type="type" minOccurs="0" maxOccurs="unbounded" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+
+            <xs:element name="test" type="testType" maxOccurs="unbounded" />
+        </xs:sequence>
+    </xs:group>
 
     <!-- TODO: add <sync> or <synchronous> tag for consecutive tests -->
-    <xs:element name="test">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element name="System.in" type="xs:string" minOccurs="0" />
-                <xs:element ref="arguments" minOccurs="0" />
-                <xs:choice>
-                    <!-- There are more things a method can do -->
-                    <!-- It can change the `this` value, it can change a parameter, or it can do multiple things -->
-                    <xs:element name="throws" type="xs:string" />
-                    <xs:choice maxOccurs="unbounded">
-                        <!-- TODO: Do I need a <pre> element -->
-                        <!-- <pre> and <post> could be of the same type -->
-                        <!-- Maybe add <pre> and <post> elements to argument tags -->
-                        <!-- <pre> and <post> could contain a javaValue or a class (with fields) -->
-                        <!-- There should be some way to show "unchanged" for post -->
+    <xs:complexType name="testType">
+        <xs:sequence>
+            <xs:element name="System.in" type="xs:string" minOccurs="0" />
+            <xs:element name="arguments" type="argumentsType" minOccurs="0" />
+            <xs:choice>
+                <!-- There are more things a method can do -->
+                <!-- It can change the `this` value, it can change a parameter, or it can do multiple things -->
+                <xs:element name="throws" type="type" />
+
+                <!-- TODO: <sequence> isn't the best here -->
+                <xs:sequence>
+                    <!-- TODO: Do I need a <pre> element -->
+                    <!-- <pre> and <post> could be of the same type -->
+                    <!-- Maybe add <pre> and <post> elements to argument tags -->
+                    <!-- <pre> and <post> could contain a javaValue or a class (with fields) -->
+                    <!-- There should be some way to show "unchanged" for post -->
 
 
-                        <!-- TODO: returns should have the same type as pre and post,
-                            to allow full on tests to be done on the return value (like for iterator()) -->
-                        <xs:element name="returns" type="javaItem" />
+                    <!-- TODO: returns should have the same type as pre and post,
+                        to allow full on tests to be done on the return value (like for iterator()) -->
+                    <xs:element name="returns" type="javaItem" minOccurs="0" />
 
-                        <!-- Remove trailing whitespace -->
-                        <!-- replace /(?<=\W)\w+(?=\r?\n)/ with "" -->
-                        <!-- add a sub-element to prints <marker> that marks the left bound -->
-                        <xs:element ref="prints" />
+                    <!-- Remove trailing whitespace -->
+                    <!-- replace /(?<=\W)\w+(?=\r?\n)/ with "" -->
+                    <!-- add a sub-element to prints <marker> that marks the left bound -->
+                    <xs:element name="prints" minOccurs="0">
+                        <xs:complexType mixed="true">
+                            <xs:sequence>
+                                <xs:element name="marker" type="xs:string" fixed="" minOccurs="0" />
+                            </xs:sequence>
+                        </xs:complexType>
+                    </xs:element>
 
-                        <!-- there are some todos in the element declaration  -->
-                        <xs:element ref="post" />
-                    </xs:choice>
-                </xs:choice>
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
+                    <xs:element name="post" type="postType" minOccurs="0" />
+                    <!-- TODO: <post> this -->
+                </xs:sequence>
+            </xs:choice>
+        </xs:sequence>
+    </xs:complexType>
 
-    <xs:element name="prints">
-        <xs:complexType mixed="true">
-            <xs:sequence>
-                <xs:element name="marker" type="xs:string" fixed="" minOccurs="0" />
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
+    <xs:complexType name="postType">
+        <xs:choice>
+            <xs:group ref="javaItem" />
+            <xs:element name="native">
+                <xs:complexType>
+                    <!-- I could just have a native test for unchanged -->
+                    <!-- <native id="unchanged" /> -->
+                    <xs:attribute name="id" type="javaIdent" />
+                </xs:complexType>
+            </xs:element>
+        </xs:choice>
+        <xs:attribute name="unchanged" type="xs:boolean" default="false" />
+        <xs:attribute name="foo" type="xs:boolean" />
+        <xs:assert test="(@unchanged and not(@foo)) or (not(@unchanged) and @foo)" />
+    </xs:complexType>
 
-    <!-- <post> should have an "ignore" option and an "unchanged" option -->
-    <xs:element name="post">
+    <!-- <post> should have an "ignore" option and an "unchanged" option (and maybe "native") -->
+   <!-- <xs:element name="post">
         <xs:complexType>
             <xs:complexContent>
                 <xs:extension base="javaValue">
-                    <!-- TODO: post is very complex:  -->
-                    <!-- - it can change a field (add <field> element) -->
-                    <!-- Don't allow "this" ident if not in class -->
+                    <!- TODO: post is very complex:
+                    <!- - it can change a field (add <field> element) ->
+                    <!- Don't allow "this" ident if not in class ->
                     <xs:attribute name="var" type="ident" use="required" />
                 </xs:extension>
             </xs:complexContent>
         </xs:complexType>
-    </xs:element>
+    </xs:element>-->
 
-    <xs:element name="arguments">
-        <xs:complexType>
-            <xs:sequence>
-                <!-- Type can be inferred from parameter type -->
-                <!-- Create a method to get the value (using reflection) -->
-                <xs:element name="argument" type="xs:string" />
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
+
+    <xs:complexType name="argumentsType">
+        <xs:sequence>
+            <!-- Type can be inferred from parameter type -->
+            <!-- Create a method to get the value (using reflection) -->
+            <!-- TODO: Why is argument type string -->
+            <!-- This should contain a <pre> and <post> -->
+
+            <!-- <xs:element name="argument" type="xs:string" /> -->
+            <xs:element name="argument">
+                <xs:complexType>
+                    <xs:sequence>
+                        <!-- TODO: This probably needs to be a javaItem, some methods take custom data types (like ch 8)  -->
+                        <xs:element name="pre" type="javaValue" />
+                        <xs:element name="post" type="postType" maxOccurs="0" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
 
     <xs:element name="mutuals">
         <xs:complexType>
-            <xs:choice maxOccurs="unbounded">
-                <xs:element name="exercise" type="positiveInt" />
-                <xs:element name="programmingProject" type="positiveInt" />
-            </xs:choice>
+            <xs:sequence>
+                <xs:element name="chapter" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:choice maxOccurs="unbounded">
+                            <xs:element name="exercise" type="positiveInt" />
+                            <xs:element name="programmingProject" type="positiveInt" />
+                        </xs:choice>
+                        <!-- Maybe make num optional for chapter -->
+                        <xs:attribute name="num" type="positiveInt" use="required" />
+                    </xs:complexType>
+                    <xs:unique name="mutualExerciseUnique">
+                        <xs:selector xpath="exercise" />
+                        <xs:field xpath="@num" />
+                    </xs:unique>
+                    <xs:unique name="mutualProgrammingProjectUnique">
+                        <xs:selector xpath="programmingProject" />
+                        <xs:field xpath="@num" />
+                    </xs:unique>
+                </xs:element>
+            </xs:sequence>
         </xs:complexType>
+        <xs:unique name="mutualChapterUnique">
+            <xs:selector xpath="chapter" />
+            <xs:field xpath="@num" />
+        </xs:unique>
     </xs:element>
 
     <!-- Yes, I know xs:positiveInteger exists, xs:integer == java.math.BigInteger while xs:int == int -->
@@ -187,33 +273,25 @@
         <xs:list itemType="xs:int" />
     </xs:simpleType> -->
 
-    <xs:simpleType name="ident">
-        <xs:restriction base="xs:string">
-            <xs:pattern value="this|arg\d+" />
-        </xs:restriction>
-    </xs:simpleType>
 
-    <xs:complexType name="checked">
-        <xs:sequence>
-            <xs:element ref="mutuals" minOccurs="0" />
-            <xs:choice>
-                <!-- TODO: (in java) if an exercise is a no-arg method then it can be replaced by the main method of a class (of the same name) -->
-                <xs:element ref="method" />
-                <!-- <xs:element ref="field" /> -->
-                <xs:element ref="class" />
-            </xs:choice>
-        </xs:sequence>
-        <xs:attribute name="num" type="positiveInt" use="required" />
-        <!-- <xs:attribute name="name" type="xs:string" use="required" /> -->
+
+    <xs:complexType name="javaItem">
+        <xs:group ref="javaItem" />
     </xs:complexType>
 
-    <!-- TODO: javaItem could be javaValue or a class -->
-    <xs:complexType name="javaItem">
+    <!-- TODO: javaItem should support predefined variables (like the ref trees in ch17) -->
+    <xs:group name="javaItem">
+        <xs:choice>
+            <xs:group ref="javaValue" />
+            <xs:element name="class" type="classType" />
+        </xs:choice>
+    </xs:group>
+    <!--<xs:complexType name="javaItem">
         <xs:sequence>
             <xs:element name="type" type="type" />
             <xs:element name="value" type="javaValue" />
         </xs:sequence>
-    </xs:complexType>
+    </xs:complexType>-->
 
     <xs:simpleType name="javaIdent">
         <xs:restriction base="xs:string">
@@ -222,8 +300,6 @@
     </xs:simpleType>
 
     <xs:group name="javaValue">
-        <!-- TODO: add basic functionality (primitives, class types, etc -->
-        <!-- TODO: add support for lists, sets, maps, collections, etc -->
         <!-- I could entirely remove the <type> element and make elements within javaValue -->
         <xs:choice>
             <!-- Primitive types -->
@@ -246,12 +322,14 @@
             <xs:element name="Array" type="javaList" />
             <xs:element name="ArrayList" type="javaList" />
             <xs:element name="LinkedList" type="javaList" /> <!-- LinkedList implements Queue -->
+            <xs:element name="TargetArrayList" type="javaList" />
             <xs:element name="Stack" type="javaList" />
             <xs:element name="HashSet" type="javaList" />
             <xs:element name="TreeSet" type="javaList" />
             <xs:element name="HashMap" type="javaMap" />
             <xs:element name="TreeMap" type="javaMap" />
-            <!-- TODO: Add TargetList (ch 15) and TargetTree (ch 17) -->
+            <xs:element name="TargetTree" type="javaList" />
+            <!-- TODO: Add TargetArrayList (ch 15) and TargetTree (ch 17) (and maybe target LinkedList fo ch 16) -->
             <!-- ^ maybe those can be expressed with a <class> element containing <field> elements -->
         </xs:choice>
     </xs:group>
@@ -294,5 +372,4 @@
         <xs:attribute name="keyType" type="type" />
         <xs:attribute name="valueType" type="type" />
     </xs:complexType>
-
 </xs:schema>

@@ -2,9 +2,18 @@
 
 <book
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:noNamespaceSchemaLocation="../book-tests.xsd">
+    xsi:noNamespaceSchemaLocation="../book-tests.xsd"
+    bookId="BJP-3">
     <chapter num="1">
         <exercise num="1">
+            <mutuals>
+                <chapter num="1">
+                    <exercise>2</exercise>
+                </chapter>
+                <chapter num="2">
+                    <exercise>3</exercise>
+                </chapter>
+            </mutuals>
             <method name="Stewie">
                 <test>
                     <System.in>foo</System.in>
@@ -14,6 +23,8 @@
                         || Victory is mine! ||
                         \\\\\\\\\\\\\\\\\\\\\\
                     </prints>
+
+                    <!--<returns></returns> -->
                 </test>
             </method>
         </exercise>
@@ -29,9 +40,9 @@
                          //\\
                           /\
                     </prints>
-                    <post var="this">
+                    <!--<post var="this">
                         <Scanner><File>foo</File></Scanner>
-                    </post>
+                    </post>-->
                 </test>
             </method>
         </exercise>
