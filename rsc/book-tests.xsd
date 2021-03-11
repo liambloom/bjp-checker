@@ -207,7 +207,7 @@
                     <xs:sequence>
                         <!-- TODO: This probably needs to be a javaItem, some methods take custom data types (like ch 8)  -->
                         <xs:element name="pre" type="javaValue" />
-                        <xs:element name="post" type="postType" maxOccurs="0" />
+                        <xs:element name="post" type="postType" minOccurs="0" />
                     </xs:sequence>
                 </xs:complexType>
             </xs:element>
@@ -265,7 +265,7 @@
             <!-- Regex for java type: (?!\.)(?:(?:^|\.)[a-zA-Z$_][a-zA-Z0-9$_]*)+(?:\[\])* -->
             <!-- This additionally support the target type (supported with "@target"), a type in the target package ("@target.package"),
                 and distinctly marks primitives using a dollar sign "$primitiveType" -->
-            <xs:pattern value="(?:\$(?:byte|short|int|long|float|double|char|boolean)|(?!\.)(?:@target(?:\.package)?)?(?:(?:^|\.)[a-zA-Z$_][a-zA-Z0-9$_]*)+)(?:\[\])*" />
+            <xs:pattern value="foo" /> <!-- FIXME (?:\$(?:byte|short|int|long|float|double|char|boolean)|(?!\.)(?:@target(?:\.package)?)?(?:(?:^|\.)[a-zA-Z$_][a-zA-Z0-9$_]*)+)(?:\[\])* -->
         </xs:restriction>
     </xs:simpleType>
 

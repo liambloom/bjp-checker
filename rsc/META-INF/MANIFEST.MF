@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Main-Class: io.github.liambloom.tests.book.bjp3.Main
+Class-Path: C:\Java Programs\.lib\jansi-2.0.1.jar;C:\Java Programs\.lib\
+ xerces-2_12_1-xml-schema-1.1\xercesImpl.jar;C:\Java Programs\.lib\xerce
+ s-2_12_1-xml-schema-1.1\org.eclipse.wst.xml.xpath2.processor_1.2.0.jar;
+ cupv10k-runtime.jar
