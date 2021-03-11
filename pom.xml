@@ -7,6 +7,7 @@
     <groupId>io.github.liambloom.tests.book</groupId>
     <artifactId>bjp3-tests</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <!-- TODO: add license to pom.xml -->
     <dependencies>
         <dependency>
             <!-- Used for colored output on non-unix terminals -->
