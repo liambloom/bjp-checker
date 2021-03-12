@@ -1,6 +1,5 @@
 .idea/
 .vscode/
-# TODO: something about the fact that I have an "out" and "target" directory
 out/
-target/
+lib/
 *.iml
