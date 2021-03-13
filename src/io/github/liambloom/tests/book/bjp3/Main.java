@@ -6,14 +6,14 @@ class Main {
     public static void main(String[] rawArgs) {
         try {
             // -[x] Parse args
-            Arguments args = new Arguments(rawArgs);
+            final Arguments args = new Arguments(rawArgs);
 
             // -[ ] Load Tests
             TestLoader.load();
 
             // -[x] Load Classes
             // TODO: maybe make an argument to run tests in another directory
-            Class<?>[] classes = DirectoryClassLoader.loadClassesHere();
+            final Class<?>[] classes = DirectoryClassLoader.loadClassesHere();
 
             // -[ ] Search classes to find correct chapter(s) and exercise(s)
             // -[ ] Retrieve/decode previous results
@@ -25,8 +25,13 @@ class Main {
             // -[ ] Print/save/encode/submit results
             //      Results could be: correct, incorrect, previously working, missing
         }
-        catch (UserError e) {
+        catch (UserErrorException e) {
             debugger.error(e.getMessage());
+            if (false /* TODO: args.debug */ && e.getCause() != null)
+                e.getCause().printStackTrace();
+        }
+        catch (Throwable e) {
+            debugger.internalError(e);
         }
     }
 }
