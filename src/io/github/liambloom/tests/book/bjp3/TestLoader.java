@@ -19,19 +19,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 class TestLoader {
-    public static final Lazy<Schema> schema = new Lazy<>() {
-        @Override
-        protected Schema createValue() {
-            try {
-                return SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1").newSchema(
-                        new StreamSource(TestLoader.class.getResourceAsStream("/book-tests.xsd")));
-            }
-            catch (SAXException e) {
-                Main.debugger.internalError(e);
-                return null; // unreachable
-            }
-        }
-    };
+    // TODO: This should be a ReadWriteLock
+    private static Schema schema;
+
+    public static Schema getSchema() throws SAXException {
+        if (schema == null)
+            schema = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1").newSchema(
+                    new StreamSource(TestLoader.class.getResourceAsStream("/book-tests.xsd")));
+        return schema;
+    }
+
+
 
     // TODO: split up into several methods and lazy fields
     public static /*Map<String, Source>*/ Source[] load() throws SAXException, URISyntaxException, IOException {

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Prototype: https://www.desmos.com/calculator/p7gvrj7rr8 -->
+
+<svg width="16" height="16" viewBox="0 0 100 100" 
+    xmlns="http://www.w3.org/2000/svg">
+
+    <rect fill="white" width="100" height="100" />
+    <path d="M 90 20
+             A 50 50 0 1 0 75 93.301
+             l -10 -17.321
+             A 30 30 0 1 1 50 20" fill="blue" />
+    <!--<path d="M 85.355 14.645
+             A 50 50 0 1 0 75 93.301
+             l 6.699 6.699
+             h 10.607
+             l -10 -10
+             l 10 -10
+             h -10.607
+             l -6.699 6.699
+             v -30
+             h -7.5
+             V 88.730
+             A 42.5 42.5 0 1 1 73.585 14.645
+             M 30 5
+             V 95
+             h 7.5
+             V 70
+
+             " fill="blue" />-->
+</svg>

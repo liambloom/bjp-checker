@@ -9,6 +9,7 @@ class Arguments {
     public final int chapter = 1;
     public final Integer exercise = 1; // I need an "all" value. I need union types
     public final Integer programmingProject = null;
+    public final XMLCheckLevel xmlCheckLevel = XMLCheckLevel.TargetOnlyCheck;
 
     //public final File targetDir;
 
@@ -38,4 +39,10 @@ class Arguments {
         //this.targetDir = new File(System.getProperty("user.dir"));
     }*/
 
+
+    public enum XMLCheckLevel {
+        NoCheck,
+        TargetOnlyCheck,
+        FullCheck
+    }
 }

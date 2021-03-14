@@ -5,6 +5,8 @@ class Main {
 
     public static void main(String[] rawArgs) {
         try {
+
+            System.out.println("done");
             // -[x] Parse args
             final Arguments args = new Arguments(rawArgs);
 
