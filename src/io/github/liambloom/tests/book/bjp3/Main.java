@@ -1,21 +1,36 @@
 package io.github.liambloom.tests.book.bjp3;
 
+import java.io.File;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+
 class Main {
-    public static final Debugger debugger = new Debugger();
+    public static Main app;
+    public final Arguments args;
+    public final String here;
+    public final Debugger debugger = new Debugger();
+
+    public Main(String[] rawArgs) throws URISyntaxException {
+        File f = new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+        if (f.isFile())
+            here = f.getParent();
+        else
+            here = f.getPath();
+
+        args = new Arguments(rawArgs);
+    }
 
     public static void main(String[] rawArgs) {
         try {
-
-            System.out.println("done");
-            // -[x] Parse args
-            final Arguments args = new Arguments(rawArgs);
+            // -[x] Initialization
+            app = new Main(rawArgs);
 
             // -[ ] Load Tests
             TestLoader.load();
 
             // -[x] Load Classes
             // TODO: maybe make an argument to run tests in another directory
-            final Class<?>[] classes = DirectoryClassLoader.loadClassesHere();
+            //final Class<?>[] classes = DirectoryClassLoader.loadClassesHere();
 
             // -[ ] Search classes to find correct chapter(s) and exercise(s)
             // -[ ] Retrieve/decode previous results
@@ -28,12 +43,15 @@ class Main {
             //      Results could be: correct, incorrect, previously working, missing
         }
         catch (UserErrorException e) {
-            debugger.error(e.getMessage());
+            app.debugger.error(e.getMessage());
             if (false /* TODO: args.debug */ && e.getCause() != null)
                 e.getCause().printStackTrace();
         }
         catch (Throwable e) {
-            debugger.internalError(e);
+            e.printStackTrace();
+            app.debugger.internalError(e);
         }
     }
+
+
 }

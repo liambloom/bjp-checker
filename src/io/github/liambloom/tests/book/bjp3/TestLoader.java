@@ -38,21 +38,22 @@ class TestLoader {
         Schema schema = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1").newSchema(new StreamSource(TestLoader.class.getResourceAsStream("/book-tests.xsd")));
 
         Source[] tests;
-        final URL externalTests = TestLoader.class.getResource("/../tests");
-        if (externalTests == null)
+        final File externalTests = new File(Main.app.here + File.separator + "tests");
+        if (!externalTests.exists())
             tests = new Source[1];
         else {
-            File[] sources = new File(externalTests.toURI()).listFiles();
+            File[] sources = externalTests.listFiles();
             tests = new Source[sources.length + 1];
             for (int i = 0; i < sources.length; i++) {
                 Path p = sources[i].toPath();
                 if (Files.isSymbolicLink(p))
                     p = Files.readSymbolicLink(p);
-                // TODO: check if sources[i] is a dir
+                if (sources[i].isDirectory()) {
+                    Main.app.debugger.warn("Expected an xml file at " + p + ", but found directory instead");
+                }
                 final String mime = Files.probeContentType(p);
                 if (mime.equals("application/xml") || mime.equals("text/xml"))
-                    // TODO: This should be a warning
-                    throw new UserErrorException("Expected an xml file at " + p + ", but found " + mime + " instead");
+                    Main.app.debugger.warn("Expected an xml file at " + p + ", but found " + mime + " instead");
                 //if (Files.isSymbolicLink(sources[i].toPath()))
 
             }

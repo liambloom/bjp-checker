@@ -48,10 +48,13 @@ class DirectoryClassLoader {
             String file = fileIter.next();
             for (URLClassLoader loader : loaders) {
                 try {
+                    // FIXME: Doesn't work with nested/inner classes
                     classes[i] = loader.loadClass(file.replace(".class", "").replace(loader.getURLs()[0].toString(), "").replace("/", "."));
                     break;
                 }
-                catch (ClassNotFoundException | NoClassDefFoundError e) { assert false; }
+                catch (ClassNotFoundException | NoClassDefFoundError e) {
+                    Main.app.debugger.internalError(e);
+                }
             }
             assert classes[i] != null;
         }

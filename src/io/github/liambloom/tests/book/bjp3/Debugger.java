@@ -24,7 +24,7 @@ class Debugger implements Closeable {
             if (false /* TODO: args.debug */)
                 e.printStackTrace();
             System.out.println(Main.class.getResource("/../"));
-            final File log = new File(new File(Main.class.getResource("/").toURI()).getParent()
+            final File log = new File(Main.app.here
                     + File.separator + "logs" + File.separator
                     + DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
             log.getParentFile().mkdir();
@@ -33,7 +33,7 @@ class Debugger implements Closeable {
         }
         catch (Throwable logError) {
             this.error("Failed to create log file");
-            if (false /* TODO: args.debug */)
+            if (true /* TODO: args.debug */)
                 logError.printStackTrace();
         }
         finally {
