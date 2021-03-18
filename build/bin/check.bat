@@ -1,0 +1,1 @@
+@call %~dp0\checker.bat check %*

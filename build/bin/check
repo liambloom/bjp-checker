@@ -1,2 +1,2 @@
-#!/usr/bin/env bash
-java -cp "$(cd `dirname $0` && pwd)/../lib/*" io.github.liambloom.tests.book.bjp3.Main
+#!/bin/sh
+/bin/sh $(cd `dirname $0` && pwd)/checker check "$@" #TODO: untestsed

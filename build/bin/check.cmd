@@ -1,1 +1,0 @@
-@java -cp "%~dp0..\lib\*" io.github.liambloom.tests.book.bjp3.Main

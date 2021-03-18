@@ -1,0 +1,2 @@
+#!/bin/sh
+java -cp "$(cd `dirname $0` && pwd)/../lib/*" io.github.liambloom.tests.book.bjp3.Main "$@" # TODO: untested
