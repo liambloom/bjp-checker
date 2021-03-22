@@ -1,2 +1,10 @@
-#!/bin/sh
-/bin/sh $(cd `dirname $0` && pwd)/checker check "$@" #TODO: untestsed
+#!/usr/bin/env bash
+echo foo
+
+this="${BASH_SOURCE[0]}"
+while [ -L "$this" ]; do
+  link_dir="$( cd -P "$( dirname "$this" )" >/dev/null 2>&1 && pwd )"
+  this="$(readlink "$this")"
+  if [[ $this != /* ]]; then this="$link_dir/$this"; fi
+done
+"$( cd -P "$( dirname "$this" )" >/dev/null 2>&1 && pwd )/checker" check "$@"
