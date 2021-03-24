@@ -2,6 +2,7 @@ package io.github.liambloom.tests.book.bjp3;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  * Represents a {@link Collection} of ranges.
@@ -13,197 +14,209 @@ class Ranges {
     private Ranges left;
     private Ranges right;
 
-    public Collection<Integer> asIntegerCollection() {
-        return new Collection<Integer>() {
-            @Override
-            public boolean add(Integer e) {
-                return Ranges.this.asRangeCollection().add(new Range(e));
-            }
+    private class RangesAsIntegerSet implements Set<Integer> {
+        @Override
+        public boolean add(Integer e) {
+            return asRangeCollection().add(new Range(e));
+        }
 
-            @Override
-            public boolean addAll(Collection<? extends Integer> c) {
-                boolean r = false;
-                for (Integer e : c) {
-                    if (add(e))
-                        r = true;
-                }
-                return r;
+        @Override
+        public boolean addAll(Collection<? extends Integer> c) {
+            boolean r = false;
+            for (Integer e : c) {
+                if (add(e))
+                    r = true;
             }
+            return r;
+        }
 
-            @Override
-            public boolean remove(Object o) {
-                return Ranges.this.remove(o);
-            }
+        @Override
+        public boolean remove(Object o) {
+            // TODO
+        }
 
-            @Override
-            public boolean removeAll(Collection<?> c) {
-                return Ranges.this.removeAll(c);
-            }
+        @Override
+        public boolean removeAll(Collection<?> c) {
+            // TODO
+        }
 
-            @Override
-            public boolean retainAll(Collection<?> c) {
-                return Ranges.this.retainAll(c);
-            }
+        @Override
+        public boolean retainAll(Collection<?> c) {
+            // TODO
+        }
 
-            @Override
-            public void clear() {
-                Ranges.this.clear();
-            }
+        @Override
+        public void clear() {
+            Ranges.this.clear();
+        }
 
-            @Override
-            public boolean contains(Object o) {
-                return Ranges.this.contains(o);
-            }
+        @Override
+        public boolean contains(Object o) {
+            // TODO
+        }
 
-            @Override
-            public boolean containsAll(Collection<?> c) {
-                return Ranges.this.containsAll(c);
-            }
+        @Override
+        public boolean containsAll(Collection<?> c) {
+            // TODO
+        }
 
-            @Override
-            public int size() {
-                // TODO
-            }
+        @Override
+        public int size() {
+            // TODO
+        }
 
-            @Override
-            public boolean isEmpty() {
-                return Ranges.this.isEmpty();
-            }
+        @Override
+        public boolean isEmpty() {
+            return Ranges.this.isEmpty();
+        }
 
-            @Override
-            public Iterator<Integer> iterator() {
-                // TODO
-            }
+        @Override
+        public Iterator<Integer> iterator() {
+            // TODO
+        }
 
-            @Override
-            public Object[] toArray() {
-                return toArray(new Object[0]);
-            }
+        @Override
+        public Object[] toArray() {
+            return toArray(new Object[0]);
+        }
 
-            @Override
-            public <T> T[] toArray(T[] a) {
-                // TODO
-            }
+        @Override
+        public <T> T[] toArray(T[] a) {
+            // TODO
+        }
 
-            @Override
-            public String toString() {
-                return Ranges.this.toString();
-            }
+        @Override
+        public String toString() {
+            return Ranges.this.toString();
+        }
 
-            @Override
-            public boolean equals(Object o) {
-                return Ranges.this.equals(o);
-            }
-        };
+        @Override
+        public boolean equals(Object o) {
+            return Ranges.this.equals(o);
+        }
+
+        private Ranges getRanges() {
+            return Ranges.this;
+        }
+    };
+
+    public Set<Integer> asIntegerSet() {
+        return new RangesAsIntegerSet();
     }
 
+    private class RangesAsRangeCollection implements Collection<Range> {
+        @Override
+        public boolean add(Range r) {
+            if (value == null){
+                value = r;
+                return true;
+            }
+            else if (value.contains(r))
+                return false;
+            else if (r.joinable(value)) {
+                value = value.join(r);
+                if (left != null) {
+                    value = left.tryJoinRight(value);
+                    if (left.value == null)
+                        left = null;
+                }
+                if (right != null) {
+                    value = right.tryJoinLeft(value);
+                    if (right.value == null)
+                        right = null;
+                }
+                return true;
+            }
+            else if (r.max < value.min)
+                return left.asRangeCollection().add(r);
+            else if (r.min > value.max)
+                return right.asRangeCollection().add(r);
+            else
+                throw new IllegalStateException("A mistake was made when comparing ranges");
+        }
+
+        @Override
+        public boolean addAll(Collection<? extends Range> c) {
+            boolean r = false;
+            for (Range e : c) {
+                if (add(e))
+                    r = true;
+            }
+            return r;
+        }
+
+        @Override
+        public boolean remove(Object o) {
+            // TODO
+        }
+
+        @Override
+        public boolean removeAll(Collection<?> c) {
+            // TODO
+        }
+
+        @Override
+        public boolean retainAll(Collection<?> c) {
+            // TODO
+        }
+
+        @Override
+        public void clear() {
+            Ranges.this.clear();
+        }
+
+        @Override
+        public boolean contains(Object o) {
+            // TODO
+        }
+
+        @Override
+        public boolean containsAll(Collection<?> c) {
+            // TODO
+        }
+
+        @Override
+        public int size() {
+            // TODO
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return Ranges.this.isEmpty();
+        }
+
+        @Override
+        public Iterator<Range> iterator() {
+            // TODO
+        }
+
+        @Override
+        public Object[] toArray() {
+            return toArray(new Object[0]);
+        }
+
+        @Override
+        public <T> T[] toArray(T[] a) {
+            // TODO
+        }
+
+        @Override
+        public String toString() {
+            return Ranges.this.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return Ranges.this.equals(o);
+        }
+
+        private Ranges getRanges() {
+            return Ranges.this;
+        }
+    };
+
     public Collection<Range> asRangeCollection() {
-        return new Collection<Range>() {
-            @Override
-            public boolean add(Range r) {
-                if (value == null){
-                    value = r;
-                    return true;
-                }
-                else if (value.contains(r))
-                    return false;
-                else if (r.joinable(value)) {
-                    value = value.join(r);
-                    if (left != null) {
-                        value = left.tryJoinRight(value);
-                        if (left.value == null)
-                            left = null;
-                    }
-                    if (right != null) {
-                        value = right.tryJoinLeft(value);
-                        if (right.value == null)
-                            right = null;
-                    }
-                    return true;
-                }
-                else if (r.max < value.min)
-                    return left.asRangeCollection().add(r);
-                else if (r.min > value.max)
-                    return right.asRangeCollection().add(r);
-                else
-                    throw new IllegalStateException("A mistake was made when comparing ranges");
-            }
-
-            @Override
-            public boolean addAll(Collection<? extends Range> c) {
-                boolean r = false;
-                for (Range e : c) {
-                    if (add(e))
-                        r = true;
-                }
-                return r;
-            }
-
-            @Override
-            public boolean remove(Object o) {
-                return Ranges.this.remove(o);
-            }
-
-            @Override
-            public boolean removeAll(Collection<?> c) {
-                return Ranges.this.removeAll(c);
-            }
-
-            @Override
-            public boolean retainAll(Collection<?> c) {
-                return Ranges.this.retainAll(c);
-            }
-
-            @Override
-            public void clear() {
-                Ranges.this.clear();
-            }
-
-            @Override
-            public boolean contains(Object o) {
-                return Ranges.this.contains(o);
-            }
-
-            @Override
-            public boolean containsAll(Collection<?> c) {
-                return Ranges.this.containsAll(c);
-            }
-
-            @Override
-            public int size() {
-                // TODO
-            }
-
-            @Override
-            public boolean isEmpty() {
-                return Ranges.this.isEmpty();
-            }
-
-            @Override
-            public Iterator<Range> iterator() {
-                // TODO
-            }
-
-            @Override
-            public Object[] toArray() {
-                return toArray(new Object[0]);
-            }
-
-            @Override
-            public <T> T[] toArray(T[] a) {
-                // TODO
-            }
-
-            @Override
-            public String toString() {
-                return Ranges.this.toString();
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                return Ranges.this.equals(o);
-            }
-        };
+        return new RangesAsRangeCollection();
     }
 
     /**
@@ -284,30 +297,10 @@ class Ranges {
         return root;
     }
 
-    public boolean remove(Object o) {
-        // TODO
-    }
-
-    public boolean removeAll(Collection<?> o) {
-        // TODO
-    }
-
-    public boolean retainAll(Collection<?> o) {
-        // TODO
-    }
-
     public void clear() {
         this.value = null;
         this.left = null;
         this.right = null;
-    }
-
-    public boolean contains(Object o) {
-        // TODO
-    }
-
-    public boolean containsAll(Collection<?> c) {
-        // TODO
     }
 
     public boolean isEmpty() {
