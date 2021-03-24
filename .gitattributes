@@ -1,9 +1,15 @@
-*               text=auto eol=lf
+# *               text=auto eol=lf
 
 *.java          text diff=java
-*.xml           text
-*.class         binary
-*.jar           binary
 
+*.xml           text
+*.xsd		text
+*.svg		text
+*.mf		text
+*.md		text
 *.cmd           text eol=crlf
 *.bat           text eol=crlf
+
+
+*.class         binary
+*.jar           binary

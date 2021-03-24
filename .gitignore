@@ -1,7 +1,2 @@
-.idea/
-.vscode/
 docs/
 out/
-build/*
-!build/bin/
-*.iml
