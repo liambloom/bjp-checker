@@ -7,9 +7,12 @@
 *.svg		text
 *.mf		text
 *.md		text
+*.txt		text
 *.cmd           text eol=crlf
 *.bat           text eol=crlf
 
+.gitignore	text
+.gitattributes	text
 
 *.class         binary
 *.jar           binary
