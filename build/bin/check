@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-echo foo
 
 this="${BASH_SOURCE[0]}"
 while [ -L "$this" ]; do
