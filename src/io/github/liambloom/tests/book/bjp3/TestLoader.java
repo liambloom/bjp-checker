@@ -11,12 +11,8 @@ import javax.xml.validation.Validator;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 
 class TestLoader {
     // TODO: This should be a ReadWriteLock
@@ -63,11 +59,15 @@ class TestLoader {
         // System.out.println(Files.probeContentType(Paths.get(TestLoader.class.getResource("/tests.xml").toURI())));
         //Files.readSymbolicLink(Paths.get(TestLoader.class.getResource("/tests.xml").toURI()));
 
+        // TODO: Only validate the built in tests (the one in the jar) in debug mode
+
         Validator validator = schema.newValidator();
-        for (Source test : tests) {
+        for (int i = 0; i < tests.length; i++) {
+            if (i == 0 && !App.app.debugger.debugMode)
+                continue;
             // If a SAXException is thrown here, it is the user's fault\
             try {
-                validator.validate(test);
+                validator.validate(tests[i]);
             }
             catch (SAXParseException e) {
                 throw new UserErrorException(e);

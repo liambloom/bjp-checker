@@ -9,8 +9,11 @@ import java.time.format.DateTimeFormatter;
 import org.fusesource.jansi.AnsiConsole;
 
 class Debugger implements Closeable {
+    public final boolean debugMode;
+
     public Debugger() {
         AnsiConsole.systemInstall();
+        debugMode = "1".equals(System.getenv("CHECKER_DEBUG"));
     }
 
     public void error(String msg, Object... args) {
@@ -20,8 +23,8 @@ class Debugger implements Closeable {
 
     public void internalError(Throwable e) {
         try {
-            this.error("Internal Error. Run with `-d' or `--debug' or check logs for more detailed information");
-            if (false /* TODO: args.debug */)
+            this.error("Internal Error. Check logs for more detailed information");
+            if (debugMode)
                 e.printStackTrace();
             final File log = new File(App.app.here
                     + File.separator + "logs" + File.separator
@@ -32,7 +35,7 @@ class Debugger implements Closeable {
         }
         catch (Throwable logError) {
             this.error("Failed to create log file");
-            if (true /* TODO: args.debug */)
+            if (debugMode)
                 logError.printStackTrace();
         }
         finally {
