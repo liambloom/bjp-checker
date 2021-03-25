@@ -23,8 +23,7 @@ class Debugger implements Closeable {
             this.error("Internal Error. Run with `-d' or `--debug' or check logs for more detailed information");
             if (false /* TODO: args.debug */)
                 e.printStackTrace();
-            System.out.println(Main.class.getResource("/../"));
-            final File log = new File(Main.app.here
+            final File log = new File(App.app.here
                     + File.separator + "logs" + File.separator
                     + DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
             log.getParentFile().mkdir();

@@ -7,4 +7,5 @@ while [ -L "$this" ]; do
   this="$(readlink "$this")"
   if [[ $this != /* ]]; then this="$link_dir/$this"; fi
 done
-java -cp "$( cd -P "$( dirname "$this" )" >/dev/null 2>&1 && pwd )/../lib/*" io.github.liambloom.tests.book.bjp3.Main "$@"
+
+java -cp "$( cd -P "$( dirname "$this" )" >/dev/null 2>&1 && pwd )/../lib/*" io.github.liambloom.tests.book.bjp3.App "$@"
