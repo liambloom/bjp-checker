@@ -30,9 +30,66 @@ class Ranges {
             return r;
         }
 
+        // Similar to the tryJoin methods in that it can signal that the
+        // caller should delete the object this was called on by setting
+        // this.value to null
         @Override
         public boolean remove(Object o) {
-            // TODO
+            if (o == null)
+                throw new NullPointerException();
+            if (!(o instanceof Integer))
+                throw new ClassCastException();
+            if (value == null)
+                return false;
+            Integer other = (Integer) o;
+            if (value.contains(other)) {
+                if (value.size() == 1) {
+                    if (left == null) {
+                        if (right == null)
+                            value = null;
+                        else {
+                            value = right.value;
+                            left = right.left;
+                            right = right.right;
+                        }
+                    }
+                    else if (right == null) {
+                        value = left.value;
+                        right = left.right;
+                        left = left.left;
+                    }
+                    else {
+
+                    }
+                }
+                else if (value.min == other)
+                    value = new Range(value.min + 1, value.max);
+                else if (value.max - 1 == other)
+                    value = new Range(value.min, value.max - 1);
+                else {
+                    Range lSplit = new Range(value.min, other);
+                    Range rSplit = new Range(other + 1, value.max);
+                    value = lSplit;
+                    asRangeCollection().add(rSplit);
+                }
+                return true;
+            }
+            else if (other < value.min) {
+                if (left == null)
+                    return false;
+                final boolean r = left.asIntegerSet().remove(o);
+                if (left.value == null)
+                    left = null;
+                return r;
+            }
+            else {
+                if (right == null)
+                    return false;
+                final boolean r = right.asIntegerSet().remove(o);
+                if (right.value == null)
+                    right = null;
+                return r;
+            }
         }
 
         @Override
