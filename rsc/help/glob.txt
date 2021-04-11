@@ -1,0 +1,9 @@
+Glob is one or more paths with the following formatting:
+  Path segments are pieces of a path separated by '/', or '.'
+  /        A slash is used as a directory separator, regardless of OS. A
+              path with a leading slash is relative to the root directory,
+              all other paths are relative to the current location
+  ?        A wildcard representing a single character other than '/' or '.'
+  *        A wildcard representing one or more characters other than '/' or '.'
+  **       A wildcard representing zero or more path segments
+  \        Escapes a '/', '?', '*', or '\'

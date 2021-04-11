@@ -1,28 +1,28 @@
 package io.github.liambloom.tests.book.bjp3;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
 // Add placeholder values for now
 class Arguments {
     // Compare flags using identity equality (==).
-    public static final int MIN_CH_NUM = 1;
+    /*public static final int MIN_CH_NUM = 1;
     public static final int AUTO_CH_FLAG = MIN_CH_NUM - 1;
     public static final int MIN_EX_NUM = 1;
     public static final int MAX_EX_NUM = 40;
     public static final boolean[] ALL_EX_FLAG = new boolean[0];
-    // TODO: More EX flags
+
+    /** Tests all exercises not currently marked as "correct" */
+    /*public static final boolean[] MISSING_EX = new boolean[0];
     public static final int MIN_PP_NUM = 1;
     public static final int MAX_PP_NUM = 10;
     // TODO: PP Flags
 
+    public static final Pattern COMBINING_FLAG = Pattern.compile("-(?!-).{2,}");
+
 
     public final int chapter;
-    public final boolean[] exercise; // I need an "all" value. I need union types
+    public final boolean[] exercise;
     public final boolean[] programmingProject;
     public final XMLCheckLevel xmlCheckLevel;
-    public final String[] commands;
+    //public final String[] commands;
 
     //public final File targetDir;
 
@@ -34,18 +34,49 @@ class Arguments {
         // Deal with defaults on access
         // Maybe do different things based on the command
         if (args.length == 0) {
-            this.commands = new String[] { "--help" };
+            args = new String[] { "--help" };
             return;
         }
 
-        ArrayList<String> commands = new ArrayList<>(args.length);
+        ArrayList<String> flatArgs = new ArrayList<>();
+
+        for (String arg : args) {
+            if (COMBINING_FLAG.matcher(arg).matches()) {
+                for (int i = 1; i < arg.length(); i++)
+                    flatArgs.add("-" + arg.charAt(i));
+            }
+            else
+                flatArgs.add(arg);
+            switch (flatArgs.get(flatArgs.size() - 1)) {
+                case "-v":
+                case "--version":
+                    System.out.println(App.VERSION);
+
+            }
+        }
+
+        /*ArrayList<String> commands = new ArrayList<>(args.length);
         int i = 0;
 
         for (; i < args.length && (!args[i].startsWith("-") || args[i].equals("--help")); i++)
             commands.add(args[i]);
         this.commands = commands.toArray(new String[0]);
 
-        int chapter = AUTO_CH_FLAG;
+        int chapter = AUTO_CH_FLAG;*/
+
+        /*if (args[0].startsWith("tests")) {
+            // TODO: validate tests and DON'T check
+        }
+        else {
+            // TODO: run tests
+        }
+
+        switch (args[0]) {
+            case "check":
+                // TODO check
+                break;
+            case "validate":
+        }
 
         for (; i < args.length; i++) {
             if (!args[i].startsWith("-") || args[i].equals("--help"))
@@ -90,9 +121,9 @@ class Arguments {
     }*/
 
 
-    public enum XMLCheckLevel {
+    /*public enum XMLCheckLevel {
         NoCheck,
         TargetOnlyCheck,
         FullCheck
-    }
+    }*/
 }

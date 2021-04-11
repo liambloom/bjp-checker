@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
+# Based off of (but not taken from) https://stackoverflow.com/a/246128/11326662
+
+[[ "$CHECKER_DEBUG" == "1" ]] && echo Debug mode is ON
 
 this="${BASH_SOURCE[0]}"
 while [ -L "$this" ]; do
   link_dir="$( cd -P "$( dirname "$this" )" >/dev/null 2>&1 && pwd )"
   this="$(readlink "$this")"
-  if [[ $this != /* ]]; then this="$link_dir/$this"; fi
+  [[ $this != /* ]] && this="$link_dir/$this"
 done
-"$( cd -P "$( dirname "$this" )" >/dev/null 2>&1 && pwd )/checker" check "$@"
+
+java -cp "$( cd -P "$( dirname "$this" )" >/dev/null 2>&1 && pwd )/../lib/*" io.github.liambloom.tests.book.bjp3.App "$@"

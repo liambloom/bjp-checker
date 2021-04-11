@@ -25,8 +25,6 @@ class TestLoader {
         return schema;
     }
 
-
-
     // TODO: split up into several methods and lazy fields
     public static /*Map<String, Source>*/ Source[] load() throws SAXException, URISyntaxException, IOException {
         // TODO: Fix conflicting SAXExceptions
@@ -34,7 +32,7 @@ class TestLoader {
         Schema schema = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1").newSchema(new StreamSource(TestLoader.class.getResourceAsStream("/book-tests.xsd")));
 
         Source[] tests;
-        final File externalTests = new File(App.app.here + File.separator + "tests");
+        final File externalTests = new File(new File(App.app.here).getParent() + File.separator + "tests");
         if (!externalTests.exists())
             tests = new Source[1];
         else {
@@ -63,7 +61,7 @@ class TestLoader {
 
         Validator validator = schema.newValidator();
         for (int i = 0; i < tests.length; i++) {
-            if (i == 0 && !App.app.debugger.debugMode)
+            if (i == 0 && !App.debugger.debugMode)
                 continue;
             // If a SAXException is thrown here, it is the user's fault\
             try {

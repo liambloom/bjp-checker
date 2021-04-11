@@ -18,7 +18,6 @@ class Debugger implements Closeable {
 
     public void error(String msg, Object... args) {
         System.err.println("\u001b[31m[error]\u001b[0m " + String.format(msg, args));
-        //System.exit(1);
     }
 
     public void internalError(Throwable e) {
@@ -26,7 +25,10 @@ class Debugger implements Closeable {
             this.error("Internal Error. Check logs for more detailed information");
             if (debugMode)
                 e.printStackTrace();
-            final File log = new File(App.app.here
+            System.out.println(App.app.here
+                    + File.separator + "logs" + File.separator
+                    + DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
+            final File log = new File(new File(App.app.here).getParent()
                     + File.separator + "logs" + File.separator
                     + DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
             log.getParentFile().mkdir();
@@ -38,13 +40,15 @@ class Debugger implements Closeable {
             if (debugMode)
                 logError.printStackTrace();
         }
-        finally {
-            System.exit(1);
-        }
+        System.exit(1);
     }
 
     public void warn(String msg, Object... args) {
         System.err.println("\u001b[33m[warning]\u001b[0m " + String.format(msg, args));
+    }
+
+    public void notice(String msg, Object... args) {
+        System.err.println("\u001b[36m[notice]\u001b[0m " + String.format(msg, args));
     }
 
     public void close() {
