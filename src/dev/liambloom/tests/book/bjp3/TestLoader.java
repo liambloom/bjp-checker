@@ -1,4 +1,4 @@
-package io.github.liambloom.tests.book.bjp3;
+package dev.liambloom.tests.book.bjp3;
 
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
