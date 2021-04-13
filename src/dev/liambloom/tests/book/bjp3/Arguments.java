@@ -1,27 +1,34 @@
 package dev.liambloom.tests.book.bjp3;
 
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Scanner;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
 // Add placeholder values for now
 class Arguments {
     // Compare flags using identity equality (==).
-    /*public static final int MIN_CH_NUM = 1;
+    public static final int MIN_CH_NUM = 1;
     public static final int AUTO_CH_FLAG = MIN_CH_NUM - 1;
     public static final int MIN_EX_NUM = 1;
     public static final int MAX_EX_NUM = 40;
     public static final boolean[] ALL_EX_FLAG = new boolean[0];
 
     /** Tests all exercises not currently marked as "correct" */
-    /*public static final boolean[] MISSING_EX = new boolean[0];
+    public static final boolean[] MISSING_EX = new boolean[0];
     public static final int MIN_PP_NUM = 1;
     public static final int MAX_PP_NUM = 10;
     // TODO: PP Flags
 
-    public static final Pattern COMBINING_FLAG = Pattern.compile("-(?!-).{2,}");
+    //public static final Pattern COMBINING_FLAG = Pattern.compile("-(?!-).{2,}");
 
 
     public final int chapter;
     public final boolean[] exercise;
     public final boolean[] programmingProject;
-    public final XMLCheckLevel xmlCheckLevel;
+    public final String[] glob;
     //public final String[] commands;
 
     //public final File targetDir;
@@ -33,7 +40,7 @@ class Arguments {
         // Don't make things final, initialize them to null
         // Deal with defaults on access
         // Maybe do different things based on the command
-        if (args.length == 0) {
+        /*if (args.length == 0) {
             args = new String[] { "--help" };
             return;
         }
@@ -53,18 +60,18 @@ class Arguments {
                     System.out.println(App.VERSION);
 
             }
-        }
+        }*/
 
-        /*ArrayList<String> commands = new ArrayList<>(args.length);
+        //ArrayList<String> commands = new ArrayList<>(args.length);
         int i = 0;
 
-        for (; i < args.length && (!args[i].startsWith("-") || args[i].equals("--help")); i++)
+        /*for (; i < args.length && (!args[i].startsWith("-") || args[i].equals("--help")); i++)
             commands.add(args[i]);
-        this.commands = commands.toArray(new String[0]);
+        this.commands = commands.toArray(new String[0]);*/
 
-        int chapter = AUTO_CH_FLAG;*/
+        int chapter = AUTO_CH_FLAG;
 
-        /*if (args[0].startsWith("tests")) {
+        if (args[0].startsWith("tests")) {
             // TODO: validate tests and DON'T check
         }
         else {
@@ -114,16 +121,95 @@ class Arguments {
         this.chapter = chapter;
     }
 
-    // Default constructor
-    /*public Arguments() {
-        this.commands = null;
-        //this.targetDir = new File(System.getProperty("user.dir"));
-    }*/
+    public static boolean preParser(String[] args) {
+        if (args.length == 0) {
+            args = new String[] { "--help" };
+            System.out.println("Checker " + App.VERSION + " (C) Liam Bloom 2021" + System.lineSeparator());
+        }
 
+        if (args[0].startsWith("-")) {
+            switch (mapPreOption(args[0])) {
+                case "help":
+                    lastArg(args, 0);
+                    help("check");
+                    return true;
+                case "version":
+                    lastArg(args, 0);
+                    System.out.println(App.VERSION);
+                    return true;
+            }
+        }
 
-    /*public enum XMLCheckLevel {
-        NoCheck,
-        TargetOnlyCheck,
-        FullCheck
-    }*/
+        if (args[1].startsWith("-") && mapPreOption(args[1]).equals("help")) {
+            lastArg(args, 1);
+            if (args[0].equals("glob"))
+                help("glob");
+            else if (args[0].startsWith("-"))
+                help(mapOption(args[0]));
+            else
+                help(args[0]);
+            return true;
+        }
+
+        if (Arrays.stream(args).anyMatch(((Predicate<String>) "-s"::equals).or("--submit"::equals))) {
+            // TODO run tests on server
+            return true;
+        }
+
+        return false;
+    }
+
+    public static void help(String name) {
+        InputStream help = App.class.getResourceAsStream("/help/" + name + ".txt");
+        if (help == null)
+            throw new UserErrorException("No help found for `" + name + "'");
+        else {
+            Scanner s = new Scanner(help);
+            while (s.hasNextLine())
+                System.out.println(s.nextLine());
+            s.close();
+        }
+    }
+
+    static String mapPreOption(String option) {
+        switch (option) {
+            case "-v":
+            case "--version":
+                return "version";
+            case "-h":
+            case "--help":
+                return "help";
+            default:
+                return mapOption(option);
+        }
+    }
+
+    static String mapOption(String option) {
+        switch (option) {
+            case "-c":
+            case "--chapter":
+                return "chapter";
+            case "-e":
+            case "--exercise":
+            case "--exercises":
+                return "exercises";
+            case "--pp":
+            case "--programming-projects":
+            case "--programmingProjects":
+                return "programmingProjects";
+            case "-r":
+            case "--results":
+                return "results";
+            case "-s":
+            case "--submit":
+                return "submit";
+            default:
+                throw new UserErrorException("Unknown flag `" + option + "'. Run check --help for a list of valid flags");
+        }
+    }
+
+    static void lastArg(String[] args, int i) {
+        if (args.length > i + 1)
+            throw new UserErrorException("Did not expect argument after `" + args[i] + "'");
+    }
 }

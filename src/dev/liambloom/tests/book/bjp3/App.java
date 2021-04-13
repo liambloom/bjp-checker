@@ -1,6 +1,7 @@
 package dev.liambloom.tests.book.bjp3;
 
 import java.io.File;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.Scanner;
 
@@ -21,43 +22,18 @@ class App {
     }
 
     public static void main(String[] args) {
-
+        // TODO: Security Policy
+        // https://stackoverflow.com/q/46991566/11326662
         try {
             // -[x] Initialization
             app = new App();
 
-            if (args.length == 0) {
-                args = new String[] { "--help" };
-                System.out.println("Checker " + VERSION + " (C) Liam Bloom 2021" + System.lineSeparator());
-            }
-
-            if (args[0].startsWith("-")) {
-                switch (mapOption(args[0])) {
-                    case "help":
-                        lastArg(args, 0);
-                        help("check");
-                        return;
-                    case "version":
-                        lastArg(args, 0);
-                        System.out.println(VERSION);
-                        return;
-                }
-            }
-
-            if (args[1].startsWith("-") && mapOption(args[1]).equals("help")) {
-                lastArg(args, 1);
-                if (args[0].equals("glob"))
-                    help("glob");
-                else if (args[0].startsWith("-"))
-                    help(mapOption(args[0]));
-                else
-                    help(args[0]);
+            if (Arguments.preParser(args))
                 return;
-            }
             // TODO: run tests
 
             // -[ ] Load Tests
-            TestLoader.load();
+            //TestLoader.load();
 
             // -[x] Load Classes
             // TODO: maybe make an argument to run tests in another directory
@@ -85,51 +61,5 @@ class App {
             // e.printStackTrace();
             App.debugger.internalError(e);
         }
-    }
-
-    public static void help(String name) {
-        //System.out.println(app.here + File.separator + "help" + File.separator + name + ".txt");
-        try (Scanner s = new Scanner(App.class.getResourceAsStream("/help/" + name + ".txt"))) {
-            while (s.hasNextLine())
-                System.out.println(s.nextLine());
-        }
-        catch (NullPointerException e) {
-            throw new UserErrorException("No help found for `" + name + "'");
-        }
-    }
-
-    static String mapOption(String option) {
-        switch (option) {
-            case "-v":
-            case "--version":
-                return "version";
-            case "-h":
-            case "--help":
-                return "help";
-            case "-c":
-            case "--chapter":
-                return "chapter";
-            case "-e":
-            case "--exercise":
-            case "--exercises":
-                return "exercises";
-            case "--pp":
-            case "--programming-projects":
-            case "--programmingProjects":
-                return "programmingProjects";
-            case "-r":
-            case "--results":
-                return "results";
-            case "-s":
-            case "--submit":
-                return "submit";
-            default:
-                throw new UserErrorException("Unknown flag `" + option + "'. Run check --help for a list of valid flags");
-        }
-    }
-
-    static void lastArg(String[] args, int i) {
-        if (args.length > i + 1)
-            throw new UserErrorException("Did not expect argument after `" + args[i] + "'");
     }
 }
