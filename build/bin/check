@@ -10,4 +10,4 @@ while [ -L "$this" ]; do
   [[ $this != /* ]] && this="$link_dir/$this"
 done
 
-java -cp "$( cd -P "$( dirname "$this" )" >/dev/null 2>&1 && pwd )/../lib/*" io.github.liambloom.tests.book.bjp3.App "$@"
+java -cp "$( cd -P "$( dirname "$this" )" >/dev/null 2>&1 && pwd )/../lib/*" dev.liambloom.tests.book.bjp3.App "$@"

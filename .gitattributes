@@ -1,18 +1,20 @@
 *               text=auto eol=lf
 
 *.java          text diff=java
+*.rs            text diff=rs
 
 *.xml           text
-*.xsd		text
-*.svg		text
-*.mf		text
-*.md		text
-*.txt		text
+*.xsd		    text
+*.svg		    text
+*.mf		    text
+*.md		    text
+*.txt		    text
 *.cmd           text eol=crlf
 *.bat           text eol=crlf
 
-.gitignore	text
+.gitignore	    text
 .gitattributes	text
 
 *.class         binary
 *.jar           binary
+*.exe           binary
