@@ -1,10 +1,12 @@
 package dev.liambloom.tests.book.bjp3;
 
 import java.io.File;
-import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.util.Scanner;
 
+
+// TODO (maybe): move internal classes to package "internal" so they're not loaded when the annotations are loaded
+// TODO (maybe) (in installer): Possibly add to BlueJ/lib/userlib
+// TODO: I probably need to add a GUI
 class App {
     public static final String VERSION = "v1.0.0-alpha-1";
     //public static final Pattern COMBINING_FLAG = Pattern.compile("-(?!-).{2,}");
@@ -13,6 +15,9 @@ class App {
     public final String here;
     public static final Debugger debugger = new Debugger();
 
+    // TODO: most things should happen in here, a new app can be constructed by cli and gui mains
+    // Arguments should be PASSED IN, not generated here
+    // Also, App.here should be static and/or lazy
     public App() throws URISyntaxException {
         File f = new File(App.class.getProtectionDomain().getCodeSource().getLocation().toURI());
         if (f.isFile())

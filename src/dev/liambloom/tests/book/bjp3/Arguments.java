@@ -1,17 +1,16 @@
 package dev.liambloom.tests.book.bjp3;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 // Add placeholder values for now
 class Arguments {
     // Compare flags using identity equality (==).
     public static final int MIN_CH_NUM = 1;
     public static final int AUTO_CH_FLAG = MIN_CH_NUM - 1;
+
     public static final int MIN_EX_NUM = 1;
     public static final int MAX_EX_NUM = 40;
     public static final boolean[] ALL_EX_FLAG = new boolean[0];
@@ -29,6 +28,10 @@ class Arguments {
     public final boolean[] exercise;
     public final boolean[] programmingProject;
     public final String[] glob;
+    public final boolean loadTests;
+    public final boolean runTests;
+    public final boolean printResults;
+
     //public final String[] commands;
 
     //public final File targetDir;
@@ -140,7 +143,7 @@ class Arguments {
             }
         }
 
-        if (args[1].startsWith("-") && mapPreOption(args[1]).equals("help")) {
+        if (args.length > 1 && args[1].startsWith("-") && mapPreOption(args[1]).equals("help")) {
             lastArg(args, 1);
             if (args[0].equals("glob"))
                 help("glob");

@@ -9,6 +9,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+// TODO: this needs to work with a glob
+// TODO: this needs to import jars
+// TODO: this needs to work with internal classes
+// TODO: this should extends URLClassLoader
+// TODO: this should load classes with limited permissions
 class DirectoryClassLoader {
     private static final Pattern PATH_SEGMENT = Pattern.compile("\\" + File.separatorChar + "[a-zA-Z_$][\\w$]*");
 
