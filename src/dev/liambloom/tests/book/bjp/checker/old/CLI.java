@@ -1,4 +1,4 @@
-package dev.liambloom.tests.book.bjp3;
+package dev.liambloom.tests.book.bjp.checker.old;
 
 import java.io.Closeable;
 import java.io.File;
@@ -8,12 +8,16 @@ import java.time.format.DateTimeFormatter;
 
 import org.fusesource.jansi.AnsiConsole;
 
-class Debugger implements Closeable {
+class CLI {
+}
+
+class Debugger implements Closeable, Logger {
     public final boolean debugMode;
 
     public Debugger() {
         AnsiConsole.systemInstall();
-        debugMode = "1".equals(System.getenv("CHECKER_DEBUG"));
+        if (debugMode = "1".equals(System.getenv("CHECKER_DEBUG")))
+            System.out.println("Debug mode is ON");
     }
 
     public void error(String msg, Object... args) {
@@ -25,10 +29,10 @@ class Debugger implements Closeable {
             this.error("Internal Error. Check logs for more detailed information");
             if (debugMode)
                 e.printStackTrace();
-            System.out.println(App.app.here
+            System.out.println(App.here()
                     + File.separator + "logs" + File.separator
                     + DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
-            final File log = new File(new File(App.app.here).getParent()
+            final File log = new File(new File(App.here()).getParent()
                     + File.separator + "logs" + File.separator
                     + DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
             log.getParentFile().mkdir();

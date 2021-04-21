@@ -1,4 +1,4 @@
-package dev.liambloom.tests.book.bjp3;
+package dev.liambloom.tests.book.bjp.checker.old;
 
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
@@ -32,7 +32,7 @@ class TestLoader {
         Schema schema = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1").newSchema(new StreamSource(TestLoader.class.getResourceAsStream("/book-tests.xsd")));
 
         Source[] tests;
-        final File externalTests = new File(new File(App.app.here).getParent() + File.separator + "tests");
+        final File externalTests = new File(new File(App.here()).getParent() + File.separator + "tests");
         if (!externalTests.exists())
             tests = new Source[1];
         else {
@@ -43,25 +43,25 @@ class TestLoader {
                 if (Files.isSymbolicLink(p))
                     p = Files.readSymbolicLink(p);
                 if (sources[i].isDirectory()) {
-                    App.debugger.warn("Expected an xml file at " + p + ", but found directory instead");
+                    App.logger.warn("Expected an xml file at " + p + ", but found directory instead");
                 }
                 final String mime = Files.probeContentType(p);
                 if (mime.equals("application/xml") || mime.equals("text/xml"))
-                    App.debugger.warn("Expected an xml file at " + p + ", but found " + mime + " instead");
+                    App.logger.warn("Expected an xml file at " + p + ", but found " + mime + " instead");
                 //if (Files.isSymbolicLink(sources[i].toPath()))
 
             }
         }
-        tests[0] = new StreamSource(TestLoader.class.getResourceAsStream("/tests.xml"));
+        tests[0] = new StreamSource(TestLoader.class.getResourceAsStream("/bjp-3.xml"));
 
-        // System.out.println(Files.probeContentType(Paths.get(TestLoader.class.getResource("/tests.xml").toURI())));
-        //Files.readSymbolicLink(Paths.get(TestLoader.class.getResource("/tests.xml").toURI()));
+        // System.out.println(Files.probeContentType(Paths.get(TestLoader.class.getResource("/bjp-3.xml").toURI())));
+        //Files.readSymbolicLink(Paths.get(TestLoader.class.getResource("/bjp-3.xml").toURI()));
 
         // TODO: Only validate the built in tests (the one in the jar) in debug mode
 
         Validator validator = schema.newValidator();
         for (int i = 0; i < tests.length; i++) {
-            if (i == 0 && !App.debugger.debugMode)
+            if (i == 0 && !App.logger.debugMode)
                 continue;
             // If a SAXException is thrown here, it is the user's fault\
             try {

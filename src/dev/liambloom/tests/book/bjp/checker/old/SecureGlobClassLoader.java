@@ -1,9 +1,11 @@
-package dev.liambloom.tests.book.bjp3;
+package dev.liambloom.tests.book.bjp.checker.old;
 
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.security.CodeSource;
+import java.security.PermissionCollection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -14,8 +16,21 @@ import java.util.regex.Pattern;
 // TODO: this needs to work with internal classes
 // TODO: this should extends URLClassLoader
 // TODO: this should load classes with limited permissions
-class DirectoryClassLoader {
+class SecureGlobClassLoader extends URLClassLoader {
     private static final Pattern PATH_SEGMENT = Pattern.compile("\\" + File.separatorChar + "[a-zA-Z_$][\\w$]*");
+
+    public SecureGlobClassLoader(String[] globs) {
+        super(new URL[0]);
+        for (String glob : globs) {
+
+        }
+        //addURL();
+    }
+
+    @Override
+    protected PermissionCollection getPermissions(CodeSource cs) {
+
+    }
 
     public static Class<?>[] loadClassesHere() throws ClassNotFoundException, MalformedURLException {
         return loadClasses(new File(System.getProperty("user.dir")));

@@ -1,4 +1,8 @@
-package dev.liambloom.tests.book.bjp3;
+package dev.liambloom.tests.book.bjp.checker.old.cli;
+
+import dev.liambloom.tests.book.bjp.checker.old.App;
+import dev.liambloom.tests.book.bjp.checker.old.Target;
+import dev.liambloom.tests.book.bjp.checker.UserErrorException;
 
 import java.io.InputStream;
 import java.util.Arrays;
@@ -7,30 +11,8 @@ import java.util.function.Predicate;
 
 // Add placeholder values for now
 class Arguments {
-    // Compare flags using identity equality (==).
-    public static final int MIN_CH_NUM = 1;
-    public static final int AUTO_CH_FLAG = MIN_CH_NUM - 1;
-
-    public static final int MIN_EX_NUM = 1;
-    public static final int MAX_EX_NUM = 40;
-    public static final boolean[] ALL_EX_FLAG = new boolean[0];
-
-    /** Tests all exercises not currently marked as "correct" */
-    public static final boolean[] MISSING_EX = new boolean[0];
-    public static final int MIN_PP_NUM = 1;
-    public static final int MAX_PP_NUM = 10;
-    // TODO: PP Flags
-
-    //public static final Pattern COMBINING_FLAG = Pattern.compile("-(?!-).{2,}");
-
-
-    public final int chapter;
-    public final boolean[] exercise;
-    public final boolean[] programmingProject;
-    public final String[] glob;
-    public final boolean loadTests;
-    public final boolean runTests;
-    public final boolean printResults;
+    public final Target target;
+    public final App app;
 
     //public final String[] commands;
 

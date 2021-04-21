@@ -1,24 +1,22 @@
-package dev.liambloom.tests.book.bjp3;
+package dev.liambloom.tests.book.bjp.checker.old;
+
+//import dev.liambloom.tests.book.bjp.checker.old.cli.Arguments;
+
+import org.xml.sax.SAXException;
 
 import java.io.File;
 import java.net.URISyntaxException;
 
 
-// TODO (maybe): move internal classes to package "internal" so they're not loaded when the annotations are loaded
 // TODO (maybe) (in installer): Possibly add to BlueJ/lib/userlib
 // TODO: I probably need to add a GUI
 class App {
     public static final String VERSION = "v1.0.0-alpha-1";
-    //public static final Pattern COMBINING_FLAG = Pattern.compile("-(?!-).{2,}");
-
-    public static App app;
     public final String here;
-    public static final Debugger debugger = new Debugger();
+    public Logger logger;
 
-    // TODO: most things should happen in here, a new app can be constructed by cli and gui mains
-    // Arguments should be PASSED IN, not generated here
-    // Also, App.here should be static and/or lazy
-    public App() throws URISyntaxException {
+    public App(Logger logger) throws URISyntaxException {
+        this.logger = logger;
         File f = new File(App.class.getProtectionDomain().getCodeSource().getLocation().toURI());
         if (f.isFile())
             here = f.getParent();
@@ -26,15 +24,19 @@ class App {
             here = f.getPath();
     }
 
-    public static void main(String[] args) {
+    // TODO: most things should happen in here, a new app can be constructed by cli and gui mains
+    // Arguments should be PASSED IN, not generated here
+    // Also, App.here should be static and/or lazy
+
+    /*public static void main(String[] args) {
         // TODO: Security Policy
         // https://stackoverflow.com/q/46991566/11326662
         try {
             // -[x] Initialization
-            app = new App();
+            //app = new App();
 
-            if (Arguments.preParser(args))
-                return;
+            /*if (Arguments.preParser(args))
+                return;*/
             // TODO: run tests
 
             // -[ ] Load Tests
@@ -53,18 +55,34 @@ class App {
             //      Idea: Use SHA-1 hash to check if files have been changed (this is what git does)
             //          Actually, SHA-1 is broken (has collisions), use something more secure, like
             //          SHA-256
-            // -[ ] Run tests in tests.xml
+            // -[ ] Run tests in bjp-3.xml
             // -[ ] Print/save/encode/submit results
             //          Results could be: correct, incorrect, previously working, missing
-        }
+        /*}
         catch (UserErrorException e) {
-            App.debugger.error(e.getMessage());
-            if (App.debugger.debugMode && e.getCause() != null)
+            App.logger.error(e.getMessage());
+            if (App.logger.debugMode && e.getCause() != null)
                 e.getCause().printStackTrace();
         }
         catch (Throwable e) {
             // e.printStackTrace();
-            App.debugger.internalError(e);
+            App.logger.internalError(e);
         }
+    }*/
+
+    public SAXException validateXML() {
+
+    }
+
+    public Results readResultsFromFile() {
+
+    }
+
+    public Results runTests() {
+
+    }
+
+    public Results submit() {
+
     }
 }

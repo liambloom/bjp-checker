@@ -1,4 +1,4 @@
-package dev.liambloom.tests.book.bjp3;
+package dev.liambloom.tests.book.bjp;
 
 import java.lang.annotation.*;
 import static java.lang.annotation.ElementType.*;

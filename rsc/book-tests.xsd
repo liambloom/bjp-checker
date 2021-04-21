@@ -55,10 +55,12 @@
         <xs:sequence>
             <xs:element ref="mutuals" minOccurs="0" />
             <xs:choice maxOccurs="unbounded">
-                <!-- TODO: (in java) if an exercise is a no-arg method then it can be replaced by the main method of a class (of the same name) -->
                 <xs:element name="method" type="methodType" />
                 <!-- <xs:element ref="field" /> -->
                 <xs:element name="class" type="classType" />
+
+                <!-- TODO: Can match a no-arg method OR main class -->
+                <xs:element name="program" type="programType" />
             </xs:choice>
         </xs:sequence>
         <xs:attribute name="num" type="positiveInt" use="required" />
@@ -91,11 +93,12 @@
 
             <xs:element name="field">
                 <xs:complexType>
+                    <!-- TODO: This should probably be of type prePost...somehow -->
                     <xs:group ref="javaValue"/>
                     <xs:attribute name="name" type="javaIdent" use="required" />
                 </xs:complexType>
-                <xs:unique name="methodNameUnique">
-                    <xs:selector xpath="method" />
+                <xs:unique name="fieldNameUnique">
+                    <xs:selector xpath="field" />
                     <xs:field xpath="@name" />
                 </xs:unique>
             </xs:element>
@@ -202,15 +205,15 @@
             <!-- This should contain a <pre> and <post> -->
 
             <!-- <xs:element name="argument" type="xs:string" /> -->
-            <xs:element name="argument">
-                <xs:complexType>
-                    <xs:sequence>
-                        <!-- TODO: This probably needs to be a javaItem, some methods take custom data types (like ch 8)  -->
-                        <xs:element name="pre" type="javaValue" />
-                        <xs:element name="post" type="postType" minOccurs="0" />
-                    </xs:sequence>
-                </xs:complexType>
-            </xs:element>
+            <xs:element name="argument" type="prePost" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="prePost">
+        <xs:sequence>
+            <!-- TODO: This probably needs to be a javaItem, some methods take custom data types (like ch 8)  -->
+            <xs:element name="pre" type="javaValue" />
+            <xs:element name="post" type="postType" minOccurs="0" />
         </xs:sequence>
     </xs:complexType>
 
