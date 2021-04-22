@@ -1,7 +1,7 @@
 package dev.liambloom.tests.book.bjp.checker;
 
 public enum TestValidationResult implements ResultVariant {
-    Valid(true), Invalid(false), InternalError(false);
+    Valid(true), Invalid(false);
 
     public final boolean isOk;
 

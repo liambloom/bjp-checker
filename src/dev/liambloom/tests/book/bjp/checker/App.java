@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 public class App {
@@ -61,36 +62,38 @@ public class App {
         err.printStackTrace(new PrintStream(log));
     }
 
-    public Stream<CompletableFuture<Result<TestValidationResult>>> validateTests(Glob glob) throws SAXException, IOException, InterruptedException, ExecutionException {
-
-        Stream<File> tests = glob.files().filter(file -> {
-            if (file.isDirectory() || file.getName().endsWith(".xml")) {
-                logger.warn("Expected xml file, found %s `%s' in tests", file.isDirectory() ? "directory" : "file", file.getName());
-                return false;
-            }
-            return true;
-        });
-
-        /*if (tests) {
-            logger.warn("No tests found in " + here + File.separator + "tests");
-            return Stream.empty();
-        }*/
-
+    public Stream<Result<TestValidationResult>> validateTests(Glob glob) throws SAXException, IOException {
         final TestLoader.Factory loaderFactory = new TestLoader.Factory();
         final Queue<TestLoader> queue = new ConcurrentLinkedQueue<>();
-        final ExecutorService executors = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        AtomicReference<IOException> exception = new AtomicReference<>();
 
-        return tests.map(file -> CompletableFuture.supplyAsync(() -> {
-            TestLoader loader = Optional.ofNullable(queue.poll()).orElseGet(loaderFactory::newTestLoader);
-            try {
-                return loader.validate(file);
-            }
-            catch (IOException e) {
-                return new Result<>(TestLoader.getTestName(file), TestValidationResult.InternalError, e);
-            }
-            finally {
-                queue.add(loader);
-            }
-        }, executors));
+        Stream<Result<TestValidationResult>> r = glob.files()
+                .filter(file -> {
+                    if (file.isDirectory() || file.getName().endsWith(".xml")) {
+                        logger.warn("Expected xml file, found %s `%s' in tests", file.isDirectory() ? "directory" : "file", file.getName());
+                        return false;
+                    }
+                    return true;
+                })
+                .map(file -> {
+                    TestLoader loader = Optional.ofNullable(queue.poll()).orElseGet(loaderFactory::newTestLoader);
+                    try {
+                        return loader.validate(file);
+                    }
+                    catch (IOException e) {
+                        try {
+                            App.createLogFile(e);
+                        } catch (IOException ignored) {};
+                        exception.compareAndSet(null, e);
+                        return null;
+                    }
+                    finally {
+                        queue.add(loader);
+                    }
+                });
+        if (exception.get() != null)
+            throw exception.get();
+        assert r.isParallel();
+        return r;
     }
 }
