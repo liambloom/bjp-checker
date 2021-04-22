@@ -6,4 +6,9 @@ Glob is one or more paths with the following formatting:
   ?        A wildcard representing a single character other than '/' or '.'
   *        A wildcard representing one or more characters other than '/' or '.'
   **       A wildcard representing zero or more path segments
-  \        Escapes a '/', '?', '*', or '\'
+  " or '   A path that contains whitespace or starts with "tests" should be
+               surrounded by single or double quotes
+  \        Escapes a '/', '?', '*', '"', ''', or '\'
+
+ Note: paths that begin with "tests" will, if not surrounded by single or
+    double quotes, will validate tests instead of running them.

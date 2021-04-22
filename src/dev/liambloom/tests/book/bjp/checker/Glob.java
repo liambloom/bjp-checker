@@ -2,7 +2,6 @@ package dev.liambloom.tests.book.bjp.checker;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.concurrent.*;
 import java.util.stream.Stream;
 
 public class Glob {
@@ -27,9 +26,7 @@ public class Glob {
         String s;
 
         public Piece(String s) {
-            isTestPiece = s.startsWith("tests/")
-                    || File.separatorChar != '/' && s.startsWith("tests" + File.separator)
-                    || s.equals("tests");
+            isTestPiece = s.startsWith("tests/") || s.equals("tests");
             this.s = s;
         }
 
@@ -41,7 +38,9 @@ public class Glob {
     public Stream<File> files() {
         return Arrays.stream(pieces)
                 .parallel()
+                .unordered()
                 .flatMap(Piece::files)
-                .distinct();
+                .distinct()
+                .sorted();
     }
 }
