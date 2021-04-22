@@ -60,8 +60,7 @@ final class Result<T, E extends Throwable> /* extends SuperResult<T, E> */ {
             return Result.ok(f.get());
         } catch (Throwable error) {
             // The only check exception that f can throw is an exception of type E.
-            // "All Throwables except subclasses of java.lang.RuntimeException or
-            // java.lang.Error are checked."
+            //
             // Therefore, e is of type E, Error or RuntimeException
 
             if (errorType.isInstance(error))
