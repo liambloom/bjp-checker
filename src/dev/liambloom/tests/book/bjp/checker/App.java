@@ -7,10 +7,7 @@ import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,35 +63,37 @@ public class App {
     }
 
     public Stream<Result<TestValidationResult>> validateTests(String[] glob) throws SAXException, IOException {
-        final TestLoader.Factory loaderFactory = new TestLoader.Factory();
-        final Queue<TestLoader> queue = new ConcurrentLinkedQueue<>();
-        AtomicReference<IOException> exception = new AtomicReference<>();
+        try {
+            final TestLoader.Factory loaderFactory = new TestLoader.Factory();
+            final Queue<TestLoader> queue = new ConcurrentLinkedQueue<>();
 
-        Stream<Result<TestValidationResult>> r = new Glob(glob, true, logger).files()
-                .filter(file -> {
-                    if (file.isDirectory() || !file.getName().endsWith(".xml")) {
-                        logger.warn("Expected xml file, found %s `%s' in tests", file.isDirectory() ? "directory" : "file", file.getName());
-                        return false;
-                    }
-                    return true;
-                })
-                .map(file -> {
-                    TestLoader loader = Optional.ofNullable(queue.poll()).orElseGet(loaderFactory::newTestLoader);
-                    try {
-                        return loader.validate(file);
-                    }
-                    catch (IOException e) {
-                        App.createLogFile(e);
-                        exception.compareAndSet(null, e);
-                        return null;
-                    }
-                    finally {
-                        queue.add(loader);
-                    }
-                });
-        if (exception.get() != null)
-            throw exception.get();
-        assert r.isParallel();
-        return r;
+            return new Glob(glob, true, logger).files()
+                    .filter(file -> {
+                        String mime;
+                        try {
+                           mime = Files.probeContentType(file.toPath());
+                        }
+                        catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                        if (file.isDirectory() || !mime.equals("text/xml") && !mime.equals("application/xml")) {
+                            logger.warn("Expected xml file, found %s `%s' in tests", file.isDirectory() ? "directory" : mime, file.getName());
+                            return false;
+                        }
+                        return true;
+                    })
+                    .map((FunctionThrowsIOException<File, Result<TestValidationResult>>) (file -> {
+                        TestLoader loader = Optional.ofNullable(queue.poll()).orElseGet(loaderFactory::newTestLoader);
+                        try {
+                            return loader.validate(file);
+                        }
+                        finally {
+                            queue.add(loader);
+                        }
+                    }));
+        }
+        catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 }

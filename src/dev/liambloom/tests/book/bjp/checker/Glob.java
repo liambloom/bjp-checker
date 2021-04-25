@@ -77,13 +77,12 @@ public class Glob {
             }
         }
 
-        public Stream<File> files() throws IOException  {
-            Collection<File> r = files(base, 0)
-                    // I hate this, but I can't find a better solution
+        public List<File> files() throws IOException  {
+            List<File> r = files(base, 0)
                     .collect(Collectors.toList());
             if (r.size() == 0)
                 throw new UserErrorException("Glob \"" + raw + "\" did not match any files");
-            return r.stream();
+            return r;
         }
 
         private Stream<File> files(File base, int i) throws IOException {
@@ -175,7 +174,7 @@ public class Glob {
             return Arrays.stream(pieces)
                     .unordered()
                     .parallel()
-                    .flatMap((FunctionThrowsIOException<Piece, Stream<File>>) Piece::files)
+                    .flatMap((FunctionThrowsIOException<Piece, Stream<File>>) (p -> p.files().stream()))
                     .distinct()
                     .sorted();
         }

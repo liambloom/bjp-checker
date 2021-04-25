@@ -1,9 +1,11 @@
 package dev.liambloom.tests.book.bjp.checker;
 
+import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 
 import java.io.*;
 import java.util.Iterator;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class CLI {
@@ -39,7 +41,7 @@ public class CLI {
                     case "validate":
                         final String[] glob = new String[args.length - 1];
                         System.arraycopy(args, 1, glob, 0, glob.length);
-                        printResults(new App(logger).validateTests(glob));
+                        logger.printResults(new App(logger).validateTests(glob));
                         break;
                     case "results":
                         throw new UserErrorException("Command `results' not supported in current checker version");
@@ -86,22 +88,11 @@ public class CLI {
         if (a.length != l)
             throw new UserErrorException("Unexpected argument after `" + a[l - 1] + "'");
     }
-
-    private static <T extends ResultVariant> void printResults(Stream<Result<T>> results) {
-        Iterator<Result<T>> iter = results.iterator();
-        while (iter.hasNext()) {
-            Result<T> r = iter.next();
-            // TODO: Add support for more colors
-            // TODO: replace PascalCase in r.variant with lowercase+spaces
-            System.out.printf("%s ... \u001b[3%dm%s\u001b[0m%n", r.name, r.variant.isOk() ? 2 : 1, r.variant);
-            if (r.variant.isError() && r.error != null)
-                // TODO: maybe print full stack trace (but only for tests, not validation results)
-                System.out.println(r.error.getMessage());
-        }
-    }
 }
 
 class CLILogger implements Logger, Closeable {
+    public static final Pattern SPACES_EXCEPT_FIRST = Pattern.compile("(?<!^)[A-Z]");
+
     public CLILogger() {
         AnsiConsole.systemInstall();
     }
@@ -122,6 +113,20 @@ class CLILogger implements Logger, Closeable {
     public Logger error(String msg, Object... args) {
         System.err.println("\u001b[31m[error]\u001b[0m " + String.format(msg, args));
         return this;
+    }
+
+    @Override
+    public <T extends ResultVariant> void printResult(Result<T> r) {
+        System.out.printf("%s ... \u001b[%dm%s\u001b[0m%n", r.name, r.variant.color().fg(),
+                SPACES_EXCEPT_FIRST.matcher(r.variant.toString()).replaceAll(" $1").toLowerCase());
+        if (r.variant.isError()) {
+            if (r.variant.printStackTrace())
+                r.error.printStackTrace(System.out);
+            else
+                System.out.println(r.error.getMessage());
+            if (r.console != null)
+                System.out.println("Console output:" + System.lineSeparator() + r.console);
+        }
     }
 
     @Override

@@ -13,4 +13,9 @@ public enum TestValidationResult implements ResultVariant {
     public boolean isOk() {
         return isOk;
     }
+
+    @Override
+    public boolean printStackTrace() {
+        return false;
+    }
 }
