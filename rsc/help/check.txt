@@ -1,16 +1,12 @@
-Usage: check [options] <glob>
+usage: checker check <glob> <args>
 
-Options:
-   -h, --help                  Display this help menu
-   -v, --version               Display version number
-   -r, --results               Prints the results without rerunning the tests
    -c, --chapter               The chapter number to check; takes one argument
    -e, --exercise,             The exercise number(s) to check; takes one or
       --exercises                   more arguments
    --pp,                       The programming project(s) to check; takes one or
       --programming-projects       more arguments
       --programmingProjects
-   -s, --submit                Submit currently & previously correct programs
+   -t, --tests                 The tests to use; takes one arguments;
+                                   default 'bjp3'
 
-For more help with a particular argument run `check <argument> --help'
-For help with glob/path formatting, run `check glob --help'
+For help with glob formatting, run `checker glob --help`

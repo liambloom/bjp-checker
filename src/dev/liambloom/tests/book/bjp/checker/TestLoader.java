@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+// TODO: Warn if non-test files are found in tests/
 public class TestLoader {
     public static final String DEFAULT_TEST = "bjp3";
     private final Validator validator;
@@ -35,13 +36,12 @@ public class TestLoader {
     }
 
     public Source load(Path path) throws IOException {
-        while (Files.isSymbolicLink(path))
-            path = Files.readSymbolicLink(path);
+        path = Glob.readSymbolicLink(path);
         if (Files.isDirectory(path))
             throw new UserErrorException("Test must be of type xml, found directory instead");
         String mime = Files.probeContentType(path);
-        if (mime.equals("application/xml") || mime.equals("text/xml"))
-            throw new UserErrorException("Test must be of type xml, found " + mime + "instead");
+        if (!(mime.equals("application/xml") || mime.equals("text/xml")))
+            throw new UserErrorException("Test must be of type xml, found " + mime + " instead");
         Source source = new StreamSource(path.toFile());
         try {
             validator.reset();

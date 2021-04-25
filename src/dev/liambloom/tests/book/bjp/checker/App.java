@@ -40,9 +40,7 @@ public class App {
             here = f.getParent();
         }
         catch (URISyntaxException e) {
-            try {
-                App.createLogFile(e);
-            } catch (IOException ignored) { }
+            App.createLogFile(e);
             throw new RuntimeException("Checker install location could not be converted to URI");
         }
     }
@@ -53,23 +51,28 @@ public class App {
         this.logger = logger;
     }
 
-    public static void createLogFile(Throwable err) throws IOException {
-        final File log = new File(here
-                + File.separator + "logs" + File.separator
-                + DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
-        log.getParentFile().mkdir();
-        log.createNewFile();
-        err.printStackTrace(new PrintStream(log));
+    public static void createLogFile(Throwable err) {
+        try {
+            final File log = new File(here
+                    + File.separator + "logs" + File.separator
+                    + DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
+            log.getParentFile().mkdir();
+            log.createNewFile();
+            err.printStackTrace(new PrintStream(log));
+        }
+        catch (IOException e) {
+            // ¯\_(ツ)_/¯
+        }
     }
 
-    public Stream<Result<TestValidationResult>> validateTests(Glob glob) throws SAXException, IOException {
+    public Stream<Result<TestValidationResult>> validateTests(String[] glob) throws SAXException, IOException {
         final TestLoader.Factory loaderFactory = new TestLoader.Factory();
         final Queue<TestLoader> queue = new ConcurrentLinkedQueue<>();
         AtomicReference<IOException> exception = new AtomicReference<>();
 
-        Stream<Result<TestValidationResult>> r = glob.files()
+        Stream<Result<TestValidationResult>> r = new Glob(glob, true, logger).files()
                 .filter(file -> {
-                    if (file.isDirectory() || file.getName().endsWith(".xml")) {
+                    if (file.isDirectory() || !file.getName().endsWith(".xml")) {
                         logger.warn("Expected xml file, found %s `%s' in tests", file.isDirectory() ? "directory" : "file", file.getName());
                         return false;
                     }
@@ -81,9 +84,7 @@ public class App {
                         return loader.validate(file);
                     }
                     catch (IOException e) {
-                        try {
-                            App.createLogFile(e);
-                        } catch (IOException ignored) {};
+                        App.createLogFile(e);
                         exception.compareAndSet(null, e);
                         return null;
                     }

@@ -33,13 +33,6 @@
                 </xs:unique>
             </xs:element>
         </xs:sequence>
-        <xs:attribute name="bookId" use="required" >
-            <xs:simpleType>
-                <xs:restriction base="xs:string">
-                    <xs:pattern value="BJP-\d+" />
-                </xs:restriction>
-            </xs:simpleType>
-        </xs:attribute>
     </xs:complexType>
 
 
@@ -60,7 +53,7 @@
                 <xs:element name="class" type="classType" />
 
                 <!-- TODO: Can match a no-arg method OR main class -->
-                <xs:element name="program" type="programType" />
+                <!-- <xs:element name="program" type="programType" /> -->
             </xs:choice>
         </xs:sequence>
         <xs:attribute name="num" type="positiveInt" use="required" />
