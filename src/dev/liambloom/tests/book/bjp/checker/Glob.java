@@ -70,16 +70,10 @@ public class Glob {
             else
                 base = new File(".").getCanonicalFile();
             segments = segmentsList.toArray(new String[0]);
-            if (isTestGlob) {
-                if (segments.length > 1)
-                    throw new UserErrorException("Illegal Test Glob: Test globs may only have one segment");
-                else if (segments[0].equals("..") || segments[0].equals("**"))
-                    throw new UserErrorException("Illegal Test Glob: Globs \"..\" and \"**\" may not be used to point to tests");
-            }
         }
 
         public List<File> files() throws IOException  {
-            List<File> r = Stream.concat(files(base, 0), isTestGlob && !base.equals(TEST_BASE) ? files(TEST_BASE, 0) : Stream.empty())
+            List<File> r = Stream.concat(files(base, 0), isTestGlob && segments.length == 1 && !base.equals(TEST_BASE) ? files(TEST_BASE, 0) : Stream.empty())
                     .collect(Collectors.toList());
             if (r.size() == 0)
                 throw new UserErrorException("Glob \"" + raw + "\" did not match any files");
