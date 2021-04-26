@@ -91,7 +91,7 @@ public class Glob {
                 case "..":
                     return files(base.getParentFile(), i + 1);
                 case "**":
-                    if (segments.length > i + 2) {
+                    if (segments.length > i + 1) {
                         try {
                             return Stream.concat(
                                 files(base, i + 1),
