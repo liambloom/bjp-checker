@@ -4,6 +4,7 @@ import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -39,17 +40,13 @@ public class CLI {
                         throw new UserErrorException("Command `submit' not supported in current checker version");
                         // break;
                     case "validate":
-                        final String[] glob = new String[args.length - 1];
-                        System.arraycopy(args, 1, glob, 0, glob.length);
-                        logger.printResults(new App(logger).validateTests(glob));
+                        logger.printResults(new App(logger).validateTests(Arrays.copyOfRange(args, 1, args.length)));
                         break;
                     case "results":
                         throw new UserErrorException("Command `results' not supported in current checker version");
                         // break;
                     case "gui":
-                        final String[] guiArgs = new String[args.length - 1];
-                        System.arraycopy(args, 1, guiArgs, 0, guiArgs.length);
-                        GUI.main(guiArgs);
+                        GUI.main(Arrays.copyOfRange(args, 1, args.length));
                         break;
                     default:
                         throw new UserErrorException("Command `" + args[0] + "' not recognized. See `checker --help' for a list of commands.");
