@@ -6,17 +6,17 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Glob {
+    public static final File TEST_BASE = new File(App.here, "tests");
     private final Piece[] pieces;
     final boolean isTestGlob;
     final Logger logger;
 
-    public Glob(String[] s, boolean isTestGlob, Logger logger) {
+    public Glob(String[] s, boolean isTestGlob, Logger logger) throws IOException {
         if (s.length == 0)
             throw new UserErrorException("No glob found. For more information, run `check glob --help'");
         this.isTestGlob = isTestGlob;
@@ -31,17 +31,8 @@ public class Glob {
         final String[] segments;
         final String raw;
 
-        public Piece(String s) {
+        public Piece(String s) throws IOException {
             raw = s;
-            if (isTestGlob) {
-                if (s.startsWith("/"))
-                    throw new UserErrorException("Tests must be in the directory " + App.here + File.separator + "tests");
-                base = new File(App.here, "tests");
-            }
-            else if (s.startsWith("/"))
-                base = new File(File.separator);
-            else
-                base = new File("");
             boolean isEscaped = false;
             StringBuilder builder = null;
             List<String> segmentsList = new ArrayList<>();
@@ -68,6 +59,16 @@ public class Glob {
             }
             if (builder != null)
                 segmentsList.add(builder.toString());
+            if (isTestGlob && segmentsList.get(0).equals("@tests")) {
+                base = TEST_BASE;
+                segmentsList.remove(0); // This is O(n) and I wish it weren't
+                if (segmentsList.isEmpty())
+                    segmentsList.add(".");
+            }
+            else if (s.startsWith("/"))
+                base = new File(File.separator).getCanonicalFile();
+            else
+                base = new File(".").getCanonicalFile();
             segments = segmentsList.toArray(new String[0]);
             if (isTestGlob) {
                 if (segments.length > 1)
@@ -78,7 +79,7 @@ public class Glob {
         }
 
         public List<File> files() throws IOException  {
-            List<File> r = files(base, 0)
+            List<File> r = Stream.concat(files(base, 0), isTestGlob && !base.equals(TEST_BASE) ? files(TEST_BASE, 0) : Stream.empty())
                     .collect(Collectors.toList());
             if (r.size() == 0)
                 throw new UserErrorException("Glob \"" + raw + "\" did not match any files");
@@ -163,7 +164,6 @@ public class Glob {
                 return Stream.concat(files.build(), dirs.build().flatMap((FunctionThrowsIOException<File, Stream<File>>) this::allFiles));
             }
             catch (UncheckedIOException e) {
-                System.out.println("How?");
                 throw e.getCause();
             }
         }
@@ -174,13 +174,24 @@ public class Glob {
             return Arrays.stream(pieces)
                     .unordered()
                     .parallel()
-                    .flatMap((FunctionThrowsIOException<Piece, Stream<File>>) (p -> p.files().stream()))
+                    .map((FunctionThrowsIOException<Piece, List<File>>) Piece::files)
+                    .flatMap(List::stream)
                     .distinct()
                     .sorted();
         }
         catch (UncheckedIOException e) {
             throw e.getCause();
         }
+    }
+
+    public File single() throws IOException {
+        return files().collect(Collectors.collectingAndThen(Collectors.toList(),
+            list -> {
+                if (list.size() != 1)
+                    throw new UserErrorException("Expected single file, but glob matched " + list.size());
+                return list.get(0);
+            }
+        ));
     }
 
     public static File readSymbolicLink(File file) throws IOException {

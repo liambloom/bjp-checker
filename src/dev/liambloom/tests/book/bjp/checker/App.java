@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 public class App {
-    public static final String VERSION = "v1.0.0-alpha-1";
+    public static final String VERSION = "v1.0.0-alpha";
 
     /**
      * The location of this application's files. The parent folder of "lib" and "bin"
@@ -40,12 +40,25 @@ public class App {
             App.createLogFile(e);
             throw new RuntimeException("Checker install location could not be converted to URI");
         }
+
     }
 
     public Logger logger;
 
-    public App(Logger logger) throws URISyntaxException {
+    public App(Logger logger) throws IOException {
         this.logger = logger;
+        for (File f : Glob.TEST_BASE.listFiles()) {
+            f = Glob.readSymbolicLink(f);
+            String mime;
+            try {
+                mime = Optional.ofNullable(Files.probeContentType(f.toPath())).orElse("unknown type");
+            }
+            catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            if (f.isDirectory() || !mime.equals("text/xml") && !mime.equals("application/xml"))
+                logger.warn("Expected xml file, found %s `%s' in tests", f.isDirectory() ? "directory" : mime, f.getName());
+        }
     }
 
     public static void createLogFile(Throwable err) {
@@ -68,21 +81,16 @@ public class App {
             final Queue<TestLoader> queue = new ConcurrentLinkedQueue<>();
 
             return new Glob(glob, true, logger).files()
-                    .filter(file -> {
+                    .map((FunctionThrowsIOException<File, Result<TestValidationResult>>) (file -> {
                         String mime;
                         try {
-                           mime = Files.probeContentType(file.toPath());
+                            mime = Optional.ofNullable(Files.probeContentType(file.toPath())).orElse("unknown type");
                         }
                         catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
-                        if (file.isDirectory() || !mime.equals("text/xml") && !mime.equals("application/xml")) {
-                            logger.warn("Expected xml file, found %s `%s' in tests", file.isDirectory() ? "directory" : mime, file.getName());
-                            return false;
-                        }
-                        return true;
-                    })
-                    .map((FunctionThrowsIOException<File, Result<TestValidationResult>>) (file -> {
+                        if (!mime.equals("text/xml") && !mime.equals("application/xml"))
+                            throw new UserErrorException(String.format("%s `%s' is not xml and therefore cannot be validated", file.isDirectory() ? "directory" : mime, file.getName()));
                         TestLoader loader = Optional.ofNullable(queue.poll()).orElseGet(loaderFactory::newTestLoader);
                         try {
                             return loader.validate(file);
