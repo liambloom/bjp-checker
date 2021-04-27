@@ -1,5 +1,5 @@
 docs/
-target/
+out/
 build/logs/
 src/dev/liambloom/tests/book/bjp/checker/old/
 *.pdb

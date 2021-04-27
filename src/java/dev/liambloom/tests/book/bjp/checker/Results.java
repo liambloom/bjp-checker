@@ -2,12 +2,9 @@ package dev.liambloom.tests.book.bjp.checker;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 public class Results {
