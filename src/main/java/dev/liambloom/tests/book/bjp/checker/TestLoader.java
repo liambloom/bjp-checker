@@ -10,7 +10,6 @@ import javax.xml.validation.Validator;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -37,11 +36,9 @@ public class TestLoader {
 
     public Source load(Path path) throws IOException {
         path = Glob.readSymbolicLink(path);
-        if (Files.isDirectory(path))
-            throw new UserErrorException("Test must be of type xml, found directory instead");
-        String mime = Files.probeContentType(path);
-        if (!(mime.equals("application/xml") || mime.equals("text/xml")))
-            throw new UserErrorException("Test must be of type xml, found " + mime + " instead");
+        String mime = Glob.mime(path);
+        if (!mime.equals("application/xml") && !mime.equals("text/xml"))
+            throw new UserErrorException(String.format("Test must be of type xml, but `%s' is of type %s", path, mime));
         Source source = new StreamSource(path.toFile());
         try {
             validator.reset();
@@ -53,15 +50,13 @@ public class TestLoader {
         }
     }
 
-    public Result<TestValidationResult> validate(File file) throws IOException {
+    public TestValidationResult validate(File file) throws IOException {
         try {
             load(file);
-            // TODO: Result doesn't make sense
-            return new Result<>(getTestName(file), TestValidationResult.Valid);
+            return new TestValidationResult(file, TestValidationResult.Variant.Valid);
         }
         catch (UserErrorException e) {
-            assert e.getCause() instanceof SAXException;
-            return new Result<>(getTestName(file), TestValidationResult.Invalid, e);
+            return new TestValidationResult(file, TestValidationResult.Variant.Invalid, (SAXException) e.getCause());
         }
     }
 
@@ -69,7 +64,9 @@ public class TestLoader {
         private final Schema schema;
 
         public Factory() throws SAXException {
-            schema = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1").newSchema(
+            SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1");
+            factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
+            schema = factory.newSchema(
                     new StreamSource(getClass().getResourceAsStream("/book-tests.xsd")));
         }
 

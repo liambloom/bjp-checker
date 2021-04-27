@@ -2,23 +2,13 @@ package dev.liambloom.tests.book.bjp.checker;
 
 import org.xml.sax.SAXException;
 
-import javax.xml.transform.Source;
-import javax.xml.transform.stream.StreamSource;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
-import javax.xml.validation.Validator;
 import java.io.*;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 public class App {
@@ -38,9 +28,8 @@ public class App {
         }
         catch (URISyntaxException e) {
             App.createLogFile(e);
-            throw new RuntimeException("Checker install location could not be converted to URI");
+            throw new RuntimeException("Checker install location could not be converted to URI", e);
         }
-
     }
 
     public Logger logger;
@@ -49,15 +38,9 @@ public class App {
         this.logger = logger;
         for (File f : Glob.TEST_BASE.listFiles()) {
             f = Glob.readSymbolicLink(f);
-            String mime;
-            try {
-                mime = Optional.ofNullable(Files.probeContentType(f.toPath())).orElse("unknown type");
-            }
-            catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-            if (f.isDirectory() || !mime.equals("text/xml") && !mime.equals("application/xml"))
-                logger.warn("Expected xml file, found %s `%s' in tests", f.isDirectory() ? "directory" : mime, f.getName());
+            String mime = f.isDirectory() ? "directory" : Glob.mime(f.toPath());
+            if (!mime.equals("text/xml") && !mime.equals("application/xml"))
+                logger.warn("Expected xml file, found `%s' of type %s in tests", f.getName(), mime);
         }
     }
 
@@ -75,22 +58,15 @@ public class App {
         }
     }
 
-    public Stream<Result<TestValidationResult>> validateTests(String[] glob) throws SAXException, IOException {
+    public Stream<TestValidationResult> validateTests(String[] glob) throws SAXException, IOException {
+        if (glob.length == 0)
+            glob = new String[]{ "@tests" };
         try {
             final TestLoader.Factory loaderFactory = new TestLoader.Factory();
             final Queue<TestLoader> queue = new ConcurrentLinkedQueue<>();
 
             return new Glob(glob, true, logger).files()
-                    .map((FunctionThrowsIOException<File, Result<TestValidationResult>>) (file -> {
-                        String mime;
-                        try {
-                            mime = Optional.ofNullable(Files.probeContentType(file.toPath())).orElse("unknown type");
-                        }
-                        catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                        if (!mime.equals("text/xml") && !mime.equals("application/xml"))
-                            throw new UserErrorException(String.format("%s `%s' is not xml and therefore cannot be validated", file.isDirectory() ? "directory" : mime, file.getName()));
+                    .map((FunctionThrowsIOException<File, TestValidationResult>) (file -> {
                         TestLoader loader = Optional.ofNullable(queue.poll()).orElseGet(loaderFactory::newTestLoader);
                         try {
                             return loader.validate(file);

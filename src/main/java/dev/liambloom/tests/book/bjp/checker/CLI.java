@@ -1,13 +1,9 @@
 package dev.liambloom.tests.book.bjp.checker;
 
-import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 
 import java.io.*;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 public class CLI {
     public static void main(String[] args) {
@@ -88,8 +84,6 @@ public class CLI {
 }
 
 class CLILogger implements Logger, Closeable {
-    public static final Pattern SPACES_EXCEPT_FIRST = Pattern.compile("(?<!^)[A-Z]");
-
     public CLILogger() {
         AnsiConsole.systemInstall();
     }
@@ -113,16 +107,15 @@ class CLILogger implements Logger, Closeable {
     }
 
     @Override
-    public <T extends ResultVariant> void printResult(Result<T> r) {
-        System.out.printf("%s ... \u001b[%dm%s\u001b[0m%n", r.name, r.variant.color().fg(),
-                SPACES_EXCEPT_FIRST.matcher(r.variant.toString()).replaceAll(" $1").toLowerCase());
+    public <T extends Result> void printResult(T r) {
+        System.out.printf("%s ... \u001b[%dm%s\u001b[0m%n", r.name, r.variant.color().fg(), r.variant.getName());
         if (r.variant.isError()) {
-            if (r.variant.printStackTrace())
-                r.error.printStackTrace(System.out);
-            else
-                System.out.println(r.error.getMessage());
-            if (r.console != null)
-                System.out.println("Console output:" + System.lineSeparator() + r.console);
+            try {
+                r.printToStream(System.out);
+            }
+            catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
     }
 

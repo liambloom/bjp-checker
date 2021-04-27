@@ -195,6 +195,12 @@ public class Glob {
     public static Path readSymbolicLink(Path path) throws IOException {
         while (Files.isSymbolicLink(path))
             path = Files.readSymbolicLink(path);
+        if (!path.toFile().exists())
+            throw new UserErrorException("There was a symbolic link to `" + path + "', which doesn't exist.");
         return path;
+    }
+
+    public static String mime(Path p) throws IOException {
+        return Optional.ofNullable(Files.probeContentType(p)).orElse("unknown");
     }
 }
