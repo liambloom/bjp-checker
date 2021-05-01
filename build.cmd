@@ -13,7 +13,7 @@ exit /b
 
 :lib
 javac -sourcepath src\java -d out\java\production\bjp3-tests -source 8 -target 8 -cp build\lib\* -bootclasspath "C:\Program Files\Java\jdk1.8.0_281\jre\lib\rt.jar" src\java\dev\liambloom\tests\book\bjp\*.java src\java\dev\liambloom\tests\book\bjp\checker\*.java
-xcopy /q /y /s rsc\* out\java\production\bjp3-tests\ 1>nul
+xcopy /q /y /s rsc\* out\java\production\bjp3-tests\ >nul
 jar cf build\lib\checker.jar -C out\java\production\bjp3-tests .
 exit /b
 
