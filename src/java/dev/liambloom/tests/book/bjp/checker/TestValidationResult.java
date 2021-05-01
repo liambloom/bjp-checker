@@ -44,7 +44,7 @@ public class TestValidationResult extends Result {
     }
 
     public enum Variant implements Result.Variant {
-        Valid(true), Invalid(false);
+        VALID(true), INVALID(false);
 
         public final boolean isOk;
 

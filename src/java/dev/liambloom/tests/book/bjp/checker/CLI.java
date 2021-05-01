@@ -7,6 +7,8 @@ import java.util.Arrays;
 
 public class CLI {
     public static void main(String[] args) {
+        System.out.println("Foo");
+
         CLILogger logger = new CLILogger();
 
         try {
@@ -38,9 +40,9 @@ public class CLI {
                     case "validate":
                         logger.printResults(new App(logger).validateTests(Arrays.copyOfRange(args, 1, args.length)));
                         break;
-                    case "results":
+                    /*case "results":
                         throw new UserErrorException("Command `results' not supported in current checker version");
-                        // break;
+                        // break;*/
                     case "gui":
                         GUI.main(Arrays.copyOfRange(args, 1, args.length));
                         break;
@@ -108,7 +110,7 @@ class CLILogger implements Logger, Closeable {
 
     @Override
     public <T extends Result> void printResult(T r) {
-        System.out.printf("%s ... \u001b[%dm%s\u001b[0m%n", r.name, r.variant.color().fg(), r.variant.getName());
+        System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name, r.variant.color().ansi, r.variant.getName());
         if (r.variant.isError()) {
             try {
                 r.printToStream(System.out);

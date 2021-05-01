@@ -833,7 +833,7 @@
                         <this>
                             <pre>
                                 <class>
-                                    <field name="(slash)?(figure)?height">
+                                    <field static="true" name="(slash)?(figure)?height">
                                         <pre>
                                             <int>4</int>
                                         </pre>
@@ -852,7 +852,7 @@
                         <this>
                             <pre>
                                 <class>
-                                    <field name="(slash)?(figure)?height">
+                                    <field static="true" name="(slash)?(figure)?height">
                                         <pre>
                                             <int>4</int>
                                         </pre>
@@ -872,5 +872,398 @@
                 </method>
             </program>
         </exercise>
+        <exercise num="19">
+            <program>
+                <method>
+                    <test>
+                        <!-- The exercise doesn't describe the class constant well enough for me to test it -->
+                        <prints>
+                            +===+===+
+                            |   |   |
+                            |   |   |
+                            |   |   |
+                            +===+===+
+                            |   |   |
+                            |   |   |
+                            |   |   |
+                            +===+===+
+                        </prints>
+                    </test>
+                </method>
+            </program>
+        </exercise>
+        <exercise num="20">
+            <mutuals>
+                <chapter num="2">
+                    <exercise>21</exercise>
+                </chapter>
+            </mutuals>
+            <program name="StarFigure">
+                <method>
+                    <test>
+                        <prints>
+                            ////////////////\\\\\\\\\\\\\\\\
+                            ////////////********\\\\\\\\\\\\
+                            ////////****************\\\\\\\\
+                            ////************************\\\\
+                            ********************************
+                        </prints>
+                    </test>
+                </method>
+            </program>
+        </exercise>
+        <exercise num="21">
+            <mutuals>
+                <chapter num="2">
+                    <exercise>20</exercise>
+                </chapter>
+            </mutuals>
+            <program name="StarFigure2">
+                <method>
+                    <test>
+                        <this>
+                            <pre>
+                                <class>
+                                    <field static="true" name="(star)?(figure)?height">
+                                        <pre>
+                                            <int>3</int>
+                                        </pre>
+                                    </field>
+                                </class>
+                            </pre>
+                        </this>
+                        <prints>
+                            ////////\\\\\\\\
+                            ////********\\\\
+                            ****************
+                        </prints>
+                    </test>
+                    <test>
+                        <this>
+                            <pre>
+                                <class>
+                                    <field static="true" name="(star)?(figure)?height">
+                                        <pre>
+                                            <int>6</int>
+                                        </pre>
+                                    </field>
+                                </class>
+                            </pre>
+                        </this>
+                        <prints>
+                            ////////////////////\\\\\\\\\\\\\\\\\\\\
+                            ////////////////********\\\\\\\\\\\\\\\\
+                            ////////////****************\\\\\\\\\\\\
+                            ////////************************\\\\\\\\
+                            ////********************************\\\\
+                            ****************************************
+                        </prints>
+                    </test>
+                </method>
+            </program>
+        </exercise>
+        <exercise num="22">
+            <mutuals>
+                <chapter num="2">
+                    <exercise>23</exercise>
+                </chapter>
+            </mutuals>
+            <program name="DollarFigure">
+                <method>
+                    <test>
+                        <prints>
+                            $$$$$$$**************$$$$$$$
+                            **$$$$$$************$$$$$$**
+                            ****$$$$$**********$$$$$****
+                            ******$$$$********$$$$******
+                            ********$$$******$$$********
+                            **********$$****$$**********
+                            ************$**$************
+                        </prints>
+                    </test>
+                </method>
+            </program>
+        </exercise>
+        <exercise num="23">
+            <mutuals>
+                <chapter num="2">
+                    <exercise>22</exercise>
+                </chapter>
+            </mutuals>
+            <program name="DollarFigure2">
+                <method>
+                    <test>
+                        <this>
+                            <pre>
+                                <class>
+                                    <field static="true" name="(dollar)?(figure)?height">
+                                        <pre>
+                                            <int>3</int>
+                                        </pre>
+                                    </field>
+                                </class>
+                            </pre>
+                        </this>
+                        <prints>
+                            $$$******$$$
+                            **$$****$$**
+                            ****$**$****
+                        </prints>
+                    </test>
+                    <test>
+                        <this>
+                            <pre>
+                                <class>
+                                    <field static="true" name="(star)?(figure)?height">
+                                        <pre>
+                                            <int>7</int>
+                                        </pre>
+                                    </field>
+                                </class>
+                            </pre>
+                        </this>
+                        <prints>
+                            $$$$$$$**************$$$$$$$
+                            **$$$$$$************$$$$$$**
+                            ****$$$$$**********$$$$$****
+                            ******$$$$********$$$$******
+                            ********$$$******$$$********
+                            **********$$****$$**********
+                            ************$**$************
+                        </prints>
+                    </test>
+                </method>
+            </program>
+        </exercise>
+        <programmingProject num="1">
+            <program>
+                <method>
+                    <test>
+                        <prints>
+                            ****** //////////// ******
+                            *****  //////////\\ *****
+                            ****   ////////\\\\ ****
+                            ***    //////\\\\\\ ***
+                            **     ////\\\\\\\\ **
+                            *      //\\\\\\\\\\ *
+                                   \\\\\\\\\\\\
+                        </prints>
+                    </test>
+                </method>
+            </program>
+        </programmingProject>
+        <programmingProject num="2">
+            <program>
+                <method>
+                    <test>
+                        <prints>
+                            +------+
+                            |  ∧∧  |
+                            | ∧  ∧ |
+                            |∧    ∧|
+                            |  ∧∧  |
+                            | ∧  ∧ |
+                            |∧    ∧|
+                            +------+
+                            |v    v|
+                            | v  v |
+                            |  vv  |
+                            |v    v|
+                            | v  v |
+                            |  vv  |
+                            +------+
+                        </prints>
+                    </test>
+                </method>
+            </program>
+        </programmingProject>
+        <programmingProject num="3">
+            <program>
+                <method>
+                    <test>
+                        <prints>
+                            +---------+
+                            |    *    |
+                            |   /*\   |
+                            |  //*\\  |
+                            | ///*\\\ |
+                            | \\\*/// |
+                            |  \\*//  |
+                            |   \*/   |
+                            |    *    |
+                            +---------+
+                            | \\\*/// |
+                            |  \\*//  |
+                            |   \*/   |
+                            |    *    |
+                            |    *    |
+                            |   /*\   |
+                            |  //*\\  |
+                            | ///*\\\ |
+                            +---------+
+                        </prints>
+                    </test>
+                </method>
+            </program>
+        </programmingProject>
+        <programmingProject num="4">
+            <program>
+                <method>
+                    <test>
+                        <prints>
+                            |""""""""""|
+                             \::::::::/
+                              \::::::/
+                               \::::/
+                                \::/
+                                 ||
+                                /::\
+                               /::::\
+                              /::::::\
+                             /::::::::\
+                            |""""""""""|
+                        </prints>
+                    </test>
+                </method>
+            </program>
+        </programmingProject>
+        <!-- TODO: Class constants ch2 pp 5-8 -->
+        <programmingProject num="5">
+            <program>
+                <method>
+                    <test>
+                        <prints>
+                                                  o  *******
+                                                 /|\ *     *
+                                                 / \ *     *
+                                             o  ******     *
+                                            /|\ *          *
+                                            / \ *          *
+                                        o  ******          *
+                                       /|\ *               *
+                                       / \ *               *
+                                   o  ******               *
+                                  /|\ *                    *
+                                  / \ *                    *
+                              o  ******                    *
+                             /|\ *                         *
+                             / \ *                         *
+                            ********************************
+                        </prints>
+                    </test>
+                </method>
+            </program>
+        </programmingProject>
+        <programmingProject num="6">
+            <program>
+                <method>
+                    <test>
+                        <prints>
+                                 /**\
+                                //**\\
+                               ///**\\\
+                              ////**\\\\
+                             /////**\\\\\
+                            +=*=*=*=*=*=*+
+                            |../\..../\..|
+                            |./\/\../\/\.|
+                            |/\/\/\/\/\/\|
+                            |\/\/\/\/\/\/|
+                            |.\/\/..\/\/.|
+                            |..\/....\/..|
+                            +=*=*=*=*=*=*+
+                            |\/\/\/\/\/\/|
+                            |.\/\/..\/\/.|
+                            |..\/....\/..|
+                            |../\..../\..|
+                            |./\/\../\/\.|
+                            |/\/\/\/\/\/\|
+                            +=*=*=*=*=*=*+
+                                 /**\
+                                //**\\
+                               ///**\\\
+                              ////**\\\\
+                             /////**\\\\\
+                        </prints>
+                    </test>
+                </method>
+            </program>
+        </programmingProject>
+        <programmingProject num="7">
+            <program>
+                <method>
+                    <test>
+                        <prints>
+                                        ||
+                                        ||
+                                        ||
+                                        ||
+                                     __/||\__
+                                  __/:::||:::\__
+                               __/::::::||::::::\__
+                            __/:::::::::||:::::::::\__
+                            |""""""""""""""""""""""""|
+                            \_/\/\/\/\/\/\/\/\/\/\/\_/
+                              \_/\/\/\/\/\/\/\/\/\_/
+                                \_/\/\/\/\/\/\/\_/
+                                  \_/\/\/\/\/\_/
+                                        ||
+                                        ||
+                                        ||
+                                        ||
+                                     |%%||%%|
+                                     |%%||%%|
+                                     |%%||%%|
+                                     |%%||%%|
+                                     |%%||%%|
+                                     |%%||%%|
+                                     |%%||%%|
+                                     |%%||%%|
+                                     |%%||%%|
+                                     |%%||%%|
+                                     |%%||%%|
+                                     |%%||%%|
+                                     |%%||%%|
+                                     |%%||%%|
+                                     |%%||%%|
+                                     |%%||%%|
+                                     __/||\__
+                                  __/:::||:::\__
+                               __/::::::||::::::\__
+                            __/:::::::::||:::::::::\__
+                            |""""""""""""""""""""""""|
+                        </prints>
+                    </test>
+                </method>
+            </program>
+        </programmingProject>
+        <programmingProject num="8">
+            <program>
+                <method>
+                    <test>
+                        <prints>
+                                      +------------------------------+
+                                      /                           ___/
+                                     /                        ___/__//
+                                    /                     ___/__/__///
+                                   /                  ___/__/__/__////
+                                  /               ___/__/__/__/__/////
+                                 /            ___/__/__/__/__/__//////
+                                /         ___/__/__/__/__/__/__///////
+                               /      ___/__/__/__/__/__/__/__////////
+                              /   ___/__/__/__/__/__/__/__/__/////////
+                             /___/__/__/__/__/__/__/__/__/__//////////
+                            +------------------------------+//////////
+                            |    Building Java Programs    |//////////
+                            |    Building Java Programs    |////////
+                            |    Building Java Programs    |//////
+                            |    Building Java Programs    |////
+                            |    Building Java Programs    |//
+                            +------------------------------+
+                        </prints>
+                    </test>
+                </method>
+            </program>
+        </programmingProject>
     </chapter>
 </book>

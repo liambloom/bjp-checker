@@ -1,10 +1,9 @@
 package dev.liambloom.tests.book.bjp.checker;
 
-import static org.fusesource.jansi.Ansi.Color;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 public abstract class Result {
@@ -19,8 +18,6 @@ public abstract class Result {
     abstract void printToStream(OutputStream stream) throws IOException;
 
     public interface Variant {
-        Pattern SPACES_EXCEPT_FIRST = Pattern.compile("(?<!^)[A-Z]");
-
         boolean isOk();
 
         default boolean isError() {
@@ -32,7 +29,7 @@ public abstract class Result {
         }
 
         default String getName() {
-            return SPACES_EXCEPT_FIRST.matcher(toString()).replaceAll(" $1").toLowerCase();
+            return toString().replace("_", " ").toLowerCase();
         }
     }
 }

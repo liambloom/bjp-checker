@@ -6,9 +6,12 @@ import java.io.*;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class App {
@@ -61,11 +64,15 @@ public class App {
     public Stream<TestValidationResult> validateTests(String[] glob) throws SAXException, IOException {
         if (glob.length == 0)
             glob = new String[]{ "@tests" };
+        return validateTests(new Glob(glob, true, logger));
+    }
+
+    public Stream<TestValidationResult> validateTests(Glob glob) throws SAXException, IOException {
         try {
             final TestLoader.Factory loaderFactory = new TestLoader.Factory();
             final Queue<TestLoader> queue = new ConcurrentLinkedQueue<>();
 
-            return new Glob(glob, true, logger).files()
+            return glob.files()
                     .map((FunctionThrowsIOException<File, TestValidationResult>) (file -> {
                         TestLoader loader = Optional.ofNullable(queue.poll()).orElseGet(loaderFactory::newTestLoader);
                         try {
@@ -79,5 +86,16 @@ public class App {
         catch (UncheckedIOException e) {
             throw e.getCause();
         }
+    }
+
+    public Stream<TestResult> check(Glob glob) throws IOException {
+        List<Class<?>> classes = new ArrayList<>();
+        new ProcessBuilder(Stream.concat(
+                Stream.of(System.getenv("JAVA_HOME") + File.separator+ "bin" + File.separator + "javap"),
+                glob.files()
+                    .filter(f -> f.getName().endsWith(".class") || f.getName().endsWith(".jar"))
+                    .map((FunctionThrowsIOException<File, String>) File::getCanonicalPath)
+        ).collect(Collectors.toList()));
+        return null; // TODO
     }
 }

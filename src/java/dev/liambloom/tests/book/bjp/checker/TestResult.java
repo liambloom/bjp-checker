@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
-import static org.fusesource.jansi.Ansi.Color;
-
 public class TestResult extends Result {
     public static final boolean EX = false;
     public static final boolean PP = true;
@@ -43,35 +41,35 @@ public class TestResult extends Result {
         /**
          * The ex/pp has been submitted
          */
-        Submitted(true, Color.GREEN),
+        SUBMITTED(true, Color.GREEN),
 
         /**
          * The ex/pp was submitted, and has since been updated. Note that
          * this does not affect the submitted status of the ex/pp.
          */
-        Updated(true, Color.BLUE),
+        UPDATED(true, Color.CYAN),
 
         /**
          * The ex/pp/test passed all tests
          */
-        Correct(true, Color.GREEN),
+        CORRECT(true, Color.GREEN),
 
         /**
          * The ex/pp has not been completed
          */
-        NotDone(false, Color.YELLOW),
+        NOT_DONE(false, Color.GRAY),
 
         /**
          * The ex/pp was correct at some point, but currently does not pass
          * all tests. This is most likely if there is a single method that
          * is modified in multiple exercises/
          */
-        PreviouslyDone(false, Color.YELLOW),
+        PREVIOUSLY_DONE(false, Color.YELLOW),
 
         /**
          * The ex/pp/test did not pass all tests
          */
-        Incorrect(false, Color.RED);
+        INCORRECT(false, Color.RED);
 
         public final boolean isOk;
         public final Color color;

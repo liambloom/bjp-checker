@@ -53,10 +53,10 @@ public class TestLoader {
     public TestValidationResult validate(File file) throws IOException {
         try {
             load(file);
-            return new TestValidationResult(file, TestValidationResult.Variant.Valid);
+            return new TestValidationResult(file, TestValidationResult.Variant.VALID);
         }
         catch (UserErrorException e) {
-            return new TestValidationResult(file, TestValidationResult.Variant.Invalid, (SAXException) e.getCause());
+            return new TestValidationResult(file, TestValidationResult.Variant.INVALID, (SAXException) e.getCause());
         }
     }
 
