@@ -1,5 +1,6 @@
 use std::process::Command;
-use std::env::{current_exe, args};
+use std::env::{self, current_exe, args, VarError};
+use std::ffi::OsStr;
 
 // FIXME: unwrap() BAD
 // TODO: Follow symlinks from current_exe()
@@ -12,7 +13,15 @@ pub fn run(main: &str) {
     here.push("*");
     let mut args = args();
     args.next();
-    Command::new("java")
+    let java_home_var = env::var("JAVA_HOME");
+    let java_home: OsStr = match java_home_var {
+        Ok(s) => s.as_ref(),
+        Err(VarError::NotUnicode(s)) => s.as_os_str(),
+        Err(VarError::NotFound) => {
+
+        }
+    };
+    Command::new(java_home + "java")
         .arg("-cp")
         .arg(here)
         .arg(main)
