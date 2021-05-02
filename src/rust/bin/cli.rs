@@ -18,17 +18,28 @@ fn print_error(e: impl Display) {
     use winapi::um::consoleapi::{GetConsoleMode, SetConsoleMode};
     use winapi::um::wincontypes::{COORD, SMALL_RECT};
     use std::os::windows::io::AsRawHandle;
-    use std::io::stderr;
+    use std::io::{self, stderr};
+
+    const ERROR_INVALID_PARAMETER: i32 = winapi::shared::winerror::ERROR_INVALID_PARAMETER as i32;
 
     let handle = stderr().as_raw_handle() as *mut winapi::ctypes::c_void;
 
     unsafe {
         let mut console_mode = 0;
-        GetConsoleMode(handle, &mut console_mode);
-        
+        if GetConsoleMode(handle, &mut console_mode) == 0 { // Not a tty
+            eprintln!("[error] ");
+        }
         // ENABLE_VIRTUAL_TERMINAL_PROCESSING=0x0004
         // The reason I'm not using the constant is because IDK if it's defined in earlier windows version 
-        if SetConsoleMode(handle, console_mode | 0x0004) == 0 {
+        else if SetConsoleMode(handle, console_mode | 0x0004) == 0 { // ANSI not supported
+            match io::Error::last_os_error().raw_os_error() {
+                Some(ERROR_INVALID_PARAMETER) => {},
+                Some(e) => {
+                    eprintln!("Exited with status code {}", e);
+                    std::process::exit(e);
+                },
+                None => unreachable!(),
+            }
             let mut console_info = CONSOLE_SCREEN_BUFFER_INFO {
                 dwSize: COORD { X: 0, Y: 0 },
                 dwCursorPosition: COORD { X: 0, Y: 0 },
@@ -42,12 +53,12 @@ fn print_error(e: impl Display) {
                 dwMaximumWindowSize: COORD { X: 0, Y: 0 }
             };
             
-            GetConsoleScreenBufferInfo(handle, &mut console_info);
+            try_sys(GetConsoleScreenBufferInfo(handle, &mut console_info));
             let saved_attributes = console_info.wAttributes;
 
-            SetConsoleTextAttribute(handle, FOREGROUND_RED);
+            try_sys(SetConsoleTextAttribute(handle, FOREGROUND_RED));
             eprint!("[error] ");
-            SetConsoleTextAttribute(handle, saved_attributes);
+            try_sys(SetConsoleTextAttribute(handle, saved_attributes));
         }
         else {
             eprint!("\x1b[31m[error]\x1b[0m ");
@@ -58,9 +69,32 @@ fn print_error(e: impl Display) {
     eprintln!("{}", e);
 }
 
+#[cfg(windows)]
+fn try_sys(r: i32) {
+    use std::{io, process::exit};
+    if r == 0 {
+        match io::Error::last_os_error().raw_os_error() {
+            Some(e) => {
+                eprintln!("Exited with status code {}", e);
+                exit(e);
+            }
+            None => {
+                eprintln!("Error while making system call");
+                exit(1);
+            }
+        }
+    }
+}
+
 #[cfg(unix)]
 fn print_error(e: impl Display) {
-    eprintln!("\x1b[31m[error]\x1b[0m {}", e);
+    if libc::isatty(std::io::stderr()) {
+        eprint!("\x1b[31m[error]\x1b[0m ");
+    }
+    else {
+        eprint!("[error] ")
+    }
+    println!("{}", e);
 }
 
 #[cfg(not(any(windows, unix)))]
