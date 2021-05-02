@@ -22,7 +22,7 @@ required-features = ["gui"]
 native-dialog = { version = "0.5", optional = true }
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", optional = true, features = ["wincon", "wincontypes", "consoleapi", "winerror"] }
+winapi = { version = "0.3", optional = true, features = ["wincon", "wincontypes", "consoleapi", "winerror", "minwindef"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = { version = "0.2", optional = true }

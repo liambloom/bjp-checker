@@ -14,13 +14,16 @@ fn main() {
 
 #[cfg(windows)]
 fn print_error(e: impl Display) {
-    use winapi::um::wincon::{FOREGROUND_RED, GetConsoleScreenBufferInfo, SetConsoleTextAttribute, CONSOLE_SCREEN_BUFFER_INFO, };
+    use winapi::um::wincon::{FOREGROUND_RED, GetConsoleScreenBufferInfo, SetConsoleTextAttribute, CONSOLE_SCREEN_BUFFER_INFO };
     use winapi::um::consoleapi::{GetConsoleMode, SetConsoleMode};
     use winapi::um::wincontypes::{COORD, SMALL_RECT};
+    use winapi::shared::minwindef::DWORD;
     use std::os::windows::io::AsRawHandle;
     use std::io::{self, stderr};
 
     const ERROR_INVALID_PARAMETER: i32 = winapi::shared::winerror::ERROR_INVALID_PARAMETER as i32;
+    // This can be found in winapi::um::wincon, but IDK if it's defined in older windows versions
+    const ENABLE_VIRTUAL_TERMINAL_PROCESSING: DWORD = 0x0004;
 
     let handle = stderr().as_raw_handle() as *mut winapi::ctypes::c_void;
 
@@ -29,9 +32,7 @@ fn print_error(e: impl Display) {
         if GetConsoleMode(handle, &mut console_mode) == 0 { // Not a tty
             eprintln!("[error] ");
         }
-        // ENABLE_VIRTUAL_TERMINAL_PROCESSING=0x0004
-        // The reason I'm not using the constant is because IDK if it's defined in earlier windows version 
-        else if SetConsoleMode(handle, console_mode | 0x0004) == 0 { // ANSI not supported
+        else if SetConsoleMode(handle, console_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) == 0 { // ANSI not supported
             match io::Error::last_os_error().raw_os_error() {
                 Some(ERROR_INVALID_PARAMETER) => {},
                 Some(e) => {
