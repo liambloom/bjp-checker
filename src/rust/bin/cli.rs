@@ -14,36 +14,46 @@ fn main() {
 
 #[cfg(windows)]
 fn print_error(e: impl Display) {
-    use winapi::um::wincon::{FOREGROUND_RED, GetConsoleScreenBufferInfo, SetConsoleTextAttribute, CONSOLE_SCREEN_BUFFER_INFO};
+    use winapi::um::wincon::{FOREGROUND_RED, GetConsoleScreenBufferInfo, SetConsoleTextAttribute, CONSOLE_SCREEN_BUFFER_INFO, };
+    use winapi::um::consoleapi::{GetConsoleMode, SetConsoleMode};
     use winapi::um::wincontypes::{COORD, SMALL_RECT};
-    use winapi::um::errhandlingapi::GetLastError;
     use std::os::windows::io::AsRawHandle;
     use std::io::stderr;
-    use std::process::exit;
-
-    let mut console_info = CONSOLE_SCREEN_BUFFER_INFO {
-        dwSize: COORD { X: 0, Y: 0 },
-        dwCursorPosition: COORD { X: 0, Y: 0 },
-        wAttributes: 0,
-        srWindow: SMALL_RECT {
-            Left: 0,
-            Top: 0,
-            Right: 0,
-            Bottom: 0
-        },
-        dwMaximumWindowSize: COORD { X: 0, Y: 0 }
-    };
 
     let handle = stderr().as_raw_handle() as *mut winapi::ctypes::c_void;
 
     unsafe {
-        if GetConsoleScreenBufferInfo(handle, &mut console_info) == 0 { exit(GetLastError() as i32); }
-        let saved_attributes = console_info.wAttributes;
+        let mut console_mode = 0;
+        GetConsoleMode(handle, &mut console_mode);
+        
+        // ENABLE_VIRTUAL_TERMINAL_PROCESSING=0x0004
+        // The reason I'm not using the constant is because IDK if it's defined in earlier windows version 
+        if SetConsoleMode(handle, console_mode | 0x0004) == 0 {
+            let mut console_info = CONSOLE_SCREEN_BUFFER_INFO {
+                dwSize: COORD { X: 0, Y: 0 },
+                dwCursorPosition: COORD { X: 0, Y: 0 },
+                wAttributes: 0,
+                srWindow: SMALL_RECT {
+                    Left: 0,
+                    Top: 0,
+                    Right: 0,
+                    Bottom: 0
+                },
+                dwMaximumWindowSize: COORD { X: 0, Y: 0 }
+            };
+            
+            GetConsoleScreenBufferInfo(handle, &mut console_info);
+            let saved_attributes = console_info.wAttributes;
 
-        if SetConsoleTextAttribute(handle, FOREGROUND_RED) == 0 { exit(GetLastError() as i32); }
-        eprint!("[error] ");
-        if SetConsoleTextAttribute(handle, saved_attributes) == 0 { exit(GetLastError() as i32); }
-    }
+            SetConsoleTextAttribute(handle, FOREGROUND_RED);
+            eprint!("[error] ");
+            SetConsoleTextAttribute(handle, saved_attributes);
+        }
+        else {
+            eprint!("\x1b[31m[error]\x1b[0m ");
+            SetConsoleMode(handle, console_mode);
+        }
+    }    
 
     eprintln!("{}", e);
 }
@@ -53,7 +63,7 @@ fn print_error(e: impl Display) {
     eprintln!("\x1b[31m[error]\x1b[0m {}", e);
 }
 
-#[cfg(all(not(windows), not(unix)))]
+#[cfg(not(any(windows, unix)))]
 fn print_error(e: impl Display) {
     eprintln!("[error] {}", e);
 }
