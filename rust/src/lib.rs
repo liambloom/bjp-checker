@@ -55,7 +55,7 @@ pub fn install_location() -> Result<PathBuf, ErrorKind> {
 pub fn log(e: &impl Error) {
     if let Ok(mut here) = install_location() {
         here.push("logs");
-        here.push("foo");
+        here.push(Local::now().format("%Y-%m-%d-%H-%M-%S.log").to_string());
         let _ = write(here, e.to_string());
     }
 }
