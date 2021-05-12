@@ -1,6 +1,6 @@
 package dev.liambloom.tests.book.bjp.checker;
 
-class UserErrorException extends RuntimeException {
+public class UserErrorException extends RuntimeException {
     public UserErrorException() {
         super();
     }

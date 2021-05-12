@@ -3,12 +3,15 @@ use std::fmt::Display;
 use std::io::{stderr, Error as IoError};
 
 fn main() {
-    match run("dev.liambloom.tests.book.bjp.checker.CLI") {
+    match JRE::Java.run("dev.liambloom.tests.book.bjp.checker.CLI") {
         Ok(_) => {}
-        Err(e @ ErrorKind::JavaHomeNotFound) => if let Err(e2) = print_error(e) { log(e2) },
+        Err(e @ ErrorKind::FailedToSpawn(_)) => {
+            if let ErrorKind::FailedToSpawn(inner) = &e { log(inner) };
+            if let Err(e2) = print_error(e) { log(&e2) }
+        },
         Err(ErrorKind::IoError(e)) => {
-            print_error("An error was encountered internally. Check logs for more information");
-            log(e);
+            let _ = print_error("An error was encountered internally. Check logs for more information");
+            log(&e);
         }
     }
 }

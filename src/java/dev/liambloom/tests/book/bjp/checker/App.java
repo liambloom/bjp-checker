@@ -4,6 +4,8 @@ import org.xml.sax.SAXException;
 
 import java.io.*;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -89,12 +91,20 @@ public class App {
     }
 
     public Stream<TestResult> check(Glob glob) throws IOException {
+        // Define a class using ClassLoader#defineClass https://stackoverflow.com/a/3298977/11326662
+        // Read from jar using ZipFile or ZipInputStream https://stackoverflow.com/a/1429275/11326662
+        // FileSystem can be used to read a zip file https://stackoverflow.com/a/29689341/11326662
+        glob.files()
+                .map(File::toPath)
+                .map((FunctionThrowsIOException<Path, byte[]>) Files::readAllBytes)
+                .map(b -> getClass().getClassLoader().defineClass(null, b, 0, b.length))
+        ;
         List<Class<?>> classes = new ArrayList<>();
         new ProcessBuilder(Stream.concat(
                 Stream.of(System.getenv("JAVA_HOME") + File.separator+ "bin" + File.separator + "javap"),
                 glob.files()
                     .filter(f -> f.getName().endsWith(".class") || f.getName().endsWith(".jar"))
-                    .map((FunctionThrowsIOException<File, String>) File::getCanonicalPath)
+                    .map( File::getCanonicalPath)
         ).collect(Collectors.toList()));
         return null; // TODO
     }

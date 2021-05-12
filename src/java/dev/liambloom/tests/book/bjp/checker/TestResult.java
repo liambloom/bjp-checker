@@ -18,6 +18,7 @@ public class TestResult extends Result {
         this(type, num, variant, null, null);
     }
 
+    // TODO: This doesn't work with incorrect prints, only with thrown errors
     public TestResult(boolean type, int num, Variant variant, Throwable error, ByteArrayOutputStream out) {
         super((type == EX ? "Exercise" : "Programming Project") + " " + num, variant);
         this.type = type;

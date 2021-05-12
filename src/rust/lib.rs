@@ -1,24 +1,45 @@
 use std::{io, fmt, error::Error, process::Command, path::PathBuf, fs::write};
-use std::env::{self, current_exe, args};
+use std::env::{current_exe, args};
+use chrono::{Local, };
 
-// TODO: build for mac/linux https://stackoverflow.com/a/62853319/11326662
-pub fn run(main: &str) -> Result<(), ErrorKind> {
-    let mut here = install_location()?;
-    here.push("lib");
-    here.push("*");
-    let mut args = args();
-    args.next();
-    let mut java = PathBuf::from(&env::var_os("JAVA_HOME").ok_or(ErrorKind::JavaHomeNotFound)?);
-    java.push("bin");
-    java.push("java");
-    Command::new(java.as_os_str())
-        .arg("-cp")
-        .arg(here)
-        .arg(main)
-        .args(args)
-        .spawn()?
-        .wait()?;
-    Ok(())
+#[derive(Debug, Copy, Clone)]
+pub enum JRE {
+    /// Calls the java command
+    Java,
+
+    /// Calls the javaw command
+    JavaWindowed
+}
+
+impl JRE {
+    // TODO: build for mac/linux https://stackoverflow.com/a/62853319/11326662
+    pub fn run(&self, main: &str) -> Result<(), ErrorKind> {
+        let mut here = install_location()?;
+        here.push("lib");
+        here.push("*");
+        let mut args = args();
+        args.next();
+        Command::new(self.to_string())
+            .arg("-cp")
+            .arg(here)
+            .arg(main)
+            .args(args)
+            .spawn()
+            .map_err(|e| ErrorKind::FailedToSpawn(e))?
+            .wait()?;
+        Ok(())
+    }
+}
+
+impl fmt::Display for JRE {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use JRE::*;
+
+        match self {
+            Java => write!(f, "java"),
+            JavaWindowed => write!(f, "javaw"),
+        }
+    }
 }
 
 pub fn install_location() -> Result<PathBuf, ErrorKind> {
@@ -31,17 +52,17 @@ pub fn install_location() -> Result<PathBuf, ErrorKind> {
     Ok(here)
 }
 
-pub fn log(e: impl Error) {
+pub fn log(e: &impl Error) {
     if let Ok(mut here) = install_location() {
         here.push("logs");
-        here.push("");
+        here.push("foo");
         let _ = write(here, e.to_string());
     }
 }
 
 #[derive(Debug)]
 pub enum ErrorKind {
-    JavaHomeNotFound,
+    FailedToSpawn(io::Error),
     IoError(io::Error),
 }
 
@@ -56,7 +77,7 @@ impl Error for ErrorKind {}
 impl fmt::Display for ErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ErrorKind::JavaHomeNotFound => write!(f, "Environmental variable JAVA_HOME is not set"),
+            ErrorKind::FailedToSpawn(_) => write!(f, "Unable to start JVM. Make sure java is in your path."),
             ErrorKind::IoError(e) => write!(f, "{}", e),
         }
     }

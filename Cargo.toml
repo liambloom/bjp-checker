@@ -19,6 +19,7 @@ path = "src/rust/bin/gui.rs"
 required-features = ["gui"]
 
 [dependencies]
+chrono = "0.4"
 native-dialog = { version = "0.5", optional = true }
 
 [target.'cfg(windows)'.dependencies]

@@ -63,6 +63,8 @@ public class CLI {
         }
     }
 
+    public static class Foo {};
+
     private static void printHelp(String arg) throws IOException {
         String name;
         switch (arg) {
