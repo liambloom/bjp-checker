@@ -5,8 +5,8 @@ rem This should do the same thing as my local intellij settings
 
 :bins
 cd rust
-cargo +nightly build --bin checker --release --features cli -Z unstable-options
-cargo +nightly build --bin checker-gui --release --features gui -Z unstable-options
+cargo +nightly build -q --bin checker --release --features cli -Z unstable-options
+cargo +nightly build -q --bin checker-gui --release --features gui -Z unstable-options
 cd ..
 rem build for other OSes?
 exit /b

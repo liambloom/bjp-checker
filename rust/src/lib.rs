@@ -1,6 +1,6 @@
 use std::{io, fmt, error::Error, process::Command, path::PathBuf, fs::write};
 use std::env::{current_exe, args};
-use chrono::{Local, };
+use chrono::Local;
 
 #[derive(Debug, Copy, Clone)]
 pub enum JRE {
