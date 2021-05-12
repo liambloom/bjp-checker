@@ -101,21 +101,22 @@ public class Test {
             m.setAccessible(true);
         }
         catch (RuntimeException e) {
-            try {
-                if (INACCESSIBLE_OBJECT_EXCEPTION_CLASS.isInstance(e))
-                    return new TestResult(this.type, this.num, ); // Method inaccessible
-                else
-                    throw e;
-            }
-            catch (ClassNotFoundException ignored) {
-                throw e;
-            }
+//            try {
+//                if (INACCESSIBLE_OBJECT_EXCEPTION_CLASS.isInstance(e))
+//                    return new TestResult(this.type, this.num, ); // Method inaccessible
+//                else
+//                    throw e;
+//            }
+//            catch (ClassNotFoundException ignored) {
+//                throw e;
+//            }
         }
         try {
             Object r = m.invoke(target, args);
 
-            if (!normalizeLineSeparators(out.toString()).equals(normalizeLineSeparators(prints)))
-                return new TestResult(this.type, this.num, TestResult.Variant.INCORRECT, );
+//            if (!normalizeLineSeparators(out.toString()).equals(normalizeLineSeparators(prints)))
+//                return new TestResult(this.type, this.num, TestResult.Variant.INCORRECT, );
+            return null;
         }
         catch (Throwable e) {
             if (throwsErr == null || !throwsErr.isInstance(e))

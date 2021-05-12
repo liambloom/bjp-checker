@@ -1,0 +1,3 @@
+[build]
+# target-dir = "out/rust"
+out-dir = "../build/bin"

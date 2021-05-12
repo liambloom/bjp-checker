@@ -5,17 +5,17 @@ authors = ["liambloom <liamrbloom@gmail.com>"]
 edition = "2018"
 
 [lib]
-path = "src/rust/lib.rs"
+path = "src/lib.rs"
 
 [[bin]]
 name = "checker"
-path = "src/rust/bin/cli.rs"
+path = "src/bin/cli.rs"
 required-features = ["cli"]
 
 
 [[bin]]
 name = "checker-gui"
-path = "src/rust/bin/gui.rs"
+path = "src/bin/gui.rs"
 required-features = ["gui"]
 
 [dependencies]
