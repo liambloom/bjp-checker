@@ -9,7 +9,6 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -22,12 +21,12 @@ public class TestLoader {
         this.validator = validator;
     }
 
-    public Source load() throws URISyntaxException, IOException {
+    public Source load() throws IOException {
         return load(DEFAULT_TEST);
     }
 
-    public Source load(String name) throws URISyntaxException, IOException {
-        return load(Paths.get(App.here + File.separator + "tests" + File.separator + name + ".xml"));
+    public Source load(String name) throws IOException {
+        return load(Paths.get(App.here() + File.separator + "tests" + File.separator + name + ".xml"));
     }
 
     public Source load(File file) throws IOException {
@@ -36,9 +35,8 @@ public class TestLoader {
 
     public Source load(Path path) throws IOException {
         path = Glob.readSymbolicLink(path);
-        String mime = Glob.mime(path);
-        if (!mime.equals("application/xml") && !mime.equals("text/xml"))
-            throw new UserErrorException(String.format("Test must be of type xml, but `%s' is of type %s", path, mime));
+        if (!path.endsWith(".xml"))
+            throw new UserErrorException(String.format("Test must be of type xml, but `%s' is not", path));
         Source source = new StreamSource(path.toFile());
         try {
             validator.reset();

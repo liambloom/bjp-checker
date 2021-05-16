@@ -30,8 +30,9 @@ public class CLI {
                         System.out.println(App.VERSION);
                         break;
                     case "check":
-                        throw new UserErrorException("Command `check' not supported in current checker version");
-                        // break;
+                        new App(logger).check(new Glob(Arrays.copyOfRange(args, 1, args.length), false, logger));
+                        //throw new UserErrorException("Command `check' not supported in current checker version");
+                        break;
                     case "submit":
                         throw new UserErrorException("Command `submit' not supported in current checker version");
                         // break;
@@ -51,17 +52,22 @@ public class CLI {
         }
         catch (UserErrorException e) {
             logger.error(e.getMessage());
+            //e.printStackTrace();
         }
         catch (Throwable e) {
             logger.error("An error was encountered internally. Check logs for more information");
-            App.createLogFile(e);
+            //e.printStackTrace();
+            try {
+                App.createLogFile(e);
+            }
+            catch (IOException ignored) {
+                logger.error("Failed to create log file");
+            }
         }
         finally {
             logger.close();
         }
     }
-
-    public static class Foo {};
 
     private static void printHelp(String arg) throws IOException {
         String name;

@@ -7,7 +7,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.regex.Pattern;
 
-//
 public class Test {
     public static final Class<?> INACCESSIBLE_OBJECT_EXCEPTION_CLASS;
 
@@ -18,11 +17,6 @@ public class Test {
         }
         catch (ClassNotFoundException e) {
             temp = Void.class;
-        }
-        // Shouldn't throw anything else, but, just in case:
-        catch (Throwable e) {
-            App.createLogFile(e);
-            throw e;
         }
         INACCESSIBLE_OBJECT_EXCEPTION_CLASS = temp;
     }
@@ -101,22 +95,16 @@ public class Test {
             m.setAccessible(true);
         }
         catch (RuntimeException e) {
-//            try {
-//                if (INACCESSIBLE_OBJECT_EXCEPTION_CLASS.isInstance(e))
-//                    return new TestResult(this.type, this.num, ); // Method inaccessible
-//                else
-//                    throw e;
-//            }
-//            catch (ClassNotFoundException ignored) {
-//                throw e;
-//            }
+            if (INACCESSIBLE_OBJECT_EXCEPTION_CLASS.isInstance(e)) {}
+                //TODO: return new TestResult(this.type, this.num, ); // Method inaccessible
+            else
+                throw e;
         }
         try {
             Object r = m.invoke(target, args);
 
-//            if (!normalizeLineSeparators(out.toString()).equals(normalizeLineSeparators(prints)))
-//                return new TestResult(this.type, this.num, TestResult.Variant.INCORRECT, );
-            return null;
+            if (!normalizeLineSeparators(out.toString()).equals(normalizeLineSeparators(prints))) {}
+                // TODO: return new TestResult(this.type, this.num, TestResult.Variant.INCORRECT, );
         }
         catch (Throwable e) {
             if (throwsErr == null || !throwsErr.isInstance(e))
@@ -129,6 +117,7 @@ public class Test {
             System.setOut(defaultOut);
             System.setErr(defaultErr);
         }
+        return null;
     }
 
     private static final Pattern LINE_SEPARATOR = Pattern.compile("\\r|\\r?\\n");

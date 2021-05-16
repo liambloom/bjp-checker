@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Glob {
-    public static final File TEST_BASE = new File(App.here, "tests");
     private final Piece[] pieces;
     final boolean isTestGlob;
     final Logger logger;
@@ -60,7 +59,7 @@ public class Glob {
             if (builder != null)
                 segmentsList.add(builder.toString());
             if (isTestGlob && segmentsList.get(0).equals("@tests")) {
-                base = TEST_BASE;
+                base = App.testBase();
                 segmentsList.remove(0); // This is O(n) and I wish it weren't
                 if (segmentsList.isEmpty())
                     segmentsList.add(".");
@@ -73,7 +72,7 @@ public class Glob {
         }
 
         public List<File> files() throws IOException  {
-            List<File> r = Stream.concat(files(base, 0), isTestGlob && segments.length == 1 && !base.equals(TEST_BASE) ? files(TEST_BASE, 0) : Stream.empty())
+            List<File> r = Stream.concat(files(base, 0), isTestGlob && segments.length == 1 && !base.equals(App.testBase()) ? files(App.testBase(), 0) : Stream.empty())
                     .collect(Collectors.toList());
             if (r.size() == 0)
                 throw new UserErrorException("Glob \"" + raw + "\" did not match any files");
@@ -136,7 +135,16 @@ public class Glob {
                     if (isTestGlob)
                         builder.append("(?:\\.xml)?");
                     final Pattern p = Pattern.compile(builder.toString());
-                    return Arrays.stream(base.listFiles((_file, name) -> p.matcher(name).matches()));
+                    Stream<File> r = Arrays.stream(base.listFiles((_file, name) -> p.matcher(name).matches()));
+                    if (segments.length > i + 1){
+                        try {
+                            r = r.flatMap((FunctionThrowsIOException<File, Stream<File>>) (f -> files(f, i + 1)));
+                        }
+                        catch (UncheckedIOException e) {
+                            throw e.getCause();
+                        }
+                    }
+                    return r;
             }
         }
 
@@ -160,6 +168,11 @@ public class Glob {
             catch (UncheckedIOException e) {
                 throw e.getCause();
             }
+        }
+
+        @Override
+        public String toString() {
+            return raw + " -> " + base + File.separator + String.join(File.separator, segments);
         }
     }
 
@@ -198,9 +211,5 @@ public class Glob {
         if (!path.toFile().exists())
             throw new UserErrorException("There was a symbolic link to `" + path + "', which doesn't exist.");
         return path;
-    }
-
-    public static String mime(Path p) throws IOException {
-        return Optional.ofNullable(Files.probeContentType(p)).orElse("unknown");
     }
 }
