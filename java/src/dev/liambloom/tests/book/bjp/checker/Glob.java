@@ -6,6 +6,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -110,32 +111,70 @@ public class Glob {
                     if (segment.contains("**"))
                         logger.warn("\"**\" as part of a larger segment is interpreted as two single stars")
                                 .notice("To use a double star, make it its own path segment");
-                    final StringBuilder builder = new StringBuilder("\\Q");
+                    List<String> literalParts = new ArrayList<>();
+                    StringBuilder builder = new StringBuilder();
+                    StringBuilder builderPart = new StringBuilder();
                     boolean isEscaped = false;
+                    // FIXME: DRY
                     for (char c : segment.toCharArray()) {
                         if (isEscaped)
-                            builder.append(c);
+                            isEscaped = false;
                         else {
-                            switch (c) {
-                                case '\\':
-                                    isEscaped = true;
-                                    break;
-                                case '*':
-                                    builder.append("\\E[^/]*\\Q");
-                                    break;
-                                case '?':
-                                    builder.append("\\E[^/]\\Q");
-                                    break;
-                                default:
+                            if (c == '\\') {
+                                isEscaped = true;
+                                continue;
+                            }
+                            else if (c == '?' || c == '*') {
+                                if (builderPart.length() != 0) {
+                                    literalParts.add(builderPart.toString());
+                                    builder.append("\\Q")
+                                            .append(builderPart)
+                                            .append("\\E");
+                                    builderPart = new StringBuilder();
+                                }
+                                else if (builder.length() == 0)
+                                    literalParts.add("");
+                                builder.append("([^/]");
+                                if (c == '*')
                                     builder.append(c);
+                                builder.append(')');
+                                continue;
                             }
                         }
+
+                        if (c == 'E' && builderPart.length() != 0 && builderPart.charAt(builderPart.length() - 1) == '\\') {
+                            // FIXME: I can't alternate literalParts and captures because of this.
+                            literalParts.add(builderPart + "E");
+                            builder.append("\\Q")
+                                    .append(builderPart)
+                                    .append("\\E")
+                                    .append('E');
+                            builderPart = new StringBuilder();
+                        }
+                        else
+                            builderPart.append(c);
                     }
-                    builder.append("\\E");
+                    if (isEscaped)
+                        throw new UserErrorException("Trailing backslash in glob \"" + raw + '"');
+                    if (builderPart.length() != 0) {
+                        literalParts.add(builderPart.toString());
+                        builder.append("\\Q")
+                                .append(builderPart)
+                                .append("\\E");
+                    }
                     if (isTestGlob)
                         builder.append("(?:\\.xml)?");
-                    final Pattern p = Pattern.compile(builder.toString());
-                    Stream<File> r = Arrays.stream(base.listFiles((_file, name) -> p.matcher(name).matches()));
+                    // FIXME: Some file systems are case sensitive, others are not
+                    final Pattern p = Pattern.compile(builder.toString(), Pattern.CASE_INSENSITIVE);
+                    Stream<File> r = Arrays.stream(base.listFiles((_file, name) -> {
+                        Matcher matcher = p.matcher(name);
+                        if (!matcher.matches())
+                            return false;
+                        int j, k;
+                        for (j = 0, k = 1; j < literalParts.size() || ; j++, k++) {
+
+                        }
+                    }));
                     if (segments.length > i + 1){
                         try {
                             r = r.flatMap((FunctionThrowsIOException<File, Stream<File>>) (f -> files(f, i + 1)));
@@ -146,7 +185,25 @@ public class Glob {
                     }
                     return r;
             }
+
+
         }
+
+        /*private class Segment {
+            //public final Pattern pattern;
+
+            public
+        }
+
+        private class SegmentBuilder {
+            private Optional<StringBuilder> builderPart = Optional.empty();
+            private StringBuilder builder = new StringBuilder();
+            private List<String> literalSegments = new ArrayList<>();
+
+            public SegmentBuilder(String segment) {
+
+            }
+        }*/
 
         private Stream<File> allFiles(File base) throws IOException {
             assert base.isDirectory();
