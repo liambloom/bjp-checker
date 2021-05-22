@@ -17,13 +17,11 @@ impl JRE {
         let mut here = install_location()?;
         here.push("lib");
         here.push("*");
-        let mut args = args();
-        args.next();
         Command::new(self.to_string())
             .arg("-cp")
             .arg(here)
             .arg(main)
-            .args(args)
+            .args(args().skip(1).map(|mut s| { s.push(3 as char); s }))
             .spawn()
             .map_err(|e| ErrorKind::FailedToSpawn(e))?
             .wait()?;

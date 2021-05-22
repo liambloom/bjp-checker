@@ -109,4 +109,13 @@ public class App {
         }
         return null; // TODO
     }
+
+    // The JVM has a glob parser that runs only on windows. It is not a very good
+    // glob parser. In order to prevent the JVM from running it, I append (char) 3
+    // to the end of each argument in rust. Since this is not allowed in paths,
+    // it prevents the JVM from trying to parse globs.
+    public static void cleanArgs(String[] args) {
+        for (int i = 0; i < args.length; i++)
+            args[i] = args[i].substring(0, args[i].length() - 1);
+    }
 }

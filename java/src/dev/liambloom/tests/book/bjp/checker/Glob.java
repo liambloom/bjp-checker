@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class Glob {
@@ -112,7 +113,7 @@ public class Glob {
                         logger.warn("\"**\" as part of a larger segment is interpreted as two single stars")
                                 .notice("To use a double star, make it its own path segment");
                     List<String> literalParts = new ArrayList<>();
-                    StringBuilder builder = new StringBuilder();
+                    StringBuilder patternBuilder = new StringBuilder();
                     StringBuilder builderPart = new StringBuilder();
                     boolean isEscaped = false;
                     // FIXME: DRY
@@ -127,17 +128,18 @@ public class Glob {
                             else if (c == '?' || c == '*') {
                                 if (builderPart.length() != 0) {
                                     literalParts.add(builderPart.toString());
-                                    builder.append("\\Q")
+                                    patternBuilder.append("\\Q")
                                             .append(builderPart)
                                             .append("\\E");
                                     builderPart = new StringBuilder();
                                 }
-                                else if (builder.length() == 0)
+                                else if (patternBuilder.length() == 0)
                                     literalParts.add("");
-                                builder.append("([^/]");
+                                patternBuilder.append("([^/]");
                                 if (c == '*')
-                                    builder.append(c);
-                                builder.append(')');
+                                    patternBuilder.append(c);
+                                patternBuilder.append(')');
+                                literalParts.add(null);
                                 continue;
                             }
                         }
@@ -145,7 +147,7 @@ public class Glob {
                         if (c == 'E' && builderPart.length() != 0 && builderPart.charAt(builderPart.length() - 1) == '\\') {
                             // FIXME: I can't alternate literalParts and captures because of this.
                             literalParts.add(builderPart + "E");
-                            builder.append("\\Q")
+                            patternBuilder.append("\\Q")
                                     .append(builderPart)
                                     .append("\\E")
                                     .append('E');
@@ -158,22 +160,31 @@ public class Glob {
                         throw new UserErrorException("Trailing backslash in glob \"" + raw + '"');
                     if (builderPart.length() != 0) {
                         literalParts.add(builderPart.toString());
-                        builder.append("\\Q")
+                        patternBuilder.append("\\Q")
                                 .append(builderPart)
                                 .append("\\E");
                     }
                     if (isTestGlob)
-                        builder.append("(?:\\.xml)?");
-                    // FIXME: Some file systems are case sensitive, others are not
-                    final Pattern p = Pattern.compile(builder.toString(), Pattern.CASE_INSENSITIVE);
+                        patternBuilder.append("(?:\\.xml)?");
+                    // TODO: Test this
+                    final Pattern patternCaseSensitive = Pattern.compile(patternBuilder.toString());
+                    final Pattern patternCaseInsensitive = Pattern.compile(patternBuilder.toString(), Pattern.CASE_INSENSITIVE);
+                    @SuppressWarnings("ConstantConditions")
                     Stream<File> r = Arrays.stream(base.listFiles((_file, name) -> {
-                        Matcher matcher = p.matcher(name);
-                        if (!matcher.matches())
-                            return false;
-                        int j, k;
-                        for (j = 0, k = 1; j < literalParts.size() || ; j++, k++) {
-
+                        Matcher matcher;
+                        System.out.println(base + " " + name + " " + patternBuilder);
+                        if ((matcher = patternCaseSensitive.matcher(name)).matches()
+                                || (matcher = patternCaseInsensitive.matcher(name)).matches())
+                        {
+                            StringBuilder builder = new StringBuilder(name.length());
+                            Iterator<String> groups = IntStream.range(1, matcher.groupCount()).mapToObj(matcher::group).iterator();
+                            for (String literalPart : literalParts)
+                                builder.append(Optional.ofNullable(literalPart).orElseGet(groups::next));
+                            System.out.println(base + builder.toString());
+                            return new File(base, builder.toString()).exists();
                         }
+                        else
+                            return false;
                     }));
                     if (segments.length > i + 1){
                         try {
