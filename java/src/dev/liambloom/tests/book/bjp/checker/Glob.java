@@ -3,6 +3,7 @@ package dev.liambloom.tests.book.bjp.checker;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -31,8 +32,14 @@ public class Glob {
         final File base;
         final String[] segments;
         final String raw;
+        final String src;
 
         public Piece(String s) throws IOException {
+            this(s, s);
+        }
+
+        private Piece(String s, String src) throws IOException {
+            this.src = src;
             raw = s;
             boolean isEscaped = false;
             StringBuilder builder = null;
@@ -73,18 +80,37 @@ public class Glob {
             segments = segmentsList.toArray(new String[0]);
         }
 
-        public List<File> files() throws IOException  {
+        public List<File> files() throws IOException {
             List<File> r = Stream.concat(files(base, 0), isTestGlob && segments.length == 1 && !base.equals(App.testBase()) ? files(App.testBase(), 0) : Stream.empty())
                     .collect(Collectors.toList());
-            if (r.size() == 0)
-                throw new UserErrorException("Glob \"" + raw + "\" did not match any files");
+            if (r.size() == 0) {
+                if (raw.contains(File.separator) && !raw.contains("/")){
+                    r = new Piece(raw.replace(File.separatorChar, '/'), src).files();
+                    logger.warn("Using \"\\\" instead of \"/\" is slower and does not support escaping");
+                }
+                else {
+                    starWarning();
+                    throw new UserErrorException("Glob \"" + src + "\" did not match any files");
+                }
+            }
+            else
+                starWarning();
+
             return r;
+        }
+
+        private void starWarning() {
+            if (Arrays.stream(segments).anyMatch(s -> !s.equals("**") && s.contains("**")))
+                logger.warn("\"**\" as part of a larger segment is interpreted as two single stars");
         }
 
         private Stream<File> files(File base, int i) throws IOException {
             assert base.isDirectory();
             if (segments.length == i)
-                return allFiles(base);
+                // TODO: Check this. IDK if it properly handles links
+                return Files.walk(base.toPath(), FileVisitOption.FOLLOW_LINKS)
+                        .map(Path::toFile)
+                        .filter(File::isFile);
             final String segment = segments[i];
             switch (segment) {
                 case ".":
@@ -107,11 +133,8 @@ public class Glob {
                         }
                     }
                     else
-                        return allFiles(base);
+                        return files(base, i + 1);
                 default:
-                    if (segment.contains("**"))
-                        logger.warn("\"**\" as part of a larger segment is interpreted as two single stars")
-                                .notice("To use a double star, make it its own path segment");
                     List<String> literalParts = new ArrayList<>();
                     StringBuilder patternBuilder = new StringBuilder();
                     StringBuilder builderPart = new StringBuilder();
@@ -133,8 +156,6 @@ public class Glob {
                                             .append("\\E");
                                     builderPart = new StringBuilder();
                                 }
-                                else if (patternBuilder.length() == 0)
-                                    literalParts.add("");
                                 patternBuilder.append("([^/]");
                                 if (c == '*')
                                     patternBuilder.append(c);
@@ -157,7 +178,7 @@ public class Glob {
                             builderPart.append(c);
                     }
                     if (isEscaped)
-                        throw new UserErrorException("Trailing backslash in glob \"" + raw + '"');
+                        throw new UserErrorException("Trailing backslash in glob \"" + src + '"');
                     if (builderPart.length() != 0) {
                         literalParts.add(builderPart.toString());
                         patternBuilder.append("\\Q")
@@ -172,32 +193,40 @@ public class Glob {
                     @SuppressWarnings("ConstantConditions")
                     Stream<File> r = Arrays.stream(base.listFiles((_file, name) -> {
                         Matcher matcher;
-                        System.out.println(base + " " + name + " " + patternBuilder);
                         if ((matcher = patternCaseSensitive.matcher(name)).matches()
                                 || (matcher = patternCaseInsensitive.matcher(name)).matches())
                         {
                             StringBuilder builder = new StringBuilder(name.length());
-                            Iterator<String> groups = IntStream.range(1, matcher.groupCount()).mapToObj(matcher::group).iterator();
+                            Iterator<String> groups = IntStream.range(1, matcher.groupCount() + 1).mapToObj(matcher::group).iterator();
                             for (String literalPart : literalParts)
                                 builder.append(Optional.ofNullable(literalPart).orElseGet(groups::next));
-                            System.out.println(base + builder.toString());
-                            return new File(base, builder.toString()).exists();
+                            File f = new File(base, builder.toString());
+                            return f.exists();
                         }
                         else
                             return false;
                     }));
-                    if (segments.length > i + 1){
-                        try {
-                            r = r.flatMap((FunctionThrowsIOException<File, Stream<File>>) (f -> files(f, i + 1)));
+
+                    try {
+                        if (i + 1 == segments.length) {
+                            r = r.flatMap((FunctionThrowsIOException<File, Stream<File>>) (f -> {
+                                if (f.isDirectory())
+                                    return files(f, i + 1);
+                                else
+                                    return Stream.of(f);
+                            }));
                         }
-                        catch (UncheckedIOException e) {
-                            throw e.getCause();
+                        else
+                            r = r
+                                    .filter(File::isDirectory)
+                                    .flatMap((FunctionThrowsIOException<File, Stream<File>>) (dir -> files(dir, i + 1)));
                         }
+                    catch (UncheckedIOException e) {
+                        throw e.getCause();
                     }
+
                     return r;
             }
-
-
         }
 
         /*private class Segment {
@@ -216,31 +245,9 @@ public class Glob {
             }
         }*/
 
-        private Stream<File> allFiles(File base) throws IOException {
-            assert base.isDirectory();
-            final Stream.Builder<File> files = Stream.builder();
-            final Stream.Builder<File> dirs = Stream.builder();
-            for (File f : base.listFiles()) {
-                f = readSymbolicLink(f);
-                if (f.isFile()) {
-                    files.accept(f);
-                }
-                else {
-                    assert f.isDirectory();
-                    dirs.accept(f);
-                }
-            }
-            try {
-                return Stream.concat(files.build(), dirs.build().flatMap((FunctionThrowsIOException<File, Stream<File>>) this::allFiles));
-            }
-            catch (UncheckedIOException e) {
-                throw e.getCause();
-            }
-        }
-
         @Override
         public String toString() {
-            return raw + " -> " + base + File.separator + String.join(File.separator, segments);
+            return src + " -> " + base + File.separator + String.join(File.separator, segments);
         }
     }
 

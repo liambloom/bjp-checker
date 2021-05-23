@@ -116,6 +116,7 @@ public class App {
     // it prevents the JVM from trying to parse globs.
     public static void cleanArgs(String[] args) {
         for (int i = 0; i < args.length; i++)
-            args[i] = args[i].substring(0, args[i].length() - 1);
+            if (args[i].charAt(args[i].length() - 1) == '\t')
+                args[i] = args[i].substring(0, args[i].length() - 1);
     }
 }
