@@ -3,6 +3,9 @@ package dev.liambloom.tests.book.bjp.checker;
 import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
@@ -18,7 +21,9 @@ public final class SecureGlobClassLoader extends ClassLoader {
         JAVA_VERSION = Integer.parseInt(vDot == -1 ? vStr : vStr.substring(0, vDot));
     }
 
-    private final SortedMap<String, LazyClass> classes;
+    private final SortedMap<String, byte[]> classBytes;
+    private final List<Class<?>> loadedClasses = new ArrayList<>();
+    private final ReadWriteLock rwlock = new ReentrantReadWriteLock();
 
     public SecureGlobClassLoader(Glob glob) throws IOException {
         this(glob, getSystemClassLoader());
@@ -27,7 +32,7 @@ public final class SecureGlobClassLoader extends ClassLoader {
     public SecureGlobClassLoader(Glob glob, ClassLoader parent) throws IOException {
         super(parent);
         try {
-            classes = glob.files()
+            classBytes = glob.files()
                     .map(File::toPath)
                     .map((FunctionThrowsIOException<Path, Path>) Glob::readSymbolicLink)
                     .flatMap((FunctionThrowsIOException<Path, Stream<ClassSource>>) (p -> {
@@ -84,9 +89,9 @@ public final class SecureGlobClassLoader extends ClassLoader {
                     }))
             .collect(Collectors.toMap(
                     s -> new StringBuilder(s.name()).reverse().toString(),
-                    s -> new LazyClass(s.stream()),
-                    (v1, v2) -> { throw new RuntimeException(String.format("Duplicate key for values %s and %s", v1, v2)); },
-                    TreeMap<String, LazyClass>::new));
+                    (FunctionThrowsIOException<ClassSource, byte[]>) ClassSource::bytes,
+                    (v1, v2) -> { throw new IllegalStateException("Duplicate key in classBytes"); },
+                    () -> Collections.synchronizedSortedMap(new TreeMap<>()) /* TreeMap<String, byte[]>::new */));
         }
         catch (UncheckedIOException e) {
             throw e.getCause();
@@ -94,58 +99,60 @@ public final class SecureGlobClassLoader extends ClassLoader {
     }
 
     public Class<?>[] loadAll() {
-        return classes.values()
-                .stream()
-                .map((FunctionThrowsIOException<LazyClass, Class<?>>) c -> c.get(null))
-                .toArray(Class<?>[]::new);
+        Lock lock = rwlock.writeLock();
+        while (!classBytes.isEmpty()) {
+            System.out.println("Locking write lock");
+            lock.lock();
+            System.out.println("Locked write lock");
+            Iterator<byte[]> iter = classBytes.values().iterator();
+            byte[] b = iter.next();
+            iter.remove();
+            System.out.println("Unlocking write lock");
+            lock.unlock();
+            System.out.println("Unlocked write lock");
+            defineClass(null, b, 0, b.length);
+        }
+        return loadedClasses.toArray(new Class<?>[0]);
     }
 
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
+        System.out.println(name);
+        Lock lock = rwlock.readLock();
         StringBuilder nameMut = new StringBuilder(name).reverse();
         String from = nameMut.toString();
         nameMut.setCharAt(name.length() - 1, (char) (nameMut.charAt(name.length() - 1) + 1));
         String to = nameMut.toString();
-        for (LazyClass clazz : classes.subMap(from, to).values()) {
+        System.out.println("Locking read lock");
+        lock.lock();
+        System.out.println("Locked read lock");
+        Iterator<byte[]> iter = classBytes.subMap(from, to).values().iterator();
+        while (iter.hasNext()) {
+            byte[] b = iter.next();
+            Class<?> clazz;
             try {
-                return clazz.get(name);
+                clazz = defineClass(name, b, 0, b.length);
             }
-            catch (IOException e) {
-                throw new UncheckedIOException(e);
+            catch (NoClassDefFoundError ignored) {
+                continue;
             }
-            catch (NoClassDefFoundError ignored) {}
-        }
-        return super.findClass(name);
-    }
-
-    private class LazyClass {
-        private Class<?> clazz = null;
-        private InputStream stream;
-
-        public LazyClass(InputStream stream) {
-            this.stream = stream;
-        }
-
-        public Class<?> get(String name) throws IOException {
-            if (clazz == null) {
-                ByteArrayOutputStream bufs = new ByteArrayOutputStream();
-                byte[] buf = new byte[0x400]; // 1kb
-                int len;
-                while ((len = stream.read(buf)) != -1)
-                    bufs.write(buf, 0, len);
-                clazz = defineClass(name, bufs.toByteArray(), 0, bufs.size());
-                stream = null;
-            }
-            else if (name != null && !clazz.getName().equals(name))
-                throw new NoClassDefFoundError(name);
+            loadedClasses.add(clazz);
+            iter.remove();
+            System.out.println("Unlocking read lock");
+            lock.unlock();
+            System.out.println("Unlocked read lock");
             return clazz;
         }
+        System.out.println("Unlocking read lock");
+        lock.unlock();
+        System.out.println("Unlocked read lock");
+        return super.findClass(name);
     }
 }
 
 class ClassSource {
     private final int version;
-    private final InputStream stream;
+    private InputStream stream;
     private final String name;
 
     // TODO: Add better constructors
@@ -170,12 +177,18 @@ class ClassSource {
         return version;
     }
 
-    public InputStream stream() {
-        return stream;
-    }
-
     public String name() {
         return name;
+    }
+
+    public byte[] bytes() throws IOException {
+        ByteArrayOutputStream bufs = new ByteArrayOutputStream();
+        byte[] buf = new byte[0x400]; // 1kb
+        int len;
+        while ((len = stream.read(buf)) != -1)
+            bufs.write(buf, 0, len);
+        stream = null;
+        return bufs.toByteArray();
     }
 }
 
