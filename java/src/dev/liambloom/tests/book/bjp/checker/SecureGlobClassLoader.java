@@ -1,12 +1,15 @@
 package dev.liambloom.tests.book.bjp.checker;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
 
 public final class SecureGlobClassLoader extends ClassLoader {
     static final int JAVA_VERSION;
@@ -30,7 +33,7 @@ public final class SecureGlobClassLoader extends ClassLoader {
             classes = glob.files()
                     .map(File::toPath)
                     .map((FunctionThrowsIOException<Path, Path>) Glob::readSymbolicLink)
-                    .flatMap((FunctionThrowsIOException<Path, Stream<ClassSource>>) (p -> {
+                    .flatMap((FunctionThrowsIOException<Path, Stream<InputStream>>) (p -> {
                         if (p.toString().endsWith(".jar")) {
                             // TODO: Test if this works with MRJARs (it should, but it's untested)
                             JarFile jar = new JarFile(p.toFile());
@@ -51,6 +54,7 @@ public final class SecureGlobClassLoader extends ClassLoader {
                                     String name = entry.getName();
                                     if (entry.isDirectory() || !name.toLowerCase().endsWith(".class"))
                                         continue;
+                                    ClassSource src;
                                     if (name.substring(0, 9).equalsIgnoreCase("META-INF/")) {
                                         if (name.substring(9, 17).equalsIgnoreCase("version/")) {
                                             int ev = Integer.parseInt(name.substring(17, name.indexOf('/', 17)));
@@ -60,7 +64,8 @@ public final class SecureGlobClassLoader extends ClassLoader {
                                         }
                                     }
                                     else
-                                        entryMap.put(name, new ClassSource(name.substring(0, name.length() - 6).replace('/', '.'), jar.getInputStream(entry), 8));
+                                        src = new ClassSource(name.substring(0, name.length() - 6).replace('/', '.'), jar.getInputStream(entry), 8);
+                                    entryMap.compute(name, src);
                                 }
                                 classFiles = entryMap.values().stream();
                             }
@@ -110,9 +115,6 @@ public final class SecureGlobClassLoader extends ClassLoader {
             try {
                 return clazz.get(name);
             }
-            catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
             catch (NoClassDefFoundError ignored) {}
         }
         return super.findClass(name);
@@ -120,26 +122,87 @@ public final class SecureGlobClassLoader extends ClassLoader {
 
     private class LazyClass {
         private Class<?> clazz = null;
-        private InputStream stream;
+        private byte[] bytes;
 
-        public LazyClass(InputStream stream) {
-            this.stream = stream;
+        public LazyClass(byte[] bytes) {
+            this.bytes = bytes;
         }
 
-        public Class<?> get(String name) throws IOException {
+        /*public synchronized LazyClass readBuf() throws IOException {
+            if (bytes != null)
+                throw new IllegalStateException("LazyClass#readBuf cannot be called more than once");
+            ByteArrayOutputStream bufs = new ByteArrayOutputStream();
+            byte[] buf = new byte[0x400]; // 1kb
+            int len;
+            while ((len = stream.read(buf)) != -1)
+                bufs.write(buf, 0, len);
+            bytes = bufs.toByteArray();
+            stream = null;
+            return this;
+        }*/
+
+        public synchronized Class<?> get(String name) {
             if (clazz == null) {
-                ByteArrayOutputStream bufs = new ByteArrayOutputStream();
-                byte[] buf = new byte[0x400]; // 1kb
-                int len;
-                while ((len = stream.read(buf)) != -1)
-                    bufs.write(buf, 0, len);
-                clazz = defineClass(name, bufs.toByteArray(), 0, bufs.size());
-                stream = null;
+                clazz = defineClass(name, bytes, 0, bytes.length);
+                bytes = null;
             }
             else if (name != null && !clazz.getName().equals(name))
                 throw new NoClassDefFoundError(name);
             return clazz;
         }
+    }
+}
+
+interface ClassSource {
+    String path();
+    byte[] bytes() throws IOException;
+}
+
+class PathClassSource implements ClassSource {
+    private final Path p;
+
+    public PathClassSource(File f) {
+        this(f.toPath());
+    }
+
+    public PathClassSource(Path p) {
+        this.p = p.toAbsolutePath();
+    }
+
+    @Override
+    public String path() {
+        return p.toString();
+    }
+
+    @Override
+    public byte[] bytes() throws IOException {
+        return Files.readAllBytes(p);
+    }
+}
+
+class CompressedClassSource implements ClassSource {
+    private final ZipEntry entry;
+    private final FunctionThrowsIOException<ZipEntry, InputStream> getInputStream;
+    private final boolean isMr;
+
+    public CompressedClassSource(JarFile jar, ZipEntry entry) throws IOException {
+        this(entry, jar::getInputStream, isMrJar(jar));
+    }
+
+    public CompressedClassSource(ZipEntry entry, FunctionThrowsIOException<ZipEntry, InputStream> getInputStream, boolean isMr) {
+        this.entry = entry;
+        this.getInputStream = getInputStream;
+        this.isMr = isMr;
+    }
+
+    @Override
+    public
+
+    static boolean isMrJar(JarFile jar) throws IOException {
+        return SecureGlobClassLoader.JAVA_VERSION > 8 && Optional.ofNullable(jar.getManifest().getMainAttributes().getValue("Multi-Release"))
+                .map(String::toLowerCase)
+                .map("true"::equals)
+                .orElse(false)
     }
 }
 
