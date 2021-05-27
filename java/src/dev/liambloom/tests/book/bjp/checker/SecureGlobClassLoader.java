@@ -8,6 +8,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
@@ -33,14 +34,11 @@ public final class SecureGlobClassLoader extends ClassLoader {
                         else
                             throw new UserErrorException("Unable to load classes from `" + p + "' because it is not a .class or .jar file");
                     }))
-                    .collect(Collector.of(
-                            TreeMap<String, LazyClass>::new,
-                            (BiConsumerThrowsIOException<TreeMap<String, LazyClass>, ClassSource>)
-                                    ((m, e) -> m.merge(new StringBuilder(e.path()).reverse().toString(), new LazyClass(e.bytes()), (v1, v2) -> v1.markAsDuplicate())),
-                            (m1, m2) -> {
-                                m1.forEach((k, v) -> m2.merge(k, v, (v1, v2) -> v1.markAsDuplicate()));
-                                return m2;
-                            }
+                    .collect(Collectors.toMap(
+                            s -> new StringBuilder(s.path()).reverse().toString(),
+                            (FunctionThrowsIOException<ClassSource, LazyClass>) (s -> new LazyClass(s.bytes())),
+                            (v1, v2) -> v1.markAsDuplicate(),
+                            TreeMap<String, LazyClass>::new
                     ));
         }
         catch (UncheckedIOException e) {

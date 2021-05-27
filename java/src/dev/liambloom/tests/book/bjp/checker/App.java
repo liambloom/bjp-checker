@@ -54,20 +54,13 @@ public class App {
     }
 
     public static void createLogFile(Throwable err) throws IOException {
-        //try {
-            final File log = new File(here
-                    + File.separator + "logs" + File.separator
-                    + DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
-            log.getParentFile().mkdir();
-            log.createNewFile();
-            err.printStackTrace(new PrintStream(log));
-            System.err.println(log);
-//        }
-//        catch (IOException e) {
-//            //throw new UncheckedIOException(e);
-//            // System.err.println("Failed to create logfile");
-//            // ¯\_(ツ)_/¯
-//        }
+        final File log = new File(here
+                + File.separator + "logs" + File.separator
+                + DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
+        log.getParentFile().mkdir();
+        log.createNewFile();
+        err.printStackTrace(new PrintStream(log));
+        System.err.println(log);
     }
 
     public Stream<TestValidationResult> validateTests(String[] glob) throws SAXException, IOException {
