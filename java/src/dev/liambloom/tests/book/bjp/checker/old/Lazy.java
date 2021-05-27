@@ -7,7 +7,7 @@ abstract class Lazy<T> {
 
     protected abstract T createValue();
 
-    public final T get() {
+    public final synchronized T get() {
         if (!isInitialized) {
             value = createValue();
             isInitialized = true;
