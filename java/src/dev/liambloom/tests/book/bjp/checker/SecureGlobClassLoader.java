@@ -7,12 +7,13 @@ import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
+import java.util.stream.Collector;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
 public final class SecureGlobClassLoader extends ClassLoader {
 
-    private final SortedMap<String, LazyClass> classes = new TreeMap<>();
+    private final SortedMap<String, LazyClass> classes;// = Collections.synchronizedSortedMap(new TreeMap<>());
 
     public SecureGlobClassLoader(Glob glob) throws IOException {
         this(glob, getSystemClassLoader());
@@ -21,7 +22,7 @@ public final class SecureGlobClassLoader extends ClassLoader {
     public SecureGlobClassLoader(Glob glob, ClassLoader parent) throws IOException {
         super(parent);
         try {
-            glob.files()
+            classes = glob.files()
                     .map(File::toPath)
                     .map((FunctionThrowsIOException<Path, Path>) Glob::readSymbolicLink)
                     .flatMap((FunctionThrowsIOException<Path, Stream<? extends ClassSource>>) (p -> {
@@ -32,21 +33,25 @@ public final class SecureGlobClassLoader extends ClassLoader {
                         else
                             throw new UserErrorException("Unable to load classes from `" + p + "' because it is not a .class or .jar file");
                     }))
-                    .forEach((ConsumerThrowsIOException<ClassSource>) (s -> classes.merge(new StringBuilder(s.path()).reverse().toString(), new LazyClass(s.bytes()), (v1, v2) -> {
-                        throw new UserErrorException("Duplicate class path " + s.path());
-                    })));
+                    .collect(Collector.of(
+                            TreeMap<String, LazyClass>::new,
+                            (BiConsumerThrowsIOException<TreeMap<String, LazyClass>, ClassSource>)
+                                    ((m, e) -> m.merge(new StringBuilder(e.path()).reverse().toString(), new LazyClass(e.bytes()), (v1, v2) -> v1.markAsDuplicate())),
+                            (m1, m2) -> {
+                                m1.forEach((k, v) -> m2.merge(k, v, (v1, v2) -> v1.markAsDuplicate()));
+                                return m2;
+                            }
+                    ));
         }
         catch (UncheckedIOException e) {
             throw e.getCause();
         }
     }
 
-    public Class<?>[] loadAll() {
-        System.out.println(classes.size());
+    public Class<?>[] loadAllClasses() {
         return classes.values()
                 .stream()
-                .map((FunctionThrowsIOException<LazyClass, Class<?>>) c -> c.get(null))
-                //.peek(System.out::println)
+                .map(c -> c.get(null))
                 .toArray(Class<?>[]::new);
     }
 
@@ -56,18 +61,21 @@ public final class SecureGlobClassLoader extends ClassLoader {
         String from = nameMut.toString();
         nameMut.setCharAt(name.length() - 1, (char) (nameMut.charAt(name.length() - 1) + 1));
         String to = nameMut.toString();
+        Class<?> r = null;
         for (LazyClass clazz : classes.subMap(from, to).values()) {
             try {
-                return clazz.get(name);
+                // Go through all of them just in case there's a duplicate class name
+                r = clazz.get(name);
             }
             catch (NoClassDefFoundError ignored) {}
         }
-        return super.findClass(name);
+        return r == null ? super.findClass(name) : r;
     }
 
     private class LazyClass {
         private Class<?> clazz = null;
         private byte[] bytes;
+        private boolean isDuplicate = false;
 
         public LazyClass(byte[] bytes) {
             this.bytes = bytes;
@@ -76,11 +84,18 @@ public final class SecureGlobClassLoader extends ClassLoader {
         public synchronized Class<?> get(String name) {
             if (clazz == null) {
                 clazz = defineClass(name, bytes, 0, bytes.length);
+                if (isDuplicate)
+                    defineClass(name, bytes, 0, bytes.length);
                 bytes = null;
             }
             else if (name != null && !clazz.getName().equals(name))
                 throw new NoClassDefFoundError(name);
             return clazz;
+        }
+
+        public LazyClass markAsDuplicate() {
+            isDuplicate = true;
+            return this;
         }
     }
 }

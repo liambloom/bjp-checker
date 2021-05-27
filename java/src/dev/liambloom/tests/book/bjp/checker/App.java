@@ -3,18 +3,12 @@ package dev.liambloom.tests.book.bjp.checker;
 import org.xml.sax.SAXException;
 
 import java.io.*;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class App {
@@ -104,7 +98,14 @@ public class App {
     }
 
     public Stream<TestResult> check(Glob glob) throws IOException {
-        for (Class<?> c : new SecureGlobClassLoader(glob).loadAll()) {
+        Class<?>[] classes;
+        try {
+            classes = new SecureGlobClassLoader(glob).loadAllClasses();
+        }
+        catch (LinkageError e) {
+            throw new UserErrorException(e);
+        }
+        for (Class<?> c : classes) {
             System.out.println(c);
         }
         return null; // TODO
