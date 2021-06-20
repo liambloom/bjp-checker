@@ -46,11 +46,11 @@ public final class SecureGlobClassLoader extends ClassLoader {
         }
     }
 
-    public Class<?>[] loadAllClasses() {
+    public Stream<Class<?>> loadAllClasses() {
         return classes.values()
                 .stream()
-                .map(c -> c.get(null))
-                .toArray(Class<?>[]::new);
+                .map(c -> c.get(null));
+                //.toArray(Class<?>[]::new);
     }
 
     @Override

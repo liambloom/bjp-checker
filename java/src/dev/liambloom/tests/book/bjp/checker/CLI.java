@@ -31,7 +31,7 @@ public class CLI {
                         System.out.println(App.VERSION);
                         break;
                     case "check":
-                        new App(logger).check(new Glob(Arrays.copyOfRange(args, 1, args.length), false, logger));
+                        new App(logger).check(new CheckArgs(args, 1, logger));
                         //throw new UserErrorException("Command `check' not supported in current checker version");
                         break;
                     case "submit":

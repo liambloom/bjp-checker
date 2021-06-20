@@ -3,12 +3,27 @@ package dev.liambloom.tests.book.bjp.checker;
 import org.w3c.dom.Element;
 
 import java.io.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.List;
 import java.util.regex.Pattern;
 
 public class Test {
     public static final Class<?> INACCESSIBLE_OBJECT_EXCEPTION_CLASS;
+
+    public static class Target {
+        private final List<AnnotatedElement> targets;
+        private final Class<? extends Annotation> annotationType;
+        private final int num;
+
+        public Target(List<AnnotatedElement> targets, Class<? extends Annotation> annotationType, int num) {
+            this.targets = targets;
+            this.annotationType = annotationType;
+            this.num = num;
+        }
+    }
 
     static {
         Class<?> temp;
@@ -36,7 +51,9 @@ public class Test {
     //protected Map<Matcher, Object> pre;
     //protected Map<Matcher, Object> post;
 
-    private Test() {}
+    //private Test() {}
+
+    public Test()
 
     /*public final class Builder {
         private Test test = new Test();

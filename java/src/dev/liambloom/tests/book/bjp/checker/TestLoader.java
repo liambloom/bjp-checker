@@ -17,7 +17,7 @@ public class TestLoader {
     public static final String DEFAULT_TEST = "bjp3";
     private final Validator validator;
 
-    TestLoader(Validator validator) {
+    private TestLoader(Validator validator) {
         this.validator = validator;
     }
 

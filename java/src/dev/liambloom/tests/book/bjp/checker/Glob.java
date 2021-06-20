@@ -18,14 +18,19 @@ public class Glob {
     final boolean isTestGlob;
     final Logger logger;
 
-    public Glob(String[] s, boolean isTestGlob, Logger logger) throws IOException {
-        if (s.length == 0)
+    public Glob(Collection<String> s, boolean isTestGlob, Logger logger) throws IOException {
+        if (s.size() == 0)
             throw new UserErrorException("No glob found. For more information, run `check glob --help'");
         this.isTestGlob = isTestGlob;
         this.logger = logger;
-        pieces = new Piece[s.length];
-        for (int i = 0; i < s.length; i++)
-            pieces[i] = new Piece(s[i]);
+        Iterator<String> iter = s.iterator();
+        pieces = new Piece[s.size()];
+        for (int i = 0; iter.hasNext(); i++)
+            pieces[i] = new Piece(iter.next());
+    }
+
+    public Glob(String[] s, boolean isTestGlob, Logger logger) throws IOException {
+        this(Arrays.asList(s), isTestGlob, logger);
     }
 
     private class Piece {
