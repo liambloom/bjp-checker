@@ -5,18 +5,26 @@ import dev.liambloom.tests.book.bjp.Exercise;
 import dev.liambloom.tests.book.bjp.ProgrammingProject;
 import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+import javax.xml.validation.Validator;
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,6 +49,13 @@ public class App {
             }
         }
         return here;
+    }
+
+    static Schema loadTestSchema() throws SAXException {
+        SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1");
+        factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
+        return factory.newSchema(
+                new StreamSource(App.class.getResourceAsStream("/book-tests.xsd")));
     }
 
     private static File testBase = null;
@@ -80,17 +95,30 @@ public class App {
 
     public Stream<TestValidationResult> validateTests(Glob glob) throws SAXException, IOException {
         try {
-            final TestLoader.Factory loaderFactory = new TestLoader.Factory();
-            final Queue<TestLoader> queue = new ConcurrentLinkedQueue<>();
+            //final TestLoader.Factory loaderFactory = new TestLoader.Factory();
+            final Schema schema = loadTestSchema();
+            final Queue<Validator> queue = new ConcurrentLinkedQueue<>();
 
             return glob.files()
                     .map((FunctionThrowsIOException<File, TestValidationResult>) (file -> {
-                        TestLoader loader = Optional.ofNullable(queue.poll()).orElseGet(loaderFactory::newTestLoader);
+                        Path path = Glob.readSymbolicLink(file.toPath());
+                        if (!path.toString().endsWith(".xml"))
+                            throw new UserErrorException(String.format("Test must be of type xml, but `%s' is not", path));
+                        Source source = new StreamSource(path.toFile());
+                        Validator v = queue.poll();
+                        if (v == null)
+                            v = schema.newValidator();
+                        else
+                            v.reset();
                         try {
-                            return loader.validate(file);
+                            v.validate(source);
+                            return new TestValidationResult(file, TestValidationResult.Variant.VALID);
+                        }
+                        catch (SAXException e) {
+                            throw new UserErrorException(e);
                         }
                         finally {
-                            queue.add(loader);
+                            queue.add(v);
                         }
                     }));
         }
@@ -99,10 +127,11 @@ public class App {
         }
     }
 
-    public Stream<TestResult> check(CheckArgs args) throws IOException, NoSuchMethodException {
+    public Stream<TestResult> check(CheckArgs args) throws IOException, NoSuchMethodException, SAXException, ParserConfigurationException {
         List<Class<?>> classes;
+        int chapter;
         try {
-            AtomicInteger chapter = new AtomicInteger(-1);
+            AtomicInteger detectedChapter = new AtomicInteger(-1);
             classes = new SecureGlobClassLoader(args.glob()).loadAllClasses()
                     .filter(clazz -> {
                     Chapter ch = clazz.getAnnotation(Chapter.class);
@@ -113,54 +142,30 @@ public class App {
                         else if (args.chapter().isPresent()) {
                             return ch.value() == args.chapter().getAsInt();
                         }
-                        else if (!chapter.compareAndSet(-1, ch.value()))
-                            throw new UserErrorException("Cannot auto detect chapter, as classes belonging to chapters " + ch.value() + " and " + chapter + " were found");
+                        else if (!detectedChapter.compareAndSet(-1, ch.value()))
+                            throw new UserErrorException("Cannot auto detect chapter, as classes belonging to chapters " + ch.value() + " and " + detectedChapter + " were found");
                         return true;
                     })
                     .collect(Collectors.toList());
+            chapter = args.chapter().orElseGet(detectedChapter::get);
         }
         catch (LinkageError e) {
             throw new UserErrorException(e);
         }
+
+
+
 
         Stream.of(new CheckerTargetGroup(Exercise.class, args.exercises()), new CheckerTargetGroup(ProgrammingProject.class, args.programmingProjects()))
                 .map(e -> e.addPotentialTargets(classes.iterator()))
                 .flatMap(CheckerTargetGroup::tests)
                 ;
 
-        List<AnnotatedElement>[] exercises = getSynchronizedListArray(args.exercises());
-        List<AnnotatedElement>[] programmingProjects = getSynchronizedListArray(args.programmingProjects());
-
-        int chapter = -1;
-        for (Class<?> clazz : classes) {
-
-            for (AnnotatedElement[] es : new AnnotatedElement[][]{{ clazz }, clazz.getConstructors(), clazz.getMethods(), clazz.getFields()}) {
-                for (AnnotatedElement e : es) {
-                    for (Exercise ex : e.getAnnotationsByType(Exercise.class)){
-                        if (args.exercises()[ex.value() - 1])
-                            exercises[ex.value() - 1].add(e);
-                    }
-                    for (ProgrammingProject pp : e.getAnnotationsByType(ProgrammingProject.class)) {
-                        if (args.programmingProjects()[pp.value() - 1])
-                            programmingProjects[pp.value() - 1].add(e);
-                    }
-                }
-            }
-        }
-
-        for (int i = 0; i < exercises.length; i++) {
-            if (exercises[i] != null && exercises[i].isEmpty())
-                throw new UserErrorException("Unable to find exercise " + i);
-        }
-        for (int i = 0; i < exercises.length; i++) {
-            if (exercises[i] != null && exercises[i].isEmpty())
-                throw new UserErrorException("Unable to find exercise " + i);
-        }
-
         return null; // TODO
     }
 
     class CheckerTargetGroup {
+        private final Pattern LOOKAHEAD_CAPITAL = Pattern.compile("(?=[A-Z])");
         private final List<AnnotatedElement>[] targets;
         private final Class<? extends Annotation> annotationType;
         private final Function<Annotation, Integer> valueOf;
@@ -206,8 +211,11 @@ public class App {
         public Stream<Test.Target> tests() {
             Stream.Builder<Test.Target> builder = Stream.builder();
             for (int i = 0; i < targets.length; i++) {
-                if (targets[i] != null)
+                if (targets[i] != null){
+                    if (targets[i].isEmpty())
+                        throw new UserErrorException("Unable to find " + LOOKAHEAD_CAPITAL.matcher(annotationType.getSimpleName()).replaceAll(" ").toLowerCase() + i);
                     builder.add(new Test.Target(targets[i], annotationType, i));
+                }
             }
             return builder.build();
         }

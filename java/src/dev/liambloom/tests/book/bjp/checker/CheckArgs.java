@@ -1,13 +1,13 @@
 package dev.liambloom.tests.book.bjp.checker;
 
+import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
-import javax.xml.transform.Source;
-import java.io.File;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 /**
  * This represents the arguments for the checking functionality of
@@ -22,7 +22,7 @@ public class CheckArgs {
     private OptionalInt chapter = OptionalInt.empty();
     private boolean[] exercises = null;
     private boolean[] programmingProjects;
-    private Source tests;
+    private Document tests;
     private Glob glob;
 
     /**
@@ -32,7 +32,7 @@ public class CheckArgs {
      * @param args The string arguments
      * @param i The position of the first argument
      */
-    public CheckArgs(String[] args, int i, Logger logger) throws IOException, SAXException {
+    public CheckArgs(String[] args, int i, Logger logger) throws IOException, SAXException, ParserConfigurationException {
         List<String> globArgs = new LinkedList<>();
         String tests = null;
 
@@ -83,7 +83,10 @@ public class CheckArgs {
         if (tests == null)
             tests = "bjp3";
 
-        this.tests = new TestLoader.Factory().newTestLoader().load(new Glob(Collections.singleton(tests), true, logger).single());
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setSchema(App.loadTestSchema());
+        Document document = dbf.newDocumentBuilder().parse(new Glob(Collections.singleton(tests), true, logger).single());
+
         glob = new Glob(globArgs, false, logger);
     }
 
@@ -131,7 +134,7 @@ public class CheckArgs {
         return glob;
     }
 
-    public Source tests() {
+    public Document tests() {
         return tests;
     }
 }
