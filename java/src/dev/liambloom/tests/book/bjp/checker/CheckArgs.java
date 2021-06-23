@@ -5,6 +5,8 @@ import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -85,7 +87,7 @@ public class CheckArgs {
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setSchema(App.loadTestSchema());
-        Document document = dbf.newDocumentBuilder().parse(new Glob(Collections.singleton(tests), true, logger).single());
+        this.tests = dbf.newDocumentBuilder().parse(new Glob(Collections.singleton(tests), true, logger).single());
 
         glob = new Glob(globArgs, false, logger);
     }

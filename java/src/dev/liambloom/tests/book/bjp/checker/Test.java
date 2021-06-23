@@ -1,17 +1,23 @@
 package dev.liambloom.tests.book.bjp.checker;
 
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 public class Test {
     public static final Class<?> INACCESSIBLE_OBJECT_EXCEPTION_CLASS;
+    private static final Pattern LOOKAHEAD_CAPITAL = Pattern.compile("(?=(?<!^)[A-Z])");
 
     public static class Target {
         private final List<AnnotatedElement> targets;
@@ -22,6 +28,18 @@ public class Test {
             this.targets = targets;
             this.annotationType = annotationType;
             this.num = num;
+        }
+
+        public Test getTest(Node tests, XPath xpath) {
+            char[] testType = annotationType.getSimpleName().toCharArray();
+            testType[0] = Character.toLowerCase(testType[0]);
+            try {
+                return new Test(targets,
+                        (Node) Optional.ofNullable(xpath.evaluate(new String(testType) + "[@num='" + num + "']", tests, XPathConstants.NODE))
+                                .orElseThrow(() -> new UserErrorException("Unable to find tests for " + toSpacedCase(annotationType.getSimpleName()) + num)));
+            } catch (XPathExpressionException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -53,7 +71,13 @@ public class Test {
 
     //private Test() {}
 
-    //public Test()
+    public Test(List<AnnotatedElement> targets, Node tests) {
+
+    }
+
+    public TestResult run() {
+
+    }
 
     /*public final class Builder {
         private Test test = new Test();
@@ -141,6 +165,10 @@ public class Test {
 
     private static String normalizeLineSeparators(String s) {
         return LINE_SEPARATOR.matcher(s).replaceAll(System.lineSeparator());
+    }
+
+    public static String toSpacedCase(String s) {
+        return LOOKAHEAD_CAPITAL.matcher(s).replaceAll(" ").toLowerCase();
     }
 
     /*public TestResult test(Class<?> clazz) {

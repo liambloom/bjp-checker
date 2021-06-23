@@ -3,6 +3,8 @@ package dev.liambloom.tests.book.bjp.checker;
 import dev.liambloom.tests.book.bjp.Chapter;
 import dev.liambloom.tests.book.bjp.Exercise;
 import dev.liambloom.tests.book.bjp.ProgrammingProject;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -11,6 +13,10 @@ import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
@@ -127,7 +133,7 @@ public class App {
         }
     }
 
-    public Stream<TestResult> check(CheckArgs args) throws IOException, NoSuchMethodException, SAXException, ParserConfigurationException {
+    public Stream<TestResult> check(CheckArgs args) throws IOException, NoSuchMethodException, SAXException, ParserConfigurationException, XPathExpressionException {
         List<Class<?>> classes;
         int chapter;
         try {
@@ -153,19 +159,30 @@ public class App {
             throw new UserErrorException(e);
         }
 
+        Document document = args.tests();
+        XPathFactory xpf = XPathFactory.newInstance();
+        XPath xpath1 = xpf.newXPath();
+        Node ch = (Node) xpath1.evaluate("/book/chapter[@num='" + chapter  + "']", document, XPathConstants.NODE);
+        Queue<XPath> xpaths = new ConcurrentLinkedQueue<>();
+        xpaths.add(xpath1);
 
 
-
-        Stream.of(new CheckerTargetGroup(Exercise.class, args.exercises()), new CheckerTargetGroup(ProgrammingProject.class, args.programmingProjects()))
+        return Stream.of(new CheckerTargetGroup(Exercise.class, args.exercises()), new CheckerTargetGroup(ProgrammingProject.class, args.programmingProjects()))
                 .map(e -> e.addPotentialTargets(classes.iterator()))
                 .flatMap(CheckerTargetGroup::tests)
-                ;
-
-        return null; // TODO
+                .map(d -> {
+                    XPath xpath = Optional.ofNullable(xpaths.poll()).orElseGet(xpf::newXPath);
+                    try {
+                        return d.getTest(ch, xpath);
+                    }
+                    finally {
+                        xpaths.add(xpath);
+                    }
+                })
+                .map(Test::run);
     }
 
-    class CheckerTargetGroup {
-        private final Pattern LOOKAHEAD_CAPITAL = Pattern.compile("(?=[A-Z])");
+    static class CheckerTargetGroup {
         private final List<AnnotatedElement>[] targets;
         private final Class<? extends Annotation> annotationType;
         private final Function<Annotation, Integer> valueOf;
@@ -213,7 +230,7 @@ public class App {
             for (int i = 0; i < targets.length; i++) {
                 if (targets[i] != null){
                     if (targets[i].isEmpty())
-                        throw new UserErrorException("Unable to find " + LOOKAHEAD_CAPITAL.matcher(annotationType.getSimpleName()).replaceAll(" ").toLowerCase() + i);
+                        throw new UserErrorException("Unable to find " + Test.toSpacedCase(annotationType.getSimpleName()) + i);
                     builder.add(new Test.Target(targets[i], annotationType, i));
                 }
             }
