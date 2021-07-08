@@ -1,15 +1,2 @@
-docs/
 out/
-target/
-build/logs/
-java/dev/liambloom/tests/book/bjp/checker/old/
-*.pdb
-build/bin/debug
-build-bins.cmd
-clear-logs.cmd
-rust/Cargo.lock
-
-
-# Added by cargo
-
-/target
+lib/
