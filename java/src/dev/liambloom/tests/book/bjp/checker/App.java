@@ -84,13 +84,13 @@ public class App {
     }
 
     public static void createLogFile(Throwable err) throws IOException {
-        final File log = new File(here
+        final File log = new File(here()
                 + File.separator + "logs" + File.separator
                 + DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
         log.getParentFile().mkdir();
         log.createNewFile();
         err.printStackTrace(new PrintStream(log));
-        System.err.println(log);
+        // System.err.println(log); // I can't remember if this was just for debugging
     }
 
     public Stream<TestValidationResult> validateTests(String[] glob) throws SAXException, IOException {
@@ -244,7 +244,7 @@ public class App {
     // it prevents the JVM from trying to parse globs.
     public static void cleanArgs(String[] args) {
         for (int i = 0; i < args.length; i++)
-            if (args[i].charAt(args[i].length() - 1) == '\t')
+            if (args[i].charAt(args[i].length() - 1) == (char) 31)
                 args[i] = args[i].substring(0, args[i].length() - 1);
     }
 }

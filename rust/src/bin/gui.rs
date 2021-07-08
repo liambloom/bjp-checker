@@ -2,7 +2,7 @@ use bjp_tests::*;
 use native_dialog::{MessageDialog, MessageType};
 
 fn main() {
-    match JRE::JavaWindowed.run("dev.liambloom.tests.book.bjp.checker.GUI") {
+    match JRE::JavaWindowed.run("dev.liambloom.tests.book.bjp.checker.GUIWrapper") {
         Ok(_) => {}
         Err(e @ ErrorKind::FailedToSpawn(_)) => {
             if let Err(e) = MessageDialog::new()

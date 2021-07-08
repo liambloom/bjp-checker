@@ -13,7 +13,7 @@ exit /b
 
 :lib
 
-javac -sourcepath java\src -d out\production\java -source 8 -target 8 -cp build\lib\* -bootclasspath "C:\Program Files\Java\jdk1.8.0_281\jre\lib\rt.jar" java\src\dev\liambloom\tests\book\bjp\*.java java\src\dev\liambloom\tests\book\bjp\checker\*.java
+javac -sourcepath java\src -d out\production\java -source 8 -target 8 -cp build\lib\* -bootclasspath "C:\Program Files\Java\jdk1.8.0_281\jre\lib\rt.jar;C:\Program Files\Java\jdk1.8.0_281\jre\lib\ext\jfxrt.jar" java\src\dev\liambloom\tests\book\bjp\*.java java\src\dev\liambloom\tests\book\bjp\checker\*.java
 xcopy /q /y /s java\rsc\* out\production\java >nul
 jar cf build\lib\checker.jar -C out\production\java .
 exit /b

@@ -5,7 +5,8 @@ public enum Color {
     GREEN("32"),
     YELLOW("33"),
     CYAN("36"),
-    GRAY("38;5;8");
+    GRAY("38;5;8"),
+    RESET("0");
 
     public final String ansi;
 

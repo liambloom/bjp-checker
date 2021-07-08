@@ -54,8 +54,6 @@ public class Test {
         INACCESSIBLE_OBJECT_EXCEPTION_CLASS = temp;
     }
 
-    protected boolean type;
-    protected int num;
     protected InputStream sysIn = new InputStream() { // Or from xml
         @Override
         public int read() throws IOException {
@@ -76,7 +74,7 @@ public class Test {
     }
 
     public TestResult run() {
-
+        return null; // TODO
     }
 
     /*public final class Builder {
@@ -104,16 +102,6 @@ public class Test {
 
         }
     }*/
-
-    public static Test c1e1() {
-        Test t = new Test();
-        t.prints = "//////////////////////\n" +
-                "|| Victory is mine! ||\n" +
-                "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\";
-        t.type = TestResult.EX;
-        t.num = 1;
-        return t;
-    }
 
     public TestResult test(Method m) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -149,9 +137,9 @@ public class Test {
         }
         catch (Throwable e) {
             if (throwsErr == null || !throwsErr.isInstance(e))
-                return new TestResult(this.type, this.num, TestResult.Variant.INCORRECT, e, out);
+                return null; // TODO new TestResult(this.type, this.num, TestResult.Variant.INCORRECT, e, out);
             else
-                return new TestResult(this.type, this.num, TestResult.Variant.CORRECT);
+                return null;// TODO new TestResult(this.type, this.num, TestResult.Variant.CORRECT);
         }
         finally {
             System.setIn(defaultIn);

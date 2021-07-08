@@ -6,21 +6,18 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 
 public class TestResult extends Result {
-    public static final boolean EX = false;
-    public static final boolean PP = true;
-
-    public final boolean type;
+    public final Checked.Type type;
     public final int num;
     public final Throwable error;
     public final ByteArrayOutputStream out;
 
-    public TestResult(boolean type, int num, Variant variant) {
+    public TestResult(Checked.Type type, int num, Variant variant) {
         this(type, num, variant, null, null);
     }
 
     // TODO: This doesn't work with incorrect prints, only with thrown errors
-    public TestResult(boolean type, int num, Variant variant, Throwable error, ByteArrayOutputStream out) {
-        super((type == EX ? "Exercise" : "Programming Project") + " " + num, variant);
+    public TestResult(Checked.Type type, int num, Variant variant, Throwable error, ByteArrayOutputStream out) {
+        super(type + " " + num, variant);
         this.type = type;
         this.num = num;
         this.error = error;

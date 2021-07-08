@@ -44,7 +44,7 @@ public class CLI {
                         throw new UserErrorException("Command `results' not supported in current checker version");
                         // break;*/
                     case "gui":
-                        GUI.main(Arrays.copyOfRange(args, 1, args.length));
+                        GUIWrapper.main(Arrays.copyOfRange(args, 1, args.length));
                         break;
                     default:
                         throw new UserErrorException("Command `" + args[0] + "' not recognized. See `checker --help' for a list of commands.");
@@ -71,16 +71,9 @@ public class CLI {
     }
 
     private static void printHelp(String arg) throws IOException {
-        String name;
-        switch (arg) {
-            case "checker":
-                name = arg;
-                break;
-            default:
-                throw new UserErrorException("Unable to find help for `" + arg + "'");
-        }
-        InputStream stream = CLI.class.getResourceAsStream("/help/" + name + ".txt");
-        assert stream != null;
+        InputStream stream;
+        if (arg.contains("/") || (stream = CLI.class.getResourceAsStream("/help/" + arg + ".txt")) == null)
+            throw new UserErrorException("Unable to find help for `" + arg + "'");
         int next;
         while ((next = stream.read()) != -1)
             System.out.write(next);

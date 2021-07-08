@@ -21,7 +21,7 @@ impl JRE {
             .arg("-cp")
             .arg(here)
             .arg(main)
-            .args(args().skip(1).map(|mut s| { s.push('\t'); s }))
+            .args(args().skip(1).map(|mut s| { s.push(31 as char); s }))
             .spawn()
             .map_err(|e| ErrorKind::FailedToSpawn(e))?
             .wait()?;
