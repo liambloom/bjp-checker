@@ -9,6 +9,7 @@ import javax.xml.xpath.XPathExpressionException;
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
@@ -16,7 +17,6 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 public class Test {
-    public static final Class<?> INACCESSIBLE_OBJECT_EXCEPTION_CLASS;
     private static final Pattern LOOKAHEAD_CAPITAL = Pattern.compile("(?=(?<!^)[A-Z])");
 
     public static class Target {
@@ -41,17 +41,6 @@ public class Test {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    static {
-        Class<?> temp;
-        try {
-            temp = Test.class.getClassLoader().loadClass("java.lang.reflect.InaccessibleObjectException");
-        }
-        catch (ClassNotFoundException e) {
-            temp = Void.class;
-        }
-        INACCESSIBLE_OBJECT_EXCEPTION_CLASS = temp;
     }
 
     protected InputStream sysIn = new InputStream() { // Or from xml
@@ -123,11 +112,8 @@ public class Test {
         try {
             m.setAccessible(true);
         }
-        catch (RuntimeException e) {
-            if (INACCESSIBLE_OBJECT_EXCEPTION_CLASS.isInstance(e)) {}
-                //TODO: return new TestResult(this.type, this.num, ); // Method inaccessible
-            else
-                throw e;
+        catch (InaccessibleObjectException e) {
+            //TODO: return new TestResult(this.type, this.num, ); // Method inaccessible
         }
         try {
             Object r = m.invoke(target, args);

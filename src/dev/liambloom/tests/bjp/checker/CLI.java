@@ -54,6 +54,7 @@ public class CLI {
         }
         catch (UserErrorException e) {
             logger.error(e.getMessage());
+            System.exit(1);
             //e.printStackTrace();
         }
         catch (Throwable e) {
@@ -65,6 +66,8 @@ public class CLI {
             catch (IOException ignored) {
                 logger.error("Failed to create log file");
             }
+
+            System.exit(1);
         }
         finally {
             logger.close();
