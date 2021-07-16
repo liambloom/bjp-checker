@@ -4,16 +4,14 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.*;
+import javafx.event.Event;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.SVGPath;
@@ -61,17 +59,17 @@ public class GUI extends Application {
         testList.minWidthProperty().bind(sidebarWidth);
         testList.maxWidthProperty().bind(sidebarWidth);
         testTitle.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        testTitle.fillProperty().bind(ColorScheme.getGrayProperty(35));
+        testTitle.fillProperty().bind(ColorScheme.getGrayProperty(65));
         VBox.setMargin(testTitle, new Insets(5));
         //testTitle.minWidthProperty().bind(testList.widthProperty());
         //testTitle.maxWidthProperty().bind(testList.widthProperty());
         testList.getChildren().add(testTitle);
         testList.backgroundProperty().bind(new ObjectBinding<>() {
-            { bind(ColorScheme.getGrayProperty(90)); }
+            { bind(ColorScheme.getGrayProperty(10)); }
 
             @Override
             protected Background computeValue() {
-                return new Background(new BackgroundFill(ColorScheme.getGrayProperty(90).get(), CornerRadii.EMPTY, Insets.EMPTY));
+                return new Background(new BackgroundFill(ColorScheme.getGrayProperty(10).get(), CornerRadii.EMPTY, Insets.EMPTY));
             }
         });
         testList.minHeightProperty().bind(pane.heightProperty());
@@ -156,12 +154,7 @@ public class GUI extends Application {
         //GridPane.setHalignment(chooserDisplay, HPos.CENTER);
         //GridPane.setValignment(chooserDisplay, VPos.CENTER);
         chooserDisplay.setAlignment(Pos.CENTER);
-        chooserDisplay.setOnMouseClicked(e -> {
-            // There is no cross platform way to select files OR folders
-            FileChooser chooser = new FileChooser();
-            chooser.setTitle("Open Project");
-            chooser.showOpenMultipleDialog(stage);
-        });
+        chooserDisplay.setOnMouseClicked(e -> openProject(stage));
 
         //chooserDisplay.setBorder(new Border(new BorderStroke(Color.RED, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
         //ColumnConstraints mainColumn = new ColumnConstraints();
@@ -178,11 +171,36 @@ public class GUI extends Application {
         //Platform.runLater(() -> menuBar.setUseSystemMenuBar(true));
         menuBar.setUseSystemMenuBar(true); // This only works on "supported platforms," which does not include windows
         System.out.println(menuBar.isUseSystemMenuBar());
-        Menu menu = new Menu("File");
-        menuBar.getMenus().add(menu);
-        menu.getItems().addAll(new MenuItem("Foo"), new MenuItem("Bar"));
+        Menu fileMenu = new Menu("File");
+        menuBar.getMenus().add(fileMenu);
+        MenuItem openProject = new MenuItem("Open Project");
+        openProject.setOnAction(e -> openProject(stage));
+        MenuItem selectFile = new MenuItem("Open File");
+        Menu openRecent = new Menu("Open Recent");
+        MenuItem addFile = new MenuItem("Add File to Project");
+        //SeparatorMenuItem
+        Menu settingsMenuItem = new Menu("Settings");
+        MenuItem colorScheme = new MenuItem("Color Scheme");
+        settingsMenuItem.getItems().add(colorScheme);
+        fileMenu.getItems().addAll(openProject, selectFile, openRecent, addFile, new SeparatorMenuItem(), settingsMenuItem);
         pane.add(menuBar, 0, 0);
         GridPane.setColumnSpan(menuBar, pane.getColumnCount());
+
+//        Pane settingPane = new Pane();
+//        Scene settings = new Scene(settingPane);
+//
+//        VBox settingsContent = new VBox();
+//        settingPane.getChildren().add(settingsContent);
+//        settingsContent.getChildren().addAll(new Text("Foo"), new Text("FooBar"));
+//        settingsContent.setAlignment(Pos.CENTER);
+
+        settingsMenuItem.setOnAction(e -> {
+//            double width = stage.getWidth();
+//            double height = stage.getHeight();
+//            stage.setScene(settings);
+//            stage.setWidth(width);
+//            stage.setHeight(height);
+        });
 
         System.out.println(pane.getRowCount());
 
@@ -201,5 +219,12 @@ public class GUI extends Application {
         stage.show();
 
         //System.out.printf("min: %f, max: %f, pref: %f, actual: %f", folderImagePane.getMinWidth(), folderImagePane.getMaxWidth(), folderImagePane.getPrefWidth(), folderImagePane.getWidth());
+    }
+
+    private void openProject(Stage stage) {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle("Open Project");
+        chooser.showDialog(stage);
+        // TODO
     }
 }

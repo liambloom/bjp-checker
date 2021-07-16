@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class Glob {
+public class Glob implements TargetFiles {
     private final Piece[] pieces;
     final boolean isTestGlob;
     final Logger logger;
@@ -256,6 +256,7 @@ public class Glob {
         }
     }
 
+    @Override
     public Stream<File> files() throws IOException {
         try {
             return Arrays.stream(pieces)
@@ -271,6 +272,7 @@ public class Glob {
         }
     }
 
+    @Override
     public File single() throws IOException {
         return files().collect(Collectors.collectingAndThen(Collectors.toList(),
             list -> {

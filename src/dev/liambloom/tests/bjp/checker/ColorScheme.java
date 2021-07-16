@@ -3,6 +3,7 @@ package dev.liambloom.tests.bjp.checker;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.paint.Color;
 
 import java.io.IOException;
@@ -11,10 +12,17 @@ import java.util.function.Function;
 import java.util.prefs.Preferences;
 
 public abstract class ColorScheme {
-    private static ColorScheme scheme = null;
-    private static final ReadOnlyObjectWrapper<Color> background = new ReadOnlyObjectWrapper<>();
-    private static final ReadOnlyObjectWrapper<Color> foreground = new ReadOnlyObjectWrapper<>();
-    private static final ReadOnlyObjectWrapper<Function<Integer, Color>> gray = new ReadOnlyObjectWrapper<>();
+    private static final SimpleObjectProperty<ColorScheme> scheme = new SimpleObjectProperty<>();
+
+    /**
+     * Grays is an array of lazily instantiated object bindings. Each binding
+     * corresponds to a shade of gray, calculated on a gradient based on the color
+     * scheme, such that gray 0 is the background color and gray 100 is the
+     * foreground color
+     */
+    @SuppressWarnings("unchecked")
+    private static final ObjectBinding<Color>[] grays = (ObjectBinding<Color>[]) new ObjectBinding[101];
+
     private static final Preferences prefs = Preferences.userNodeForPackage(ColorScheme.class);
 
     static {
@@ -31,21 +39,19 @@ public abstract class ColorScheme {
     }
 
     public static ColorScheme get() {
-        return scheme;
+        return scheme.get();
     }
 
     public static void set(ColorScheme scheme) {
-        if (ColorScheme.scheme == null) {
-            if (scheme == null)
+        if (scheme == null) {
+            if (ColorScheme.scheme.get() == null)
                 scheme = new LightColorScheme();
+            else
+                throw new NullPointerException("scheme may not be null");
         }
-        else {
-            prefs.put("colorScheme", scheme.getClass().getName());
-        }
-        ColorScheme.scheme = scheme;
-        background.set(scheme.getBackground());
-        foreground.set(scheme.getForeground());
-        gray.set(scheme::getGray);
+
+        prefs.put("colorScheme", scheme.getClass().getName());
+        ColorScheme.scheme.set(scheme);
     }
 
     public static void set(String scheme) throws ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException {
@@ -57,34 +63,42 @@ public abstract class ColorScheme {
         }
     }
 
-    // I can't decide if I want to make these two methods final
-    public Color getBackground() {
-        return getGray(100);
+    public abstract Color getBackground();
+    public abstract Color getForeground();
+
+
+    public static ObjectBinding<Color> getBackgroundProperty() {
+        return getGrayProperty(0);
     }
 
-    public Color getForeground() {
-        return getGray(0);
-    }
-
-    public abstract Color getGray(int brightness);
-
-
-    public static ReadOnlyObjectProperty<Color> getBackgroundProperty() {
-        return background.getReadOnlyProperty();
-    }
-
-    public static ReadOnlyObjectProperty<Color> getForegroundProperty() {
-        return foreground.getReadOnlyProperty();
+    public static ObjectBinding<Color> getForegroundProperty() {
+        return getGrayProperty(100);
     }
 
     public static ObjectBinding<Color> getGrayProperty(int brightness) {
-        return new ObjectBinding<>() {
-            { bind(gray); }
+        if (grays[brightness] == null) {
+            grays[brightness] = new ObjectBinding<>() {
+                { bind(scheme); }
 
-            @Override
-            protected Color computeValue() {
-                return gray.get().apply(brightness);
-            }
-        };
+                @Override
+                protected Color computeValue() {
+                    final ColorScheme s = scheme.get();
+                    final Color fg = s.getForeground();
+                    final Color bg = s.getBackground();
+                    final double r = brightness * 0.01;
+
+                    Color c = new Color(
+                            r * (fg.getRed() - bg.getRed()) + bg.getRed(),
+                            r * (fg.getGreen() - bg.getGreen()) + bg.getGreen(),
+                            r * (fg.getBlue() - bg.getBlue()) + bg.getBlue(),
+                            r * (fg.getOpacity() - bg.getOpacity()) + bg.getOpacity()
+                    );
+
+                    return c;
+                }
+            };
+        }
+
+        return grays[brightness];
     }
 }
