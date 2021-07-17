@@ -24,12 +24,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,6 +42,7 @@ public class App {
      * The location of this application's files. The parent folder of "lib" and "bin"
      */
     private static String here = null;
+    private static Preferences prefs = null;
 
     public static String here() {
         if (here == null) {
@@ -54,6 +57,12 @@ public class App {
             }
         }
         return here;
+    }
+
+    public static Preferences prefs() {
+        if (prefs == null)
+            prefs = Preferences.userNodeForPackage(GUI.class);
+        return prefs;
     }
 
     static Schema loadTestSchema() throws SAXException {
@@ -246,4 +255,42 @@ public class App {
             if (args[i].charAt(args[i].length() - 1) == (char) 31)
                 args[i] = args[i].substring(0, args[i].length() - 1);
     }
+
+    /*private enum OS {
+        Windows(System.getenv("PROGRAMDATA") + "\\BJP Checker", System.getenv("APPDATA") + "\\BJP Checker"),
+        MacOS("TODO", "TODO"),
+        Linux("TODO", "~/.checkerrc"),
+        Solaris("TODO", "TODO"),
+        Other("TODO", "TODO");
+
+        private final Path global;
+        private final Path local;
+
+        OS(String global, String local) {
+            this.global = Paths.get(global);
+            this.local = Paths.get(local);
+        }
+
+        public Path getGlobalStorage() {
+            return global;
+        }
+
+        public Path getLocalStorage() {
+            return local;
+        }
+    }
+
+    static OS getOS() {
+        String os = System.getProperty("os.name");
+        if (os.contains("mac") || os.contains("darwin"))
+            return OS.MacOS;
+        else if (os.contains("win"))
+            return OS.Windows;
+        else if (os.contains("nix") || os.contains("nux") || os.contains("aix"))
+            return OS.Linux;
+        else if (os.contains("sunos"))
+            return OS.Solaris;
+        else
+            return OS.Other;
+    }*/
 }

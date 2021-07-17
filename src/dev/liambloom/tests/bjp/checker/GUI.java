@@ -26,6 +26,9 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.scene.paint.Color;
 
+import java.util.Iterator;
+import java.util.prefs.Preferences;
+
 public class GUI extends Application {
     public static void main(String[] args) {
         App.cleanArgs(args);
@@ -33,6 +36,7 @@ public class GUI extends Application {
     }
 
     private static final double SQRT3 = Math.sqrt(3);
+    private final SimpleBooleanProperty isProjectOpen = new SimpleBooleanProperty(false);
 
     @Override
     public void start(Stage stage) {
@@ -177,11 +181,16 @@ public class GUI extends Application {
         openProject.setOnAction(e -> openProject(stage));
         MenuItem selectFile = new MenuItem("Open File");
         Menu openRecent = new Menu("Open Recent");
+        openRecent.setDisable(App.prefs().get("recent", "").equals(""));
         MenuItem addFile = new MenuItem("Add File to Project");
-        //SeparatorMenuItem
+        addFile.disableProperty().bind(isProjectOpen.not());
         Menu settingsMenuItem = new Menu("Settings");
-        MenuItem colorScheme = new MenuItem("Color Scheme");
+        Menu colorScheme = new Menu("Color Scheme");
         settingsMenuItem.getItems().add(colorScheme);
+        Iterator<ColorScheme> schemes = ColorScheme.getColorSchemes().iterator();
+        for (int i = 0; schemes.hasNext(); i++) {
+            // TODO
+        }
         fileMenu.getItems().addAll(openProject, selectFile, openRecent, addFile, new SeparatorMenuItem(), settingsMenuItem);
         pane.add(menuBar, 0, 0);
         GridPane.setColumnSpan(menuBar, pane.getColumnCount());
