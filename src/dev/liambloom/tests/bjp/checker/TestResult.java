@@ -65,6 +65,13 @@ public class TestResult extends Result {
         PREVIOUSLY_DONE(false, Color.YELLOW),
 
         /**
+         * A method or field corresponding to the ex/pp is not accessible,
+         * either because it is not public or because its package is not
+         * exported from its respective module.
+         */
+        METHOD_INCACCESABLE(false, Color.RED),
+
+        /**
          * The ex/pp/test did not pass all tests
          */
         INCORRECT(false, Color.RED);

@@ -250,47 +250,9 @@ public class App {
     // glob parser. In order to prevent the JVM from running it, I append (char) 3
     // to the end of each argument in rust. Since this is not allowed in paths,
     // it prevents the JVM from trying to parse globs.
-    public static void cleanArgs(String[] args) {
+    /*public static void cleanArgs(String[] args) {
         for (int i = 0; i < args.length; i++)
             if (args[i].charAt(args[i].length() - 1) == (char) 31)
                 args[i] = args[i].substring(0, args[i].length() - 1);
-    }
-
-    /*private enum OS {
-        Windows(System.getenv("PROGRAMDATA") + "\\BJP Checker", System.getenv("APPDATA") + "\\BJP Checker"),
-        MacOS("TODO", "TODO"),
-        Linux("TODO", "~/.checkerrc"),
-        Solaris("TODO", "TODO"),
-        Other("TODO", "TODO");
-
-        private final Path global;
-        private final Path local;
-
-        OS(String global, String local) {
-            this.global = Paths.get(global);
-            this.local = Paths.get(local);
-        }
-
-        public Path getGlobalStorage() {
-            return global;
-        }
-
-        public Path getLocalStorage() {
-            return local;
-        }
-    }
-
-    static OS getOS() {
-        String os = System.getProperty("os.name");
-        if (os.contains("mac") || os.contains("darwin"))
-            return OS.MacOS;
-        else if (os.contains("win"))
-            return OS.Windows;
-        else if (os.contains("nix") || os.contains("nux") || os.contains("aix"))
-            return OS.Linux;
-        else if (os.contains("sunos"))
-            return OS.Solaris;
-        else
-            return OS.Other;
     }*/
 }

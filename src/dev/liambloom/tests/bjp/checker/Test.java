@@ -108,7 +108,6 @@ public class Test {
             // TODO
             target = null;
         }
-        // m.setAccessible() throws an InaccessibleObjectException in java 9+. But that exception is only defined in java 9+.
         try {
             m.setAccessible(true);
         }
