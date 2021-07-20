@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.*;
+import javafx.beans.value.ObservableObjectValue;
 import javafx.event.Event;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -43,6 +44,8 @@ public class GUI extends Application {
         GridPane pane = new GridPane();// hello = new Label("Hello World");
         Scene main = new Scene(pane);
 
+        pane.backgroundProperty().bind(getBoundBackgroundProperty(ColorScheme.getBackgroundProperty()));
+
         SimpleIntegerProperty sidebarWidth = new SimpleIntegerProperty(200);
         SimpleDoubleProperty chooserDisplayScale = new SimpleDoubleProperty(0.6);
 
@@ -68,14 +71,7 @@ public class GUI extends Application {
         //testTitle.minWidthProperty().bind(testList.widthProperty());
         //testTitle.maxWidthProperty().bind(testList.widthProperty());
         testList.getChildren().add(testTitle);
-        testList.backgroundProperty().bind(new ObjectBinding<>() {
-            { bind(ColorScheme.getGrayProperty(10)); }
-
-            @Override
-            protected Background computeValue() {
-                return new Background(new BackgroundFill(ColorScheme.getGrayProperty(10).get(), CornerRadii.EMPTY, Insets.EMPTY));
-            }
-        });
+        testList.backgroundProperty().bind(getBoundBackgroundProperty(ColorScheme.getGrayProperty(15)));
         testList.minHeightProperty().bind(pane.heightProperty());
 
         //stage.
@@ -142,9 +138,12 @@ public class GUI extends Application {
                 1, -SQRT3 / 3, 280 * SQRT3 / 3,
                 0, SQRT3 / 2 , 280 - 140 * SQRT3));
 
+        final int CHOOSER_IMG_GRAY = 30;
+
         for (SVGPath i : new SVGPath[]{folderImageBack, folderImageFront}) {
-            i.fillProperty().bind(ColorScheme.getGrayProperty(50));
+            i.fillProperty().bind(ColorScheme.getGrayProperty(CHOOSER_IMG_GRAY));
             i.strokeProperty().bind(ColorScheme.getBackgroundProperty());
+            i.setStrokeWidth(2);
             //AnchorPane.setLeftAnchor(i, 0.0);
             //AnchorPane.setBottomAnchor(i, 0.0);
             folderImagePane.getChildren().add(i);
@@ -152,7 +151,7 @@ public class GUI extends Application {
 
         chooserDisplay.getChildren().add(folderImagePane);
         Text selectProjectText = new Text("Open Project");
-        selectProjectText.fillProperty().bind(ColorScheme.getGrayProperty(50));
+        selectProjectText.fillProperty().bind(ColorScheme.getGrayProperty(CHOOSER_IMG_GRAY));
         selectProjectText.setFont(Font.font("Arial", FontWeight.BOLD, 70));
         chooserDisplay.getChildren().add(selectProjectText);
         //GridPane.setHalignment(chooserDisplay, HPos.CENTER);
@@ -186,11 +185,20 @@ public class GUI extends Application {
         addFile.disableProperty().bind(isProjectOpen.not());
         Menu settingsMenuItem = new Menu("Settings");
         Menu colorScheme = new Menu("Color Scheme");
+        ToggleGroup colorSchemeToggles = new ToggleGroup();
         settingsMenuItem.getItems().add(colorScheme);
         Iterator<ColorScheme> schemes = ColorScheme.getColorSchemes().iterator();
         for (int i = 0; schemes.hasNext(); i++) {
-            // TODO
+            ColorScheme s = schemes.next();
+            RadioMenuItem menuItem = new RadioMenuItem(s.name());
+            menuItem.setToggleGroup(colorSchemeToggles);
+            int schemeIndex = i;
+            menuItem.setOnAction(e -> ColorScheme.set(schemeIndex));
+            colorScheme.getItems().add(menuItem);
+            if (i == ColorScheme.getIndex())
+                menuItem.setSelected(true);
         }
+        //colorScheme.getItems().addAll(new SeparatorMenuItem())
         fileMenu.getItems().addAll(openProject, selectFile, openRecent, addFile, new SeparatorMenuItem(), settingsMenuItem);
         pane.add(menuBar, 0, 0);
         GridPane.setColumnSpan(menuBar, pane.getColumnCount());
@@ -235,5 +243,16 @@ public class GUI extends Application {
         chooser.setTitle("Open Project");
         chooser.showDialog(stage);
         // TODO
+    }
+
+    private static ObjectBinding<Background> getBoundBackgroundProperty(ObservableObjectValue<Color> c) {
+        return new ObjectBinding<>() {
+            { bind(c); }
+
+            @Override
+            protected Background computeValue() {
+                return new Background(new BackgroundFill(c.get(), CornerRadii.EMPTY, Insets.EMPTY));
+            }
+        };
     }
 }

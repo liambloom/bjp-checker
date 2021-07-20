@@ -1,19 +1,28 @@
 package dev.liambloom.tests.bjp.checker;
 
+import javafx.beans.Observable;
 import javafx.beans.binding.ObjectBinding;
-import javafx.beans.property.ReadOnlyObjectProperty;
-import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.value.ObservableObjectValue;
+import javafx.geometry.Insets;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
 import javafx.scene.paint.Color;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
-import java.util.function.Function;
 import java.util.prefs.Preferences;
 
 public abstract class ColorScheme {
-    private static final SimpleObjectProperty<ColorScheme> scheme = new SimpleObjectProperty<>();
+    private static final SimpleIntegerProperty schemeIndex = new SimpleIntegerProperty();
+    private static final ObjectBinding<ColorScheme> scheme = new ObjectBinding<>() {
+        { bind(schemeIndex); }
+
+        @Override
+        protected ColorScheme computeValue() {
+            return allSchemes.get(schemeIndex.get());
+        }
+    };
     private static final ArrayList<ColorScheme> allSchemes = new ArrayList<>();
     private static final Set<String> schemeNames = new HashSet<>();
     private static final Preferences colorSchemePrefs = App.prefs().node("colorScheme");
@@ -63,8 +72,8 @@ public abstract class ColorScheme {
         // load schemes
         for (int i = RESERVED_SCHEMES; i < schemeCount; i++) {
             Preferences scheme = colorSchemePrefs.node("userDefined/" + i);
-            byte[] err = new byte[0];
             String name = scheme.get("name", null);
+            boolean useGammaBlending = scheme.getBoolean("useGammaBlending", false);
             byte[] bgBytes = scheme.getByteArray("background", null);
             byte[] fgBytes = scheme.getByteArray("foreground", null);
             if (name == null || bgBytes == null || fgBytes == null)
@@ -85,6 +94,11 @@ public abstract class ColorScheme {
                 @Override
                 public String name() {
                     return name;
+                }
+
+                @Override
+                public boolean useGammaBlending() {
+                    return useGammaBlending;
                 }
             });
         }
@@ -119,15 +133,42 @@ public abstract class ColorScheme {
     public static ColorScheme get() {
         return scheme.get();
     }
+    public static int getIndex() { return schemeIndex.get(); }
 
     public static void set(int scheme) {
         colorSchemePrefs.putInt("current", scheme);
-        ColorScheme.scheme.set(allSchemes.get(scheme));
+        schemeIndex.set(scheme);
     }
 
     public abstract Color getBackground();
     public abstract Color getForeground();
     public abstract String name();
+
+    /**
+     * Determines whether gamma adjustments are taken into account when calculating
+     * gray values for this color scheme. Default value: {@code false}.
+     *
+     * Finding blends of computer colors is complicated. Java stores colors as sRGB
+     * colors, which are space efficient and meant to store colors that we can
+     * more easily distinguish with more precision. This is good, but it can cause
+     * problems when blending colors, which you can find out more about from
+     * <a href="https://youtu.be/LKnqECcg6Gw">this</a> video. If this method is
+     * overridden to return {@code true} then the more mathematically accurate
+     * method of calculating color gradients, as explained in the video, is used.
+     * This method can, however, give unappealing results for blending colors that
+     * have a dramatically different value of R+G+B (such as black and white).
+     *
+     * Generally, if your foreground and background colors have similar R+G+B values
+     * (such as red and green), you probably want to override this method to return
+     * {@code true}, but if your foreground and background colors have very different
+     * R+G+B values (such as black and white), you probably want to have the method
+     * return {@code false} (which happens if you don't override it)
+     *
+     * @return Whether or not this color scheme should use gamma blending.
+     */
+    public boolean useGammaBlending() {
+        return false;
+    }
 
 
     public static ObjectBinding<Color> getBackgroundProperty() {
@@ -146,21 +187,59 @@ public abstract class ColorScheme {
                 @Override
                 protected Color computeValue() {
                     final ColorScheme s = scheme.get();
-                    final Color fg = s.getForeground();
-                    final Color bg = s.getBackground();
-                    final double r = brightness * 0.01;
+                    final double m = brightness * 0.01;
+                    final Color fg, bg;
+                    if (s.useGammaBlending()) {
+                        fg = inverseSRGBCompand(s.getForeground());
+                        bg = inverseSRGBCompand(s.getBackground());
+                    }
+                    else {
+                        fg = s.getForeground();
+                        bg = s.getBackground();
+                    }
 
-                    return new Color(
-                            r * (fg.getRed() - bg.getRed()) + bg.getRed(),
-                            r * (fg.getGreen() - bg.getGreen()) + bg.getGreen(),
-                            r * (fg.getBlue() - bg.getBlue()) + bg.getBlue(),
-                            r * (fg.getOpacity() - bg.getOpacity()) + bg.getOpacity()
+                    Color mixed = new Color(
+                            m * fg.getRed() + (1-m) * bg.getRed(),
+                            m * fg.getGreen() + (1-m) * bg.getGreen(),
+                            m * fg.getBlue() + (1-m) * bg.getBlue(),
+                            m * (fg.getOpacity() - bg.getOpacity()) + bg.getOpacity()
                     );
+
+                    if (s.useGammaBlending())
+                        mixed = sRGBCompand(mixed);
+
+                    return mixed;
                 }
             };
         }
 
         return grays[brightness];
+    }
+
+    private static Color inverseSRGBCompand(Color c) {
+        return new Color(
+                inverseSRGBCompandChanel(c.getRed()),
+                inverseSRGBCompandChanel(c.getGreen()),
+                inverseSRGBCompandChanel(c.getBlue()),
+                c.getOpacity()
+        );
+    }
+
+    private static double inverseSRGBCompandChanel(double c) {
+        return c > 0.04045 ? Math.pow((c + 0.055) / 1.055, 2.4) : c / 12.92;
+    }
+
+    private static Color sRGBCompand(Color c) {
+        return new Color(
+                sRGBCompandChanel(c.getRed()),
+                sRGBCompandChanel(c.getGreen()),
+                sRGBCompandChanel(c.getBlue()),
+                c.getOpacity()
+        );
+    }
+
+    private static double sRGBCompandChanel(double c) {
+        return c > 0.0031308 ? 1.055 * Math.pow(c, 1 / 2.4) - 0.055 : c * 11.92;
     }
 
     public static List<ColorScheme> getColorSchemes() {
@@ -176,6 +255,7 @@ public abstract class ColorScheme {
         colorSchemePrefs.putInt("count", colorSchemePrefs.getInt("count", RESERVED_SCHEMES) + 1);
         Preferences schemeStore = colorSchemePrefs.node("userDefined/" + (allSchemes.size() - 1));
         schemeStore.put("name", s.name());
+        schemeStore.putBoolean("useGammaBlending", s.useGammaBlending());
         Color bg = s.getBackground();
         schemeStore.putByteArray("background", new byte[]{
                 (byte) (bg.getRed() * 0xff),
