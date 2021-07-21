@@ -32,7 +32,6 @@ import java.util.prefs.Preferences;
 
 public class GUI extends Application {
     public static void main(String[] args) {
-        App.cleanArgs(args);
         Application.launch(args);
     }
 
@@ -44,7 +43,7 @@ public class GUI extends Application {
         GridPane pane = new GridPane();// hello = new Label("Hello World");
         Scene main = new Scene(pane);
 
-        pane.backgroundProperty().bind(getBoundBackgroundProperty(ColorScheme.getBackgroundProperty()));
+        pane.backgroundProperty().bind(getBoundBackgroundProperty(ColorSchemeManager.getBackgroundProperty()));
 
         SimpleIntegerProperty sidebarWidth = new SimpleIntegerProperty(200);
         SimpleDoubleProperty chooserDisplayScale = new SimpleDoubleProperty(0.6);
@@ -66,12 +65,12 @@ public class GUI extends Application {
         testList.minWidthProperty().bind(sidebarWidth);
         testList.maxWidthProperty().bind(sidebarWidth);
         testTitle.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        testTitle.fillProperty().bind(ColorScheme.getGrayProperty(65));
+        testTitle.fillProperty().bind(ColorSchemeManager.getGrayProperty(65));
         VBox.setMargin(testTitle, new Insets(5));
         //testTitle.minWidthProperty().bind(testList.widthProperty());
         //testTitle.maxWidthProperty().bind(testList.widthProperty());
         testList.getChildren().add(testTitle);
-        testList.backgroundProperty().bind(getBoundBackgroundProperty(ColorScheme.getGrayProperty(15)));
+        testList.backgroundProperty().bind(getBoundBackgroundProperty(ColorSchemeManager.getGrayProperty(15)));
         testList.minHeightProperty().bind(pane.heightProperty());
 
         //stage.
@@ -141,8 +140,8 @@ public class GUI extends Application {
         final int CHOOSER_IMG_GRAY = 30;
 
         for (SVGPath i : new SVGPath[]{folderImageBack, folderImageFront}) {
-            i.fillProperty().bind(ColorScheme.getGrayProperty(CHOOSER_IMG_GRAY));
-            i.strokeProperty().bind(ColorScheme.getBackgroundProperty());
+            i.fillProperty().bind(ColorSchemeManager.getGrayProperty(CHOOSER_IMG_GRAY));
+            i.strokeProperty().bind(ColorSchemeManager.getBackgroundProperty());
             i.setStrokeWidth(2);
             //AnchorPane.setLeftAnchor(i, 0.0);
             //AnchorPane.setBottomAnchor(i, 0.0);
@@ -151,7 +150,7 @@ public class GUI extends Application {
 
         chooserDisplay.getChildren().add(folderImagePane);
         Text selectProjectText = new Text("Open Project");
-        selectProjectText.fillProperty().bind(ColorScheme.getGrayProperty(CHOOSER_IMG_GRAY));
+        selectProjectText.fillProperty().bind(ColorSchemeManager.getGrayProperty(CHOOSER_IMG_GRAY));
         selectProjectText.setFont(Font.font("Arial", FontWeight.BOLD, 70));
         chooserDisplay.getChildren().add(selectProjectText);
         //GridPane.setHalignment(chooserDisplay, HPos.CENTER);
