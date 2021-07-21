@@ -2,9 +2,14 @@ package dev.liambloom.tests.bjp.checker;
 
 import javafx.scene.paint.Color;
 
-@Managed
+@Managed(singletons = {
+        LightColorScheme.class,
+        DarkColorScheme.class
+})
 public interface ColorScheme {
     Color getBackground();
     Color getForeground();
-    Color getAltBackground();
+    //Color getAltBackground();
+
+    //private static ColorScheme light() { return null; }
 }

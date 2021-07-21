@@ -8,4 +8,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
 public @interface Managed {
+    Class<?>[] singletons() default {};
 }
