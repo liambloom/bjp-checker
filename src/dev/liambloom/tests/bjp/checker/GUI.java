@@ -14,6 +14,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Font;
@@ -40,10 +41,12 @@ public class GUI extends Application {
 
     @Override
     public void start(Stage stage) {
+        // FIXME: When the monitor size changes, the gui scaling doesn't change
+
         GridPane pane = new GridPane();// hello = new Label("Hello World");
         Scene main = new Scene(pane);
 
-        pane.backgroundProperty().bind(getBoundBackgroundProperty(ColorSchemeManager.getBackgroundProperty()));
+        pane.backgroundProperty().bind(new BackgroundBinding(ColorSchemeManager.getBackgroundProperty()));
 
         SimpleIntegerProperty sidebarWidth = new SimpleIntegerProperty(200);
         SimpleDoubleProperty chooserDisplayScale = new SimpleDoubleProperty(0.6);
@@ -65,12 +68,12 @@ public class GUI extends Application {
         testList.minWidthProperty().bind(sidebarWidth);
         testList.maxWidthProperty().bind(sidebarWidth);
         testTitle.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        testTitle.fillProperty().bind(ColorSchemeManager.getGrayProperty(65));
+        testTitle.fillProperty().bind(ColorSchemeManager.getMenuTitleProperty());
         VBox.setMargin(testTitle, new Insets(5));
         //testTitle.minWidthProperty().bind(testList.widthProperty());
         //testTitle.maxWidthProperty().bind(testList.widthProperty());
         testList.getChildren().add(testTitle);
-        testList.backgroundProperty().bind(getBoundBackgroundProperty(ColorSchemeManager.getGrayProperty(15)));
+        testList.backgroundProperty().bind(new BackgroundBinding(ColorSchemeManager.getAltBackgroundProperty()));
         testList.minHeightProperty().bind(pane.heightProperty());
 
         //stage.
@@ -140,7 +143,7 @@ public class GUI extends Application {
         final int CHOOSER_IMG_GRAY = 30;
 
         for (SVGPath i : new SVGPath[]{folderImageBack, folderImageFront}) {
-            i.fillProperty().bind(ColorSchemeManager.getGrayProperty(CHOOSER_IMG_GRAY));
+            i.fillProperty().bind(ColorSchemeManager.getGrayscaleIconProperty());
             i.strokeProperty().bind(ColorSchemeManager.getBackgroundProperty());
             i.setStrokeWidth(2);
             //AnchorPane.setLeftAnchor(i, 0.0);
@@ -150,7 +153,7 @@ public class GUI extends Application {
 
         chooserDisplay.getChildren().add(folderImagePane);
         Text selectProjectText = new Text("Open Project");
-        selectProjectText.fillProperty().bind(ColorSchemeManager.getGrayProperty(CHOOSER_IMG_GRAY));
+        selectProjectText.fillProperty().bind(ColorSchemeManager.getGrayscaleIconProperty());
         selectProjectText.setFont(Font.font("Arial", FontWeight.BOLD, 70));
         chooserDisplay.getChildren().add(selectProjectText);
         //GridPane.setHalignment(chooserDisplay, HPos.CENTER);
@@ -183,20 +186,17 @@ public class GUI extends Application {
         MenuItem addFile = new MenuItem("Add File to Project");
         addFile.disableProperty().bind(isProjectOpen.not());
         Menu settingsMenuItem = new Menu("Settings");
-        Menu colorScheme = new Menu("Color Scheme");
-        ToggleGroup colorSchemeToggles = new ToggleGroup();
-        settingsMenuItem.getItems().add(colorScheme);
-        Iterator<ColorScheme> schemes = ColorScheme.getColorSchemes().iterator();
-        for (int i = 0; schemes.hasNext(); i++) {
-            ColorScheme s = schemes.next();
-            RadioMenuItem menuItem = new RadioMenuItem(s.name());
-            menuItem.setToggleGroup(colorSchemeToggles);
-            int schemeIndex = i;
-            menuItem.setOnAction(e -> ColorScheme.set(schemeIndex));
-            colorScheme.getItems().add(menuItem);
-            if (i == ColorScheme.getIndex())
-                menuItem.setSelected(true);
-        }
+        CheckMenuItem darkMode = new CheckMenuItem("Dark Mode");
+        settingsMenuItem.getItems().add(darkMode);
+        darkMode.setSelected(ColorSchemeManager.getColorScheme().equals(ColorSchemeManager.getDarkColorScheme()));
+        ColorSchemeManager.getColorSchemeProperty().bind(new ObjectBinding<>() {
+            { bind(darkMode.selectedProperty()); }
+
+            @Override
+            protected ColorScheme computeValue() {
+                return darkMode.isSelected() ? ColorSchemeManager.getDarkColorScheme() : ColorSchemeManager.getLightColorScheme();
+            }
+        });
         //colorScheme.getItems().addAll(new SeparatorMenuItem())
         fileMenu.getItems().addAll(openProject, selectFile, openRecent, addFile, new SeparatorMenuItem(), settingsMenuItem);
         pane.add(menuBar, 0, 0);
@@ -244,7 +244,7 @@ public class GUI extends Application {
         // TODO
     }
 
-    private static ObjectBinding<Background> getBoundBackgroundProperty(ObservableObjectValue<Color> c) {
+    private static ObjectBinding<Background> getBoundBackgroundProperty(ObservableObjectValue<Paint> c) {
         return new ObjectBinding<>() {
             { bind(c); }
 
