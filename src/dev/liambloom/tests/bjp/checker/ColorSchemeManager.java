@@ -7,8 +7,8 @@ import javafx.scene.paint.Color;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
-public class __ColorSchemeManager__ {
-    private __ColorSchemeManager__() {}
+public class ColorSchemeManager {
+    private ColorSchemeManager() {}
 
     private static final ColorScheme light = new LightColorScheme();
 
@@ -32,7 +32,7 @@ public class __ColorSchemeManager__ {
 
     public static void setColorScheme(ColorScheme scheme) {
         App.prefs().put("colorScheme", scheme.getClass().getName());
-        __ColorSchemeManager__.scheme.set(scheme);
+        ColorSchemeManager.scheme.set(scheme);
     }
 
     // ----------------------------------------------------------------------

@@ -7,7 +7,4 @@ module dev.liambloom.tests.bjp {
     requires org.fusesource.jansi;
     exports dev.liambloom.tests.bjp;
     exports dev.liambloom.tests.bjp.checker to javafx.graphics;
-
-    // Do I need to include this?
-    provides javax.annotation.processing.Processor with dev.liambloom.tests.bjp.checker.ManagerProcessor;
 }
