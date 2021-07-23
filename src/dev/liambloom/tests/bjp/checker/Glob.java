@@ -34,7 +34,7 @@ public class Glob implements TargetFiles {
     }
 
     private class Piece {
-        final File base;
+        final Path base;
         final String[] segments;
         final String raw;
         final String src;
@@ -79,14 +79,14 @@ public class Glob implements TargetFiles {
                     segmentsList.add(".");
             }
             else if (s.startsWith("/"))
-                base = new File(File.separator).getCanonicalFile();
+                base = Path.of(File.separator).toRealPath();
             else
-                base = new File(".").getCanonicalFile();
+                base = Path.of(".").toRealPath();
             segments = segmentsList.toArray(new String[0]);
         }
 
-        public List<File> files() throws IOException {
-            List<File> r = Stream.concat(files(base, 0), isTestGlob && segments.length == 1 && !base.equals(App.testBase()) ? files(App.testBase(), 0) : Stream.empty())
+        public List<Path> files() throws IOException {
+            List<Path> r = Stream.concat(files(base, 0), isTestGlob && segments.length == 1 && !base.equals(App.testBase()) ? files(App.testBase(), 0) : Stream.empty())
                     .collect(Collectors.toList());
             if (r.size() == 0) {
                 if (raw.contains(File.separator) && !raw.contains("/")){
@@ -109,28 +109,27 @@ public class Glob implements TargetFiles {
                 logger.warn("\"**\" as part of a larger segment is interpreted as two single stars");
         }
 
-        private Stream<File> files(File base, int i) throws IOException {
-            assert base.isDirectory();
+        private Stream<Path> files(Path base, int i) throws IOException {
+            assert Files.isDirectory(base);
             if (segments.length == i)
                 // TODO: Check this. IDK if it properly handles links
-                return Files.walk(base.toPath(), FileVisitOption.FOLLOW_LINKS)
-                        .map(Path::toFile)
-                        .filter(File::isFile);
+                return Files.walk(base, FileVisitOption.FOLLOW_LINKS)
+                        .filter(Files::isRegularFile);
             final String segment = segments[i];
             switch (segment) {
                 case ".":
                     return files(base, i + 1);
                 case "..":
-                    return files(base.getParentFile(), i + 1);
+                    return files(base.getParent(), i + 1);
                 case "**":
                     if (segments.length > i + 1) {
                         try {
                             return Stream.concat(
                                 files(base, i + 1),
-                                Arrays.stream(base.listFiles())
-                                    .map((FunctionThrowsIOException<File, File>) Glob::readSymbolicLink)
-                                    .filter(File::isDirectory)
-                                    .flatMap((FunctionThrowsIOException<File, Stream<File>>) (dir -> files(dir, i)))
+                                Files.list(base)
+                                    .map((FunctionThrowsIOException<Path, Path>) Path::toRealPath)
+                                    .filter(Files::isDirectory)
+                                    .flatMap((FunctionThrowsIOException<Path, Stream<Path>>) (dir -> files(dir, i)))
                             );
                         }
                         catch (UncheckedIOException e) {
@@ -196,35 +195,36 @@ public class Glob implements TargetFiles {
                     final Pattern patternCaseSensitive = Pattern.compile(patternBuilder.toString());
                     final Pattern patternCaseInsensitive = Pattern.compile(patternBuilder.toString(), Pattern.CASE_INSENSITIVE);
                     @SuppressWarnings("ConstantConditions")
-                    Stream<File> r = Arrays.stream(base.listFiles((_file, name) -> {
-                        Matcher matcher;
-                        if ((matcher = patternCaseSensitive.matcher(name)).matches()
-                                || (matcher = patternCaseInsensitive.matcher(name)).matches())
-                        {
-                            StringBuilder builder = new StringBuilder(name.length());
-                            Iterator<String> groups = IntStream.range(1, matcher.groupCount() + 1).mapToObj(matcher::group).iterator();
-                            for (String literalPart : literalParts)
-                                builder.append(Optional.ofNullable(literalPart).orElseGet(groups::next));
-                            File f = new File(base, builder.toString());
-                            return f.exists();
-                        }
-                        else
-                            return false;
-                    }));
+                    Stream<Path> r = Files.list(base)
+                            .filter(p -> {
+                                String name = p.toString();
+                                Matcher matcher;
+                                if ((matcher = patternCaseSensitive.matcher(name)).matches()
+                                        || (matcher = patternCaseInsensitive.matcher(name)).matches())
+                                {
+                                    StringBuilder builder = new StringBuilder(name.length());
+                                    Iterator<String> groups = IntStream.range(1, matcher.groupCount() + 1).mapToObj(matcher::group).iterator();
+                                    for (String literalPart : literalParts)
+                                        builder.append(Optional.ofNullable(literalPart).orElseGet(groups::next));
+                                    return Files.exists(base.resolve(builder.toString()));
+                                }
+                                else
+                                    return false;
+                            });
 
                     try {
                         if (i + 1 == segments.length) {
-                            r = r.flatMap((FunctionThrowsIOException<File, Stream<File>>) (f -> {
-                                if (f.isDirectory())
-                                    return files(f, i + 1);
+                            r = r.flatMap((FunctionThrowsIOException<Path, Stream<Path>>) (p -> {
+                                if (Files.isDirectory(p))
+                                    return files(p, i + 1);
                                 else
-                                    return Stream.of(f);
+                                    return Stream.of(p);
                             }));
                         }
                         else
                             r = r
-                                    .filter(File::isDirectory)
-                                    .flatMap((FunctionThrowsIOException<File, Stream<File>>) (dir -> files(dir, i + 1)));
+                                    .filter(Files::isDirectory)
+                                    .flatMap((FunctionThrowsIOException<Path, Stream<Path>>) (dir -> files(dir, i + 1)));
                         }
                     catch (UncheckedIOException e) {
                         throw e.getCause();
@@ -250,19 +250,19 @@ public class Glob implements TargetFiles {
             }
         }*/
 
-        @Override
+        /*@Override
         public String toString() {
             return src + " -> " + base + File.separator + String.join(File.separator, segments);
-        }
+        }*/
     }
 
     @Override
-    public Stream<File> files() throws IOException {
+    public Stream<Path> files() throws IOException {
         try {
             return Arrays.stream(pieces)
                     .unordered()
                     .parallel()
-                    .map((FunctionThrowsIOException<Piece, List<File>>) Piece::files)
+                    .map((FunctionThrowsIOException<Piece, List<Path>>) Piece::files)
                     .flatMap(List::stream)
                     .distinct()
                     .sorted();
@@ -273,7 +273,7 @@ public class Glob implements TargetFiles {
     }
 
     @Override
-    public File single() throws IOException {
+    public Path single() throws IOException {
         return files().collect(Collectors.collectingAndThen(Collectors.toList(),
             list -> {
                 if (list.size() != 1)
@@ -281,17 +281,5 @@ public class Glob implements TargetFiles {
                 return list.get(0);
             }
         ));
-    }
-
-    public static File readSymbolicLink(File file) throws IOException {
-        return readSymbolicLink(file.toPath()).toFile();
-    }
-
-    public static Path readSymbolicLink(Path path) throws IOException {
-        while (Files.isSymbolicLink(path))
-            path = Files.readSymbolicLink(path);
-        if (!path.toFile().exists())
-            throw new UserErrorException("There was a symbolic link to `" + path + "', which doesn't exist.");
-        return path;
     }
 }

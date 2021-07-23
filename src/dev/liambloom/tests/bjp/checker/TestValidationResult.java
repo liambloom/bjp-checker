@@ -6,6 +6,8 @@ import org.xml.sax.SAXParseException;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.regex.Pattern;
 
 public class TestValidationResult extends Result {
@@ -13,12 +15,12 @@ public class TestValidationResult extends Result {
 
     public final byte[] message;
 
-    public TestValidationResult(File file, Variant variant) throws IOException {
-        this(file, variant, null);
+    public TestValidationResult(Path path, Variant variant) throws IOException {
+        this(path, variant, null);
     }
 
-    public TestValidationResult(File file, Variant variant, SAXException error) throws IOException {
-        super(file.getName().substring(0, file.getName().lastIndexOf('.')), variant);
+    public TestValidationResult(Path path, Variant variant, SAXException error) throws IOException {
+        super(path.toString().substring(0, path.toString().lastIndexOf('.')), variant);
 
         if (error == null) {
             message = null;
@@ -31,7 +33,7 @@ public class TestValidationResult extends Result {
 
         if (error instanceof SAXParseException) {
             SAXParseException parseException = (SAXParseException) error;
-            message += String.format(" at %s:%d:%d", file.getCanonicalPath(), parseException.getLineNumber(), parseException.getColumnNumber());
+            message += String.format(" at %s:%d:%d", path.toRealPath(), parseException.getLineNumber(), parseException.getColumnNumber());
         }
         this.message = message.getBytes();
     }

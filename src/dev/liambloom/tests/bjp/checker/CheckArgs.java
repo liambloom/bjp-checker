@@ -85,7 +85,7 @@ public class CheckArgs {
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setSchema(App.loadTestSchema());
-        this.tests = dbf.newDocumentBuilder().parse(new Glob(Collections.singleton(tests), true, logger).single());
+        this.tests = dbf.newDocumentBuilder().parse(new Glob(Collections.singleton(tests), true, logger).single().toFile());
 
         glob = new Glob(globArgs, false, logger);
     }

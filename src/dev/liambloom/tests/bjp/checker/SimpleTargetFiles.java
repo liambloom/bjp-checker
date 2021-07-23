@@ -11,25 +11,24 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SimpleTargetFiles implements TargetFiles{
-    private final Collection<File> files;
+    private final Collection<Path> files;
 
     public SimpleTargetFiles() {
         this(new ArrayList<>());
     }
 
-    public SimpleTargetFiles(Collection<File> files) {
+    public SimpleTargetFiles(Collection<Path> files) {
         this.files = files;
     }
 
     public void addDir(Path p) throws IOException {
         files.addAll(Files.walk(p, FileVisitOption.FOLLOW_LINKS)
-                .map(Path::toFile)
-                .filter(File::isFile)
+                .filter(Files::isRegularFile)
                 .collect(Collectors.toList()));
     }
 
     @Override
-    public Stream<File> files() {
+    public Stream<Path> files() {
         if (files.isEmpty())
             throw new UserErrorException("Expected file, but no files were found");
         else
@@ -37,7 +36,7 @@ public class SimpleTargetFiles implements TargetFiles{
     }
 
     @Override
-    public File single() {
+    public Path single() {
         if (files.size() > 1)
             throw new UserErrorException("Expected single file, but multiple files were selected");
         else if (files.isEmpty())

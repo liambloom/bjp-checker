@@ -23,6 +23,7 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -41,16 +42,16 @@ public class App {
     /**
      * The location of this application's files. The parent folder of "lib" and "bin"
      */
-    private static String here = null;
+    private static Path here = null;
     private static Preferences prefs = null;
 
-    public static String here() {
+    public static synchronized Path here() {
         if (here == null) {
             try {
-                File f = new File(App.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-                if (f.isFile())
-                    f = f.getParentFile();
-                here = f.getParent();
+                Path p = Path.of(App.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+                if (Files.isRegularFile(p))
+                    p = p.getParent();
+                here = p.getParent();
             }
             catch (URISyntaxException e) {
                 throw new RuntimeException(e);
@@ -59,7 +60,7 @@ public class App {
         return here;
     }
 
-    public static Preferences prefs() {
+    public static synchronized Preferences prefs() {
         if (prefs == null)
             prefs = Preferences.userNodeForPackage(GUI.class);
         return prefs;
@@ -72,11 +73,11 @@ public class App {
                 new StreamSource(App.class.getResourceAsStream("/book-tests.xsd")));
     }
 
-    private static File testBase = null;
+    private static Path testBase = null;
 
-    public static File testBase() {
+    public static synchronized Path testBase() {
         if (testBase == null)
-            testBase = new File(here(), "tests");
+            testBase = here().resolve("tests");
         return testBase;
     }
 
@@ -84,20 +85,18 @@ public class App {
 
     public App(Logger logger) throws IOException {
         this.logger = logger;
-        for (File f : Optional.ofNullable(App.testBase().listFiles()).orElseGet(() -> new File[0])) {
-            f = Glob.readSymbolicLink(f);
-            if (f.isDirectory() || !f.toString().endsWith(".xml"))
-                logger.warn("Expected xml file, found `%s' in tests", f.getName());
+        for (Path p : Files.exists(App.testBase()) ? Files.newDirectoryStream(App.testBase()) : Collections.<Path>emptyList()) {
+            p = p.toRealPath();
+            if (Files.isDirectory(p) || !p.toString().endsWith(".xml"))
+                logger.warn("Expected xml file, found `%s' in tests", p.toString());
         }
     }
 
     public static void createLogFile(Throwable err) throws IOException {
-        final File log = new File(here()
-                + File.separator + "logs" + File.separator
-                + DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
-        log.getParentFile().mkdir();
-        log.createNewFile();
-        err.printStackTrace(new PrintStream(log));
+        final Path log = here().resolve("logs").resolve(DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
+        Files.createDirectory(log.getParent());
+        Files.createFile(log);
+        err.printStackTrace(new PrintStream(Files.newOutputStream(log)));
         // System.err.println(log); // I can't remember if this was just for debugging
     }
 
@@ -114,8 +113,8 @@ public class App {
             final Queue<Validator> queue = new ConcurrentLinkedQueue<>();
 
             return glob.files()
-                    .map((FunctionThrowsIOException<File, TestValidationResult>) (file -> {
-                        Path path = Glob.readSymbolicLink(file.toPath());
+                    .map((FunctionThrowsIOException<Path, TestValidationResult>) (path -> {
+                        path = path.toRealPath();
                         if (!path.toString().endsWith(".xml"))
                             throw new UserErrorException(String.format("Test must be of type xml, but `%s' is not", path));
                         Source source = new StreamSource(path.toFile());
@@ -126,7 +125,7 @@ public class App {
                             v.reset();
                         try {
                             v.validate(source);
-                            return new TestValidationResult(file, TestValidationResult.Variant.VALID);
+                            return new TestValidationResult(path, TestValidationResult.Variant.VALID);
                         }
                         catch (SAXException e) {
                             throw new UserErrorException(e);

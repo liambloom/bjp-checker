@@ -23,8 +23,7 @@ public final class GlobClassLoader extends ClassLoader {
         super(parent);
         try {
             classes = glob.files()
-                    .map(File::toPath)
-                    .map((FunctionThrowsIOException<Path, Path>) Glob::readSymbolicLink)
+                    .map((FunctionThrowsIOException<Path, Path>) Path::toRealPath)
                     .flatMap((FunctionThrowsIOException<Path, Stream<? extends ClassSource>>) (p -> {
                         if (p.toString().endsWith(".jar"))
                             return CompressedClassSource.allSources(new JarFile(p.toFile())).stream();
