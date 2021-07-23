@@ -1,4 +1,4 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.gui;
 
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.value.ObservableValue;

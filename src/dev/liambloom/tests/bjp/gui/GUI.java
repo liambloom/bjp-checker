@@ -1,35 +1,23 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.gui;
 
+import dev.liambloom.tests.bjp.shared.App;
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.*;
 import javafx.beans.value.ObservableObjectValue;
-import javafx.event.Event;
-import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.VPos;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Paint;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.transform.Affine;
-import javafx.scene.transform.Scale;
-import javafx.scene.transform.Shear;
 import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.scene.paint.Color;
-
-import java.util.Iterator;
-import java.util.prefs.Preferences;
 
 public class GUI extends Application {
     public static void main(String[] args) {
@@ -189,7 +177,7 @@ public class GUI extends Application {
         CheckMenuItem darkMode = new CheckMenuItem("Dark Mode");
         settingsMenuItem.getItems().add(darkMode);
         darkMode.setSelected(ColorSchemeManager.getColorScheme().equals(ColorSchemeManager.getDarkColorScheme()));
-        ColorSchemeManager.getColorSchemeProperty().bind(new ObjectBinding<>() {
+        ColorSchemeManager.colorSchemeProperty().bind(new ObjectBinding<>() {
             { bind(darkMode.selectedProperty()); }
 
             @Override
@@ -210,15 +198,14 @@ public class GUI extends Application {
 //        settingsContent.getChildren().addAll(new Text("Foo"), new Text("FooBar"));
 //        settingsContent.setAlignment(Pos.CENTER);
 
-        settingsMenuItem.setOnAction(e -> {
+        //settingsMenuItem.setOnAction(e -> {
 //            double width = stage.getWidth();
 //            double height = stage.getHeight();
 //            stage.setScene(settings);
 //            stage.setWidth(width);
 //            stage.setHeight(height);
-        });
+        //});
 
-        System.out.println(pane.getRowCount());
 
         //pane.setGridLinesVisible(true);
 

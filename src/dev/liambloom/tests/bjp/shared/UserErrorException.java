@@ -1,4 +1,4 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.shared;
 
 public class UserErrorException extends RuntimeException {
     public UserErrorException() {

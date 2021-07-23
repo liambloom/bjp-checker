@@ -1,4 +1,4 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.shared;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

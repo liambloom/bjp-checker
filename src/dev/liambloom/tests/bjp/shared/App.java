@@ -1,8 +1,11 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.shared;
 
 import dev.liambloom.tests.bjp.Chapter;
 import dev.liambloom.tests.bjp.Exercise;
 import dev.liambloom.tests.bjp.ProgrammingProject;
+import dev.liambloom.tests.bjp.cli.CheckArgs;
+import dev.liambloom.tests.bjp.cli.Glob;
+import dev.liambloom.tests.bjp.gui.GUI;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
@@ -25,7 +28,6 @@ import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -66,7 +68,7 @@ public class App {
         return prefs;
     }
 
-    static Schema loadTestSchema() throws SAXException {
+    public static Schema loadTestSchema() throws SAXException {
         SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1");
         factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
         return factory.newSchema(

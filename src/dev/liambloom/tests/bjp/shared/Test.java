@@ -1,4 +1,4 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.shared;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;

@@ -1,4 +1,6 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.shared;
+
+import dev.liambloom.tests.bjp.cli.Glob;
 
 import java.io.*;
 import java.nio.file.Files;

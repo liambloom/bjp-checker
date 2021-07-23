@@ -1,5 +1,8 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.cli;
 
+import dev.liambloom.tests.bjp.shared.App;
+import dev.liambloom.tests.bjp.shared.Logger;
+import dev.liambloom.tests.bjp.shared.UserErrorException;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 

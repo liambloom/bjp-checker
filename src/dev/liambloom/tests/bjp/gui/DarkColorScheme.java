@@ -1,9 +1,9 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.gui;
 
 import javafx.scene.paint.Color;
 
 class DarkColorScheme implements ColorScheme {
-    DarkColorScheme() {}
+    protected DarkColorScheme() {}
 
     @Override
     public javafx.scene.paint.Color getBackground() {

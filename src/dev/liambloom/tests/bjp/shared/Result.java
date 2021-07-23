@@ -1,10 +1,7 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.shared;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Locale;
-import java.util.regex.Pattern;
 
 public abstract class Result {
     public final String name;
@@ -15,7 +12,7 @@ public abstract class Result {
         this.variant = variant;
     }
 
-    abstract void printToStream(OutputStream stream) throws IOException;
+    public abstract void printToStream(OutputStream stream) throws IOException;
 
     public interface Variant {
         boolean isOk();

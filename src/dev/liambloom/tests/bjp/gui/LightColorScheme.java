@@ -1,9 +1,9 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.gui;
 
 import javafx.scene.paint.Color;
 
 class LightColorScheme implements ColorScheme {
-    LightColorScheme() {}
+    protected LightColorScheme() {}
 
     @Override
     public Color getBackground() {

@@ -1,12 +1,11 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.shared;
 
+import dev.liambloom.tests.bjp.shared.Test;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.lang.reflect.AnnotatedElement;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class Checked {
     public Type type;

@@ -1,12 +1,10 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.shared;
 
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 

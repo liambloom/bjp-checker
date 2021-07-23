@@ -1,16 +1,10 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.gui;
 
+import dev.liambloom.tests.bjp.shared.App;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.geometry.Insets;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.CornerRadii;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -42,7 +36,7 @@ public class ColorSchemeManager {
         ColorSchemeManager.scheme.set(scheme);
     }
 
-    public static ObjectProperty<ColorScheme> getColorSchemeProperty() {
+    public static ObjectProperty<ColorScheme> colorSchemeProperty() {
         return scheme;
     }
 
@@ -78,20 +72,22 @@ public class ColorSchemeManager {
     static {
         scheme.addListener((_1, _2, newValue) -> App.prefs().put("colorScheme", newValue.getClass().getName()));
 
-        try {
-            String schemeName = App.prefs().get("colorScheme", LightColorScheme.class.getName());
-            setColorScheme(switch (schemeName) {
-                case "dev.liambloom.tests.bjp.checker.LightColorScheme" -> getLightColorScheme();
-                case "dev.liambloom.tests.bjp.checker.DarkColorScheme" -> getDarkColorScheme();
-                default -> (ColorScheme) ColorSchemeManager.class.getClassLoader().loadClass(schemeName).getDeclaredConstructor().newInstance();
-            });
-        } catch (NoSuchMethodException | ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            // TODO: maybe produce a warning?
-            App.prefs().remove("colorScheme");
-            try {
-                App.createLogFile(e);
-            } catch (IOException ignored) { }
-            setColorScheme(getLightColorScheme());
-        }
+        String schemeName = App.prefs().get("colorScheme", LightColorScheme.class.getName());
+        setColorScheme(switch (schemeName) {
+            case "dev.liambloom.tests.bjp.gui.LightColorScheme" -> getLightColorScheme();
+            case "dev.liambloom.tests.bjp.gui.DarkColorScheme" -> getDarkColorScheme();
+            default -> {
+                try {
+                    yield (ColorScheme) ColorSchemeManager.class.getClassLoader().loadClass(schemeName).getDeclaredConstructor().newInstance();
+                }
+                catch (NoSuchMethodException | ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                    App.prefs().remove("colorScheme");
+                    try {
+                        App.createLogFile(e);
+                    } catch (IOException ignored) { }
+                    yield getLightColorScheme();
+                }
+            }
+        });
     }
 }

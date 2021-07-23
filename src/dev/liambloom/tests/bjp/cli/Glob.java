@@ -1,4 +1,9 @@
-package dev.liambloom.tests.bjp.checker;
+package dev.liambloom.tests.bjp.cli;
+
+import dev.liambloom.tests.bjp.shared.App;
+import dev.liambloom.tests.bjp.shared.FunctionThrowsIOException;
+import dev.liambloom.tests.bjp.shared.Logger;
+import dev.liambloom.tests.bjp.shared.UserErrorException;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,7 +18,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class Glob implements TargetFiles {
+public class Glob {
     private final Piece[] pieces;
     final boolean isTestGlob;
     final Logger logger;
@@ -256,7 +261,6 @@ public class Glob implements TargetFiles {
         }*/
     }
 
-    @Override
     public Stream<Path> files() throws IOException {
         try {
             return Arrays.stream(pieces)
@@ -272,7 +276,6 @@ public class Glob implements TargetFiles {
         }
     }
 
-    @Override
     public Path single() throws IOException {
         return files().collect(Collectors.collectingAndThen(Collectors.toList(),
             list -> {
