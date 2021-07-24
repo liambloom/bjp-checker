@@ -1,19 +1,16 @@
 package dev.liambloom.tests.bjp.cli;
 
-import dev.liambloom.tests.bjp.shared.App;
+import dev.liambloom.tests.bjp.shared.*;
 import dev.liambloom.tests.bjp.gui.GUI;
-import dev.liambloom.tests.bjp.shared.Logger;
-import dev.liambloom.tests.bjp.shared.Result;
-import dev.liambloom.tests.bjp.shared.UserErrorException;
 import javafx.application.Application;
-import org.fusesource.jansi.AnsiConsole;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 public class CLI {
     public static void main(String[] args) {
-        CLILogger logger = new CLILogger();
+        App.setLogger(new CLILogger());
 
         try {
             if (args.length == 0) {
@@ -36,14 +33,17 @@ public class CLI {
                         System.out.println(App.VERSION);
                         break;
                     case "check":
-                        new App(logger).check(new CheckArgs(args, 1, logger));
+                        App.check(CheckArgs.fromCLIArgs(args, 1));
                         //throw new UserErrorException("Command `check' not supported in current checker version");
                         break;
                     case "submit":
                         throw new UserErrorException("Command `submit' not supported in current checker version");
                         // break;
                     case "validate":
-                        logger.printResults(new App(logger).validateTests(Arrays.copyOfRange(args, 1, args.length)));
+                        (App.validateTests(args.length == 1
+                                ? Stream.of(App.testBase())
+                                : new Glob(Arrays.copyOfRange(args, 1, args.length), true).files()))
+                            .forEachOrdered(CLI::printResult);
                         break;
                     /*case "results":
                         throw new UserErrorException("Command `results' not supported in current checker version");
@@ -57,24 +57,21 @@ public class CLI {
             }
         }
         catch (UserErrorException e) {
-            logger.error(e.getMessage());
+            App.logger.log(Logger.LogKind.ERROR, e.getMessage());
             System.exit(1);
             //e.printStackTrace();
         }
         catch (Throwable e) {
-            logger.error("An error was encountered internally. Check logs for more information");
+            App.logger.log(Logger.LogKind.ERROR, "An error was encountered internally. Check logs for more information");
             //e.printStackTrace();
             try {
                 App.createLogFile(e);
             }
             catch (IOException ignored) {
-                logger.error("Failed to create log file");
+                App.logger.log(Logger.LogKind.ERROR, "Failed to create log file");
             }
 
             System.exit(1);
-        }
-        finally {
-            logger.close();
         }
     }
 
@@ -90,5 +87,17 @@ public class CLI {
     private static void assertLength(Object[] a, int l) {
         if (a.length != l)
             throw new UserErrorException("Unexpected argument after `" + a[l - 1] + "'");
+    }
+
+    private static void printResult(Result r) {
+        System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name, r.variant.color().ansi, r.variant.getName());
+        if (r.variant.isError()) {
+            try {
+                r.printToStream(System.out);
+            }
+            catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
     }
 }

@@ -3,9 +3,6 @@ package dev.liambloom.tests.bjp.shared;
 import dev.liambloom.tests.bjp.Chapter;
 import dev.liambloom.tests.bjp.Exercise;
 import dev.liambloom.tests.bjp.ProgrammingProject;
-import dev.liambloom.tests.bjp.cli.CheckArgs;
-import dev.liambloom.tests.bjp.cli.Glob;
-import dev.liambloom.tests.bjp.gui.GUI;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
@@ -39,6 +36,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class App {
+    private App() {}
+
     public static final String VERSION = "v1.0.0-alpha-2";
 
     /**
@@ -46,8 +45,14 @@ public class App {
      */
     private static Path here = null;
     private static Preferences prefs = null;
+    private static Path testBase = null;
+    private static Logger innerLogger = null;
+    // TODO: Use logger more & better
+    public final static Logger logger = (logKind, msg, args) -> {
+        innerLogger.log(logKind, msg, args);
+    };
 
-    public static synchronized Path here() {
+    public static Path here() {
         if (here == null) {
             try {
                 Path p = Path.of(App.class.getProtectionDomain().getCodeSource().getLocation().toURI());
@@ -62,10 +67,21 @@ public class App {
         return here;
     }
 
-    public static synchronized Preferences prefs() {
+    public static Preferences prefs() {
         if (prefs == null)
-            prefs = Preferences.userNodeForPackage(GUI.class);
+            prefs = Preferences.userRoot().node("dev/liambloom/tests/bjp");
         return prefs;
+    }
+
+    public static Path testBase() {
+        if (testBase == null)
+            testBase = here().resolve("tests");
+        return testBase;
+    }
+
+
+    public static void setLogger(Logger logger) {
+        App.innerLogger = logger;
     }
 
     public static Schema loadTestSchema() throws SAXException {
@@ -75,22 +91,12 @@ public class App {
                 new StreamSource(App.class.getResourceAsStream("/book-tests.xsd")));
     }
 
-    private static Path testBase = null;
-
-    public static synchronized Path testBase() {
-        if (testBase == null)
-            testBase = here().resolve("tests");
-        return testBase;
-    }
-
-    public Logger logger;
-
-    public App(Logger logger) throws IOException {
-        this.logger = logger;
+    // TODO: Use this somewhere
+    public static void checkTests() throws IOException {
         for (Path p : Files.exists(App.testBase()) ? Files.newDirectoryStream(App.testBase()) : Collections.<Path>emptyList()) {
             p = p.toRealPath();
             if (Files.isDirectory(p) || !p.toString().endsWith(".xml"))
-                logger.warn("Expected xml file, found `%s' in tests", p.toString());
+                logger.log(Logger.LogKind.WARN, "Expected xml file, found `%s' in tests", p.toString());
         }
     }
 
@@ -102,24 +108,19 @@ public class App {
         // System.err.println(log); // I can't remember if this was just for debugging
     }
 
-    public Stream<TestValidationResult> validateTests(String[] glob) throws SAXException, IOException {
-        if (glob.length == 0)
-            glob = new String[]{ "@tests" };
-        return validateTests(new Glob(glob, true, logger));
-    }
-
-    public Stream<TestValidationResult> validateTests(Glob glob) throws SAXException, IOException {
+    public static Stream<TestValidationResult> validateTests(Stream<Path> paths) throws SAXException, IOException {
         try {
             //final TestLoader.Factory loaderFactory = new TestLoader.Factory();
             final Schema schema = loadTestSchema();
             final Queue<Validator> queue = new ConcurrentLinkedQueue<>();
 
-            return glob.files()
+            return paths
                     .map((FunctionThrowsIOException<Path, TestValidationResult>) (path -> {
                         path = path.toRealPath();
                         if (!path.toString().endsWith(".xml"))
                             throw new UserErrorException(String.format("Test must be of type xml, but `%s' is not", path));
                         Source source = new StreamSource(path.toFile());
+                        // TODO: Use error logger that is build into this
                         Validator v = queue.poll();
                         if (v == null)
                             v = schema.newValidator();
@@ -142,12 +143,13 @@ public class App {
         }
     }
 
-    public Stream<TestResult> check(CheckArgs args) throws IOException, NoSuchMethodException, SAXException, ParserConfigurationException, XPathExpressionException {
+    public static Stream<TestResult> check(CheckArgs args)
+            throws IOException, NoSuchMethodException, SAXException, ParserConfigurationException, XPathExpressionException {
         List<Class<?>> classes;
         int chapter;
         try {
             AtomicInteger detectedChapter = new AtomicInteger(-1);
-            classes = new GlobClassLoader(args.glob()).loadAllClasses()
+            classes = new PathStreamClassLoader(args.paths()).loadAllClasses()
                     .filter(clazz -> {
                     Chapter ch = clazz.getAnnotation(Chapter.class);
                         if (ch == null)
@@ -205,10 +207,6 @@ public class App {
             }
 
             Method m = annotationType.getMethod("value");
-            if (m.getReturnType() != int.class)
-                throw new IllegalArgumentException("Method " + m + " should return int");
-            if (!m.isAccessible())
-                throw new IllegalStateException("Impossible state: inaccessible method in interface");
             valueOf = a -> {
                 try {
                     return (Integer) m.invoke(a);
@@ -246,14 +244,4 @@ public class App {
             return builder.build();
         }
     }
-
-    // The JVM has a glob parser that runs only on windows. It is not a very good
-    // glob parser. In order to prevent the JVM from running it, I append (char) 3
-    // to the end of each argument in rust. Since this is not allowed in paths,
-    // it prevents the JVM from trying to parse globs.
-    /*public static void cleanArgs(String[] args) {
-        for (int i = 0; i < args.length; i++)
-            if (args[i].charAt(args[i].length() - 1) == (char) 31)
-                args[i] = args[i].substring(0, args[i].length() - 1);
-    }*/
 }

@@ -1,7 +1,5 @@
 package dev.liambloom.tests.bjp.shared;
 
-import dev.liambloom.tests.bjp.cli.Glob;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,18 +11,19 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
-public final class GlobClassLoader extends ClassLoader {
+// TODO: Most of this functionality is the same as a URLClassLoader. loadAllClasses is the only bit that's different. Although I guess that's kind of the point
+public final class PathStreamClassLoader extends ClassLoader {
 
     private final SortedMap<String, LazyClass> classes;// = Collections.synchronizedSortedMap(new TreeMap<>());
 
-    public GlobClassLoader(Glob glob) throws IOException {
+    public PathStreamClassLoader(Stream<Path> glob) throws IOException {
         this(glob, getSystemClassLoader());
     }
 
-    public GlobClassLoader(Glob glob, ClassLoader parent) throws IOException {
+    public PathStreamClassLoader(Stream<Path> glob, ClassLoader parent) throws IOException {
         super(parent);
         try {
-            classes = glob.files()
+            classes = glob
                     .map((FunctionThrowsIOException<Path, Path>) Path::toRealPath)
                     .flatMap((FunctionThrowsIOException<Path, Stream<? extends ClassSource>>) (p -> {
                         if (p.toString().endsWith(".jar"))

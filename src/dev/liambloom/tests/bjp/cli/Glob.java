@@ -21,21 +21,19 @@ import java.util.stream.Stream;
 public class Glob {
     private final Piece[] pieces;
     final boolean isTestGlob;
-    final Logger logger;
 
-    public Glob(Collection<String> s, boolean isTestGlob, Logger logger) throws IOException {
+    public Glob(Collection<String> s, boolean isTestGlob) throws IOException {
         if (s.size() == 0)
             throw new UserErrorException("No glob found. For more information, run `check glob --help'");
         this.isTestGlob = isTestGlob;
-        this.logger = logger;
         Iterator<String> iter = s.iterator();
         pieces = new Piece[s.size()];
         for (int i = 0; iter.hasNext(); i++)
             pieces[i] = new Piece(iter.next());
     }
 
-    public Glob(String[] s, boolean isTestGlob, Logger logger) throws IOException {
-        this(Arrays.asList(s), isTestGlob, logger);
+    public Glob(String[] s, boolean isTestGlob) throws IOException {
+        this(Arrays.asList(s), isTestGlob);
     }
 
     private class Piece {
@@ -96,7 +94,7 @@ public class Glob {
             if (r.size() == 0) {
                 if (raw.contains(File.separator) && !raw.contains("/")){
                     r = new Piece(raw.replace(File.separatorChar, '/'), src).files();
-                    logger.warn("Using \"\\\" instead of \"/\" is slower and does not support escaping");
+                    App.logger.log(Logger.LogKind.WARN, "Using \"\\\" instead of \"/\" is slower and does not support escaping");
                 }
                 else {
                     starWarning();
@@ -111,7 +109,7 @@ public class Glob {
 
         private void starWarning() {
             if (Arrays.stream(segments).anyMatch(s -> !s.equals("**") && s.contains("**")))
-                logger.warn("\"**\" as part of a larger segment is interpreted as two single stars");
+                App.logger.log(Logger.LogKind.WARN, "\"**\" as part of a larger segment is interpreted as two single stars");
         }
 
         private Stream<Path> files(Path base, int i) throws IOException {

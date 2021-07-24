@@ -1,32 +1,34 @@
-package dev.liambloom.tests.bjp.cli;
+package dev.liambloom.tests.bjp.shared;
 
-import dev.liambloom.tests.bjp.shared.App;
-import dev.liambloom.tests.bjp.shared.Logger;
-import dev.liambloom.tests.bjp.shared.UserErrorException;
+import dev.liambloom.tests.bjp.cli.Glob;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * This represents the arguments for the checking functionality of
  * this program, which can be found at {@link App#check(CheckArgs)}
  */
-public class CheckArgs {
+public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] programmingProjects, Document tests, Stream<Path> paths) {
     private static final Pattern RANGED_NUM = Pattern.compile("(?:\\d+(?:-\\d+)?(?:,|$))+");
     public static final int MAX_EX_COUNT = 24;
     public static final int MAX_PP_COUNT = 8;
     public static final int MAX_CH = 18;
 
-    private OptionalInt chapter = OptionalInt.empty();
+    /*private OptionalInt chapter = OptionalInt.empty();
     private boolean[] exercises = null;
     private boolean[] programmingProjects;
     private Document tests;
-    private Glob glob;
+    private Glob glob;*/
+
+
 
     /**
      * Constructs CheckArgs from string arguments, beginning
@@ -35,9 +37,14 @@ public class CheckArgs {
      * @param args The string arguments
      * @param i The position of the first argument
      */
-    public CheckArgs(String[] args, int i, Logger logger) throws IOException, SAXException, ParserConfigurationException {
+    public static CheckArgs fromCLIArgs(String[] args, int i) throws IOException, SAXException, ParserConfigurationException {
         List<String> globArgs = new LinkedList<>();
-        String tests = null;
+        String testNames = null;
+        OptionalInt chapter = OptionalInt.empty();
+        boolean[] exercises = null;
+        boolean[] programmingProjects = null;
+        //Document tests;
+        //
 
         for (; i < args.length; i++) {
             switch (args[i]) {
@@ -72,9 +79,9 @@ public class CheckArgs {
                     break;
                 case "-t":
                 case "--tests":
-                    if (tests != null)
+                    if (testNames != null)
                         throw new UserErrorException("Repeat argument: " + args[i]);
-                    tests = args[++i];
+                    testNames = args[++i];
                     break;
                 default:
                     globArgs.add(args[i]);
@@ -83,14 +90,20 @@ public class CheckArgs {
 
         if (exercises == null && programmingProjects == null)
             throw new UserErrorException("No exercises or programming projects specified");
-        if (tests == null)
-            tests = "bjp3";
+        if (exercises == null)
+            exercises = new boolean[MAX_EX_COUNT];
+        if (programmingProjects == null)
+            programmingProjects = new boolean[MAX_PP_COUNT];
+        if (testNames == null)
+            testNames = "bjp3";
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setSchema(App.loadTestSchema());
-        this.tests = dbf.newDocumentBuilder().parse(new Glob(Collections.singleton(tests), true, logger).single().toFile());
+        Document tests = dbf.newDocumentBuilder().parse(new Glob(Collections.singleton(testNames), true).single().toFile());
 
-        glob = new Glob(globArgs, false, logger);
+        Stream<Path> paths = new Glob(globArgs, false).files();
+
+        return new CheckArgs( chapter, exercises, programmingProjects, tests, paths);
     }
 
     private static int putRanges(String[] args, boolean[] nums, int i, String name) {
@@ -121,7 +134,7 @@ public class CheckArgs {
         return i;
     }
 
-    public OptionalInt chapter() {
+    /*public OptionalInt chapter() {
         return chapter;
     }
 
@@ -139,5 +152,5 @@ public class CheckArgs {
 
     public Document tests() {
         return tests;
-    }
+    }*/
 }
