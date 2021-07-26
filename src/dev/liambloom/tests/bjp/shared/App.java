@@ -48,9 +48,7 @@ public class App {
     private static Path testBase = null;
     private static Logger innerLogger = null;
     // TODO: Use logger more & better
-    public final static Logger logger = (logKind, msg, args) -> {
-        innerLogger.log(logKind, msg, args);
-    };
+    public final static Logger logger = (logKind, msg, args) -> innerLogger.log(logKind, msg, args);
 
     public static Path here() {
         if (here == null) {
@@ -87,6 +85,7 @@ public class App {
     public static Schema loadTestSchema() throws SAXException {
         SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1");
         factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
+        // TODO: factory.setErrorHandler(ErrorHandler)
         return factory.newSchema(
                 new StreamSource(App.class.getResourceAsStream("/book-tests.xsd")));
     }
@@ -108,14 +107,14 @@ public class App {
         // System.err.println(log); // I can't remember if this was just for debugging
     }
 
-    public static Stream<TestValidationResult> validateTests(Stream<Path> paths) throws SAXException, IOException {
+    public static Stream<Result> validateTests(Stream<Path> paths) throws SAXException, IOException {
         try {
             //final TestLoader.Factory loaderFactory = new TestLoader.Factory();
             final Schema schema = loadTestSchema();
             final Queue<Validator> queue = new ConcurrentLinkedQueue<>();
 
             return paths
-                    .map((FunctionThrowsIOException<Path, TestValidationResult>) (path -> {
+                    .map((FunctionThrowsIOException<Path, Result>) (path -> {
                         path = path.toRealPath();
                         if (!path.toString().endsWith(".xml"))
                             throw new UserErrorException(String.format("Test must be of type xml, but `%s' is not", path));
@@ -128,9 +127,13 @@ public class App {
                             v.reset();
                         try {
                             v.validate(source);
-                            return new TestValidationResult(path, TestValidationResult.Variant.VALID);
+                            return new Result(
+                                    path.toString().substring(0, path.toString().lastIndexOf('.')),
+                                    TestValidationStatus.VALID/* ,
+                                    TODO: Generate ByteArrayOutputStream from ErrorHandler*/);
                         }
                         catch (SAXException e) {
+                            // TODO: Wait, what? What is this? This is not what results are for!
                             throw new UserErrorException(e);
                         }
                         finally {
@@ -143,13 +146,13 @@ public class App {
         }
     }
 
-    public static Stream<TestResult> check(CheckArgs args)
+    public static Stream<Result> check(CheckArgs args)
             throws IOException, NoSuchMethodException, SAXException, ParserConfigurationException, XPathExpressionException {
         List<Class<?>> classes;
         int chapter;
         try {
             AtomicInteger detectedChapter = new AtomicInteger(-1);
-            classes = new PathStreamClassLoader(args.paths()).loadAllClasses()
+            classes = new PathClassLoader(args.paths()).loadAllClasses()
                     .filter(clazz -> {
                     Chapter ch = clazz.getAnnotation(Chapter.class);
                         if (ch == null)
@@ -184,7 +187,7 @@ public class App {
                 .map(d -> {
                     XPath xpath = Optional.ofNullable(xpaths.poll()).orElseGet(xpf::newXPath);
                     try {
-                        return d.getTest(ch, xpath);
+                        return d.newTest(ch, xpath);
                     }
                     finally {
                         xpaths.add(xpath);
@@ -193,7 +196,7 @@ public class App {
                 .map(Test::run);
     }
 
-    static class CheckerTargetGroup {
+    private static class CheckerTargetGroup {
         private final List<AnnotatedElement>[] targets;
         private final Class<? extends Annotation> annotationType;
         private final Function<Annotation, Integer> valueOf;
@@ -211,20 +214,15 @@ public class App {
                 try {
                     return (Integer) m.invoke(a);
                 }
-                catch (IllegalAccessException | InvocationTargetException e) {
-                    throw new IllegalStateException("Impossible state: this should have been caught earlier", e);
-                }
+                catch (IllegalAccessException | InvocationTargetException e) { throw new IllegalStateException(e); }
             };
 
             this.annotationType = annotationType;
         }
 
-        public CheckerTargetGroup addPotentialTarget(AnnotatedElement e) {
-            for (Annotation a : e.getAnnotationsByType(annotationType)) {
-                Optional.ofNullable(targets[valueOf.apply(a)])
-                        .ifPresent(t -> t.add(e));
-            }
-            return this;
+        public void addPotentialTarget(AnnotatedElement e) {
+            Optional.ofNullable(targets[valueOf.apply(e.getAnnotation(annotationType))])
+                    .ifPresent(t -> t.add(e));
         }
 
         public CheckerTargetGroup addPotentialTargets(Iterator<? extends AnnotatedElement> iter) {
@@ -236,8 +234,8 @@ public class App {
             Stream.Builder<Test.Target> builder = Stream.builder();
             for (int i = 0; i < targets.length; i++) {
                 if (targets[i] != null){
-                    if (targets[i].isEmpty())
-                        throw new UserErrorException("Unable to find " + Test.toSpacedCase(annotationType.getSimpleName()) + i);
+                    /*if (targets[i].isEmpty())
+                        throw new UserErrorException("Unable to find " + TestUtils.camelOrPascalToSpacedCase(annotationType.getSimpleName()) + i);*/
                     builder.add(new Test.Target(targets[i], annotationType, i));
                 }
             }

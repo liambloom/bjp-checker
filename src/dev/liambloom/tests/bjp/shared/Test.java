@@ -1,49 +1,46 @@
 package dev.liambloom.tests.bjp.shared;
 
-import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.InaccessibleObjectException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
-public class Test {
-    private static final Pattern LOOKAHEAD_CAPITAL = Pattern.compile("(?=(?<!^)[A-Z])");
+public interface Test {
+    Result run();
 
-    public static class Target {
-        private final List<AnnotatedElement> targets;
-        private final Class<? extends Annotation> annotationType;
-        private final int num;
+    record Target(List<AnnotatedElement> targets, Class<? extends Annotation> annotationType, int num) {
+        public Test newTest(Node tests, XPath xpath) {
+            String testName = Case.convert(annotationType().getSimpleName(), Case.SPACE) + ' ' + num;
 
-        public Target(List<AnnotatedElement> targets, Class<? extends Annotation> annotationType, int num) {
-            this.targets = targets;
-            this.annotationType = annotationType;
-            this.num = num;
-        }
+            if (targets().isEmpty())
+                return Test.withFixedResult(new Result(testName, TestStatus.MISSING));
 
-        public Test getTest(Node tests, XPath xpath) {
-            char[] testType = annotationType.getSimpleName().toCharArray();
-            testType[0] = Character.toLowerCase(testType[0]);
+
             try {
-                return new Test(targets,
-                        (Node) Optional.ofNullable(xpath.evaluate(new String(testType) + "[@num='" + num + "']", tests, XPathConstants.NODE))
-                                .orElseThrow(() -> new UserErrorException("Unable to find tests for " + toSpacedCase(annotationType.getSimpleName()) + num)));
+                return Test.multiTest(targets,
+                        (Node) Optional.ofNullable(xpath.evaluate(Case.convert(annotationType.getSimpleName(), Case.CAMEL) + "[@num='" + num + "']", tests, XPathConstants.NODE))
+                                .orElseThrow(() -> new UserErrorException("Unable to find tests for " + testName)));
             } catch (XPathExpressionException e) {
                 throw new RuntimeException(e);
             }
         }
     }
 
-    protected InputStream sysIn = new InputStream() { // Or from xml
+    static Test withFixedResult(Result result) {
+        return () -> result;
+    }
+
+    static Test multiTest(List<AnnotatedElement> targets, Node tests) {
+        // TODO
+        return null;
+    }
+
+    /*protected InputStream sysIn = new InputStream() { // Or from xml
         @Override
         public int read() throws IOException {
             return -1;
@@ -62,9 +59,9 @@ public class Test {
 
     }
 
-    public TestResult run() {
+    public Result run() {
         return null; // TODO
-    }
+    }*/
 
     /*public final class Builder {
         private Test test = new Test();
@@ -92,7 +89,7 @@ public class Test {
         }
     }*/
 
-    public TestResult test(Method m) {
+    /*public Result test(Method m) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PrintStream outWrapper = new PrintStream(out);
         InputStream defaultIn = System.in;
@@ -134,15 +131,9 @@ public class Test {
         return null;
     }
 
-    private static final Pattern LINE_SEPARATOR = Pattern.compile("\\r|\\r?\\n");
+    */
 
-    private static String normalizeLineSeparators(String s) {
-        return LINE_SEPARATOR.matcher(s).replaceAll(System.lineSeparator());
-    }
 
-    public static String toSpacedCase(String s) {
-        return LOOKAHEAD_CAPITAL.matcher(s).replaceAll(" ").toLowerCase();
-    }
 
     /*public TestResult test(Class<?> clazz) {
         for (Matcher matcher : pre.keySet()) {

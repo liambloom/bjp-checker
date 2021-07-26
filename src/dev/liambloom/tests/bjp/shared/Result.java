@@ -1,32 +1,28 @@
 package dev.liambloom.tests.bjp.shared;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
-public abstract class Result {
-    public final String name;
-    public final Variant variant;
-
-    public Result(String name, Variant variant) {
-        this.name = name;
-        this.variant = variant;
+// FIXME: The Result system is very convoluted not very good, I should improve it
+public record Result(String name, Status status, Optional<ByteArrayOutputStream> console, List<Result> subResults) {
+    public Result(String name, Status status, @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<ByteArrayOutputStream> console) {
+        this(name, status, console, Collections.emptyList());
     }
 
-    public abstract void printToStream(OutputStream stream) throws IOException;
+    public Result(String name, Status status) {
+        this(name, status, Optional.empty());
+    }
 
-    public interface Variant {
-        boolean isOk();
-
-        default boolean isError() {
-            return !isOk();
-        }
-
-        default Color color() {
-            return isOk() ? Color.GREEN : Color.RED;
-        }
+    // This makes more sense as an abstract class, but enums can't extend abstract classes
+    public interface Status {
+        Color color();
 
         default String getName() {
-            return toString().replace("_", " ").toLowerCase();
+            return Case.convert(toString(), Case.SPACE); // toString().replace("_", " ").toLowerCase();
         }
     }
 }

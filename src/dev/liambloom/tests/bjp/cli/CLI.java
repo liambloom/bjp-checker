@@ -6,6 +6,7 @@ import javafx.application.Application;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public class CLI {
@@ -40,10 +41,15 @@ public class CLI {
                         throw new UserErrorException("Command `submit' not supported in current checker version");
                         // break;
                     case "validate":
-                        (App.validateTests(args.length == 1
-                                ? Stream.of(App.testBase())
-                                : new Glob(Arrays.copyOfRange(args, 1, args.length), true).files()))
-                            .forEachOrdered(CLI::printResult);
+                        try {
+                            App.validateTests(args.length == 1
+                                    ? Stream.of(App.testBase())
+                                    : new Glob(Arrays.copyOfRange(args, 1, args.length), true).files())
+                                    .forEachOrdered((ConsumerThrowsIOException<Result>) CLI::printResult);
+                        }
+                        catch (UncheckedIOException e) {
+                            throw e.getCause();
+                        }
                         break;
                     /*case "results":
                         throw new UserErrorException("Command `results' not supported in current checker version");
@@ -89,15 +95,13 @@ public class CLI {
             throw new UserErrorException("Unexpected argument after `" + a[l - 1] + "'");
     }
 
-    private static void printResult(Result r) {
-        System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name, r.variant.color().ansi, r.variant.getName());
-        if (r.variant.isError()) {
-            try {
-                r.printToStream(System.out);
-            }
-            catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+    private static void printResult(Result r) throws IOException {
+        System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), r.status().getName());
+        try {
+            r.console().ifPresent((ConsumerThrowsIOException<ByteArrayOutputStream>) (c -> c.writeTo(System.out)));
+        }
+        catch (UncheckedIOException e) {
+            throw e.getCause();
         }
     }
 }

@@ -142,6 +142,7 @@ public class Glob {
                     else
                         return files(base, i + 1);
                 default:
+                    // TODO: This can (and should) use Pattern.quote()
                     List<String> literalParts = new ArrayList<>();
                     StringBuilder patternBuilder = new StringBuilder();
                     StringBuilder builderPart = new StringBuilder();

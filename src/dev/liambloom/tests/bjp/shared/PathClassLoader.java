@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
@@ -11,16 +12,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
-// TODO: Most of this functionality is the same as a URLClassLoader. loadAllClasses is the only bit that's different. Although I guess that's kind of the point
-public final class PathStreamClassLoader extends ClassLoader {
+public final class PathClassLoader extends ClassLoader {
 
     private final SortedMap<String, LazyClass> classes;// = Collections.synchronizedSortedMap(new TreeMap<>());
 
-    public PathStreamClassLoader(Stream<Path> glob) throws IOException {
+    public PathClassLoader(Stream<Path> glob) throws IOException {
         this(glob, getSystemClassLoader());
     }
 
-    public PathStreamClassLoader(Stream<Path> glob, ClassLoader parent) throws IOException {
+    public PathClassLoader(Stream<Path> glob, ClassLoader parent) throws IOException {
         super(parent);
         try {
             classes = glob
@@ -122,19 +122,7 @@ class PathClassSource implements ClassSource {
 
 class CompressedClassSource implements ClassSource {
     public static final Pattern MR_CLASS = Pattern.compile("META-INF/version/\\d+/");
-    static final int JAVA_VERSION;
-
-    static {
-        String versionString = System.getProperty("java.version");
-        String majorVersionString;
-        if (versionString.startsWith("1."))
-            majorVersionString = versionString.substring(2, 3);
-        else {
-            int vDot = versionString.indexOf('.');
-            majorVersionString = vDot == -1 ? versionString : versionString.substring(0, vDot);
-        }
-        JAVA_VERSION = Integer.parseInt(majorVersionString);
-    }
+    private static final int JAVA_VERSION = Runtime.version().feature();
 
     private final ZipEntry entry;
     private final JarFile jar;
@@ -178,7 +166,7 @@ class CompressedClassSource implements ClassSource {
         while (entries.hasMoreElements()) {
             JarEntry entry = entries.nextElement();
             String name = entry.getName();
-            if (entry.isDirectory() || !name.toLowerCase().endsWith(".class"))
+            if (entry.isDirectory() || !name.toLowerCase(Locale.ENGLISH).endsWith(".class"))
                 continue;
             CompressedClassSource.construct(jar, entry, isMrJar)
                     .ifPresent(src -> entryMap.compute(src.path(), (BiFunctionThrowsIOException<String, CompressedClassSource, CompressedClassSource>)
@@ -193,8 +181,8 @@ class CompressedClassSource implements ClassSource {
     }
 
     private static boolean isMrJar(JarFile jar) throws IOException {
-        return JAVA_VERSION > 8 && Optional.ofNullable(jar.getManifest().getMainAttributes().getValue("Multi-Release"))
-                .map(String::toLowerCase)
+        return JAVA_VERSION > 8 && Optional.ofNullable(jar.getManifest().getMainAttributes().getValue(Attributes.Name.MULTI_RELEASE))
+                .map(s -> s.toLowerCase(Locale.ENGLISH))
                 .map("true"::equals)
                 .orElse(false);
     }
