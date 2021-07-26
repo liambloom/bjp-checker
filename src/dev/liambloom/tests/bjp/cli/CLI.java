@@ -5,6 +5,7 @@ import dev.liambloom.tests.bjp.gui.GUI;
 import javafx.application.Application;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -43,8 +44,8 @@ public class CLI {
                     case "validate":
                         try {
                             App.validateTests(args.length == 1
-                                    ? Stream.of(App.testBase())
-                                    : new Glob(Arrays.copyOfRange(args, 1, args.length), true).files())
+                                    ? Files.list(App.testBase())
+                                    : Arrays.stream(args).skip(1).map(App::getTest))
                                     .forEachOrdered((ConsumerThrowsIOException<Result>) CLI::printResult);
                         }
                         catch (UncheckedIOException e) {

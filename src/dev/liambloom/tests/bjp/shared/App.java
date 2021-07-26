@@ -31,6 +31,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,13 +40,13 @@ public class App {
     private App() {}
 
     public static final String VERSION = "v1.0.0-alpha-2";
+    private static final String[] TEST_NAMES = { "bjp3" };
 
     /**
      * The location of this application's files. The parent folder of "lib" and "bin"
      */
     private static Path here = null;
     private static Preferences prefs = null;
-    private static Path testBase = null;
     private static Logger innerLogger = null;
     // TODO: Use logger more & better
     public final static Logger logger = (logKind, msg, args) -> innerLogger.log(logKind, msg, args);
@@ -71,10 +72,77 @@ public class App {
         return prefs;
     }
 
-    public static Path testBase() {
+    /*public static Stream<InputStream> testBase() {
+        Stream.Builder<InputStream> builder = Stream.builder();
+
+        builder.add();
+
+
+
         if (testBase == null)
             testBase = here().resolve("tests");
         return testBase;
+    }*/
+
+    /* TODO: Create a custom class for managing these tests, which loads them, stores their names,
+        InputStreams, etc. The test should be called Book. */
+    public static InputStream getTest(String name) {
+        return Stream.<Supplier<Optional<InputStream>>>of(
+                () -> Optional.ofNullable(App.class.getClassLoader().getResourceAsStream("/tests/" + name + ".xml")),
+                () -> Optional.ofNullable(App.prefs().node("tests").get(name, null)).map(s -> {
+                    try {
+                        return new BufferedInputStream(new FileInputStream(s));
+                    } catch (FileNotFoundException e) {
+                        return null;
+                    }
+                })
+        )
+                .map(Supplier::get)
+                .filter(Objects::nonNull)
+                .map(Optional::get)
+                .findFirst() // Streams being lazy is so wonderful
+                .orElseThrow(() -> new UserErrorException("Test \"" + name + "\" not found"));
+    }
+
+    /**
+     * This gets a stream of paths to each custom test. Tests that come built
+     * into the application are not in this stream. Not all paths are
+     * guaranteed to exist, and the caller of this method should handle
+     * any non-existent paths, generally by altering the user.
+     *
+     * @return A stream of paths to each custom test
+     */
+    public static Stream<Path> getCustomTests() {
+        Preferences tests = prefs().node("tests");
+        Preferences index = tests.node("index");
+        Stream.Builder<Path> builder = Stream.builder();
+
+        for (int i = 0; i < index.getInt("size", 0); i++) {
+            String testName = index.get(Integer.toString(i), null);
+            if (testName == null)
+                continue;
+            String test = tests.get(testName, null);
+            if (test == null)
+                continue;
+            builder.add(Path.of(test));
+        }
+
+        return builder.build();
+    }
+
+    public static Stream<InputStream> getAllTests() {
+        return Stream.concat(
+                Arrays.stream(TEST_NAMES)
+                        .map(n -> App.class.getClassLoader().getResourceAsStream("/tests" + n + ".xml")),
+                getCustomTests()
+                        .map(p -> {
+                            try {
+                                return new BufferedInputStream(new FileInputStream(p.toFile()));
+                            } catch (FileNotFoundException e) {
+                                // TODO
+                            }
+                        })
+        );
     }
 
 
@@ -91,13 +159,13 @@ public class App {
     }
 
     // TODO: Use this somewhere
-    public static void checkTests() throws IOException {
+    /*public static void checkTests() throws IOException {
         for (Path p : Files.exists(App.testBase()) ? Files.newDirectoryStream(App.testBase()) : Collections.<Path>emptyList()) {
             p = p.toRealPath();
             if (Files.isDirectory(p) || !p.toString().endsWith(".xml"))
                 logger.log(Logger.LogKind.WARN, "Expected xml file, found `%s' in tests", p.toString());
         }
-    }
+    }*/
 
     public static void createLogFile(Throwable err) throws IOException {
         final Path log = here().resolve("logs").resolve(DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
@@ -107,7 +175,7 @@ public class App {
         // System.err.println(log); // I can't remember if this was just for debugging
     }
 
-    public static Stream<Result> validateTests(Stream<Path> paths) throws SAXException, IOException {
+    public static Stream<Result> validateTests(Stream<InputStream> paths) throws SAXException, IOException {
         try {
             //final TestLoader.Factory loaderFactory = new TestLoader.Factory();
             final Schema schema = loadTestSchema();

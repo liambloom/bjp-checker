@@ -2,7 +2,8 @@
 
 <book
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="../book-tests.xsd">
+        xsi:noNamespaceSchemaLocation="../book-tests.xsd"
+        name="BJP 3">
     <chapter num="1">
         <exercise num="1">
             <mutuals>

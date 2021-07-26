@@ -39,7 +39,7 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
      */
     public static CheckArgs fromCLIArgs(String[] args, int i) throws IOException, SAXException, ParserConfigurationException {
         List<String> globArgs = new LinkedList<>();
-        String testNames = null;
+        String testName = null;
         OptionalInt chapter = OptionalInt.empty();
         boolean[] exercises = null;
         boolean[] programmingProjects = null;
@@ -79,9 +79,9 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
                     break;
                 case "-t":
                 case "--tests":
-                    if (testNames != null)
+                    if (testName != null)
                         throw new UserErrorException("Repeat argument: " + args[i]);
-                    testNames = args[++i];
+                    testName = args[++i];
                     break;
                 default:
                     globArgs.add(args[i]);
@@ -94,14 +94,14 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
             exercises = new boolean[MAX_EX_COUNT];
         if (programmingProjects == null)
             programmingProjects = new boolean[MAX_PP_COUNT];
-        if (testNames == null)
-            testNames = "bjp3";
+        if (testName == null)
+            testName = "bjp3";
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setSchema(App.loadTestSchema());
-        Document tests = dbf.newDocumentBuilder().parse(new Glob(Collections.singleton(testNames), true).single().toFile());
+        Document tests = dbf.newDocumentBuilder().parse(App.getTest(testName));
 
-        Stream<Path> paths = new Glob(globArgs, false).files();
+        Stream<Path> paths = new Glob(globArgs).files();
 
         return new CheckArgs( chapter, exercises, programmingProjects, tests, paths);
     }

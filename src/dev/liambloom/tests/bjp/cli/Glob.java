@@ -20,20 +20,18 @@ import java.util.stream.Stream;
 
 public class Glob {
     private final Piece[] pieces;
-    final boolean isTestGlob;
 
-    public Glob(Collection<String> s, boolean isTestGlob) throws IOException {
+    public Glob(Collection<String> s) throws IOException {
         if (s.size() == 0)
             throw new UserErrorException("No glob found. For more information, run `check glob --help'");
-        this.isTestGlob = isTestGlob;
         Iterator<String> iter = s.iterator();
         pieces = new Piece[s.size()];
         for (int i = 0; iter.hasNext(); i++)
             pieces[i] = new Piece(iter.next());
     }
 
-    public Glob(String[] s, boolean isTestGlob) throws IOException {
-        this(Arrays.asList(s), isTestGlob);
+    public Glob(String... s) throws IOException {
+        this(Arrays.asList(s));
     }
 
     private class Piece {
@@ -75,13 +73,7 @@ public class Glob {
             }
             if (builder != null)
                 segmentsList.add(builder.toString());
-            if (isTestGlob && segmentsList.get(0).equals("@tests")) {
-                base = App.testBase();
-                segmentsList.remove(0); // This is O(n) and I wish it weren't
-                if (segmentsList.isEmpty())
-                    segmentsList.add(".");
-            }
-            else if (s.startsWith("/"))
+            if (s.startsWith("/"))
                 base = Path.of(File.separator).toRealPath();
             else
                 base = Path.of(".").toRealPath();
@@ -89,7 +81,7 @@ public class Glob {
         }
 
         public List<Path> files() throws IOException {
-            List<Path> r = Stream.concat(files(base, 0), isTestGlob && segments.length == 1 && !base.equals(App.testBase()) ? files(App.testBase(), 0) : Stream.empty())
+            List<Path> r = files(base, 0)
                     .collect(Collectors.toList());
             if (r.size() == 0) {
                 if (raw.contains(File.separator) && !raw.contains("/")){
@@ -193,12 +185,10 @@ public class Glob {
                                 .append(builderPart)
                                 .append("\\E");
                     }
-                    if (isTestGlob)
-                        patternBuilder.append("(?:\\.xml)?");
                     // TODO: Test this
                     final Pattern patternCaseSensitive = Pattern.compile(patternBuilder.toString());
                     final Pattern patternCaseInsensitive = Pattern.compile(patternBuilder.toString(), Pattern.CASE_INSENSITIVE);
-                    @SuppressWarnings("ConstantConditions")
+                    //@SuppressWarnings("ConstantConditions")
                     Stream<Path> r = Files.list(base)
                             .filter(p -> {
                                 String name = p.toString();
