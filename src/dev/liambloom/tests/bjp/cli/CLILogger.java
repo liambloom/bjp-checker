@@ -26,7 +26,7 @@ public class CLILogger implements Logger, Closeable {
     public void log(LogKind logKind, String msg, Object... args) {
         out.printf("\u001b[%sm[%s]\u001b[0m ",
                 (switch (logKind) {
-                    case ERROR -> Color.RED;
+                    case FATAL_ERROR, ERROR -> Color.RED;
                     case WARN -> Color.YELLOW;
                     case NOTICE ->  Color.CYAN;
                     case OTHER -> Color.GRAY;
@@ -34,6 +34,9 @@ public class CLILogger implements Logger, Closeable {
                 logKind.toString().toLowerCase());
         out.printf(msg, args);
         out.println();
+
+        if (logKind == LogKind.FATAL_ERROR)
+            System.exit(1);
     }
 
     @Override

@@ -6,6 +6,7 @@ public interface Logger {
     void log(LogKind logKind, String msg, Object... args);
 
     enum LogKind {
+        FATAL_ERROR,
         ERROR,
         WARN,
         NOTICE,

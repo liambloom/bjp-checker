@@ -44,8 +44,8 @@ public class CLI {
                     case "validate":
                         try {
                             App.validateTests(args.length == 1
-                                    ? Files.list(App.testBase())
-                                    : Arrays.stream(args).skip(1).map(App::getTest))
+                                    ? Book.getAllTests()
+                                    : Arrays.stream(args).skip(1).map(Book::getTest))
                                     .forEachOrdered((ConsumerThrowsIOException<Result>) CLI::printResult);
                         }
                         catch (UncheckedIOException e) {
