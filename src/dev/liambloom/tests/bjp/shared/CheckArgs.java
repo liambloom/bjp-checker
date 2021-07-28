@@ -15,20 +15,21 @@ import java.util.stream.Stream;
 /**
  * This represents the arguments for the checking functionality of
  * this program, which can be found at {@link App#check(CheckArgs)}
+ *
+ * @param chapter The chapter to check, or {@code OptionalInt.empty()} to auto-detect.
+ * @param exercises If (and only if) {@code exercises[i]} is true, then exercise {@code i + 1} will be run.
+ * @param programmingProjects If (and only if) {@code programmingProjects[i]} is true, then programming project {@code i + 1} will be run.
+ * @param tests The document containing the tests, which must follow the schema TODO: add link to schema
+ * @param paths A stream of the paths for all .class and .jar files to check
  */
 public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] programmingProjects, Document tests, Stream<Path> paths) {
     private static final Pattern RANGED_NUM = Pattern.compile("(?:\\d+(?:-\\d+)?(?:,|$))+");
+    public static final String DEFAULT_TEST_NAME = "bjp3";
+
+    // FIXME: I can't use these, because these consts only apply to bjp3
     public static final int MAX_EX_COUNT = 24;
     public static final int MAX_PP_COUNT = 8;
     public static final int MAX_CH = 18;
-
-    /*private OptionalInt chapter = OptionalInt.empty();
-    private boolean[] exercises = null;
-    private boolean[] programmingProjects;
-    private Document tests;
-    private Glob glob;*/
-
-
 
     /**
      * Constructs CheckArgs from string arguments, beginning
@@ -95,11 +96,11 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
         if (programmingProjects == null)
             programmingProjects = new boolean[MAX_PP_COUNT];
         if (testName == null)
-            testName = "bjp3";
+            testName = DEFAULT_TEST_NAME;
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setSchema(App.loadTestSchema());
-        Document tests = dbf.newDocumentBuilder().parse(App.getTest(testName));
+        Document tests = Book.getTest(testName).getDocument(dbf.newDocumentBuilder());
 
         Stream<Path> paths = new Glob(globArgs).files();
 
