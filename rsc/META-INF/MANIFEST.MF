@@ -1,2 +1,1 @@
 Manifest-Version: 1.0
-Automatic-Module-Name: dev.liambloom.checker.bjp
