@@ -25,18 +25,33 @@ import static java.nio.file.StandardWatchEventKinds.*;
 public abstract class Book {
     abstract Result validate(Validator v) throws IOException;
     abstract Document getDocument(DocumentBuilder db) throws SAXException, IOException;
-    abstract void addWatcher(Consumer<WatchEvent<Path>> cb);
-    abstract boolean exists();
+    abstract void addWatcher(Consumer<WatchEvent<Path>> cb) throws IOException;
+    abstract boolean exists() throws IOException;
 
     private static final Map<Path, Collection<Consumer<WatchEvent<Path>>>> watcherCallbacks = Collections.synchronizedMap(new HashMap<>());
     private static final Map<FileSystem, WatchService> watchers = Collections.synchronizedMap(new HashMap<>());
-    private static final String[] TEST_NAMES = { "bjp3" };
+    private static final Map<Path, Collection<Path>> watcherSymlinkTargets = Collections.synchronizedMap(new HashMap<>());
+    private static final Map<String, Book> loadedTests = Collections.synchronizedMap(new HashMap<>());
+    private static final Map<String, String> LOCAL_TEST_NAMES;
+
+    static {
+        LOCAL_TEST_NAMES = new HashMap<>();
+        LOCAL_TEST_NAMES.put("BJP 3", "bjp3");
+    }
 
     public static Book getTest(String name) {
-        InputStream stream = App.class.getClassLoader().getResourceAsStream("/tests/" + name + ".xml");
-        if (stream != null) {
+        { // Get book if it has already been loaded
+            Book alreadyLoaded = loadedTests.get(name);
+            if (alreadyLoaded != null)
+                return alreadyLoaded;
+        }
+
+        Book r;
+
+        InputStream stream = App.class.getClassLoader().getResourceAsStream("/tests/" + LOCAL_TEST_NAMES.get(name) + ".xml");
+        if (stream != null) { // Get test from jar
             Source source = new StreamSource(stream);
-            return new Book() {
+            r = new Book() {
                 @Override
                 public Result validate(Validator v) throws IOException {
                     // TODO: v.setErrorHandler()
@@ -66,47 +81,64 @@ public abstract class Book {
                 }
             };
         }
+        else { // Get tests from preferences
+            String pathString = App.prefs().node("tests").get(name, null);
 
-        String pathString = App.prefs().node("tests").get(name, null);
+            if (pathString == null)
+                throw new UserErrorException("Test \"" + name + "\" not found");
 
-        if (pathString == null)
-            throw new UserErrorException("Test \"" + name + "\" not found");
+            Path p = Path.of(pathString);
 
-        Path p = Path.of(pathString);
-
-        //if (Files.notExists(p)) {
-        return new Book() {
-            @Override
-            public Result validate(Validator v) throws IOException {
-                if (exists()) {
-                    try {
-                        v.validate(new StreamSource(new BufferedInputStream(Files.newInputStream(p))));
-                        return new Result(name, TestValidationStatus.VALID/* Generate ByteArrayOutputStream from ErrorHandler */);
+            r = new Book() {
+                @Override
+                public Result validate(Validator v) throws IOException {
+                    if (exists()) {
+                        try {
+                            v.validate(new StreamSource(new BufferedInputStream(Files.newInputStream(p))));
+                            return new Result(name, TestValidationStatus.VALID/* Generate ByteArrayOutputStream from ErrorHandler */);
+                        }
+                        catch (SAXException e) {
+                            return new Result(name, TestValidationStatus.INVALID/*, Generate ByteArrayOutputStream from ErrorHandler */);
+                        }
                     }
-                    catch (SAXException e) {
-                        return new Result(name, TestValidationStatus.INVALID/*, Generate ByteArrayOutputStream from ErrorHandler */);
+                    else
+                        return new Result(name, TestValidationStatus.NOT_FOUND);
+                }
+
+                @Override
+                public Document getDocument(DocumentBuilder db) throws SAXException, IOException {
+                    if (exists())
+                        return db.parse(Files.newInputStream(p));
+                    else
+                        throw new NoSuchFileException(p.toString());
+                }
+
+                @Override
+                public void addWatcher(Consumer<WatchEvent<Path>> cb) throws IOException {
+                    Book.addWatcher(p, cb);
+                }
+
+                @Override
+                public boolean exists() throws IOException {
+                    try {
+                        return p.toRealPath().toString().endsWith(".xml");
+                    }
+                    catch (NoSuchFileException e) {
+                        return false;
                     }
                 }
-                else
-                    return new Result(name, TestValidationStatus.NOT_FOUND);
-            }
+            };
+        }
 
-            @Override
-            public Document getDocument(DocumentBuilder db) throws SAXException, IOException {
-                return db.parse(Files.newInputStream(p));
-            }
 
-            @Override
-            public void addWatcher(Consumer<WatchEvent<Path>> cb) {
-                // This should be taken care of by another thread
-                //p.getParent().register();
-            }
+        loadedTests.put(name, r);
+        return r;
+    }
 
-            @Override
-            public boolean exists() {
-                return Files.exists(p);
-            }
-        };
+    public static boolean testExists(String name) {
+        return loadedTests.containsKey(name)
+                || Optional.ofNullable(LOCAL_TEST_NAMES.get(name)).map(n -> Book.class.getClassLoader().getResource(n)).isPresent()
+                || App.prefs().node("tests").get(name, null) != null;
     }
 
     public static void addTest(Path p) throws SAXException, IOException {
@@ -145,29 +177,95 @@ public abstract class Book {
 
                             @SuppressWarnings("unchecked")
                             WatchEvent<Path> event = (WatchEvent<Path>) eventUnfiltered;
-                            Collection<Consumer<WatchEvent<Path>>> callbacks = watcherCallbacks.get(event.context().toAbsolutePath().normalize());
+                            Path target = event.context().toAbsolutePath().normalize();
+                            Queue<Path> targets = new LinkedList<>();
+                            targets.add(target);
 
-                            if (callbacks == null)
-                                continue;
+                            while (Files.isSymbolicLink(target)) {
+                                Path targetTarget;
+                                try {
+                                    targetTarget = Files.readSymbolicLink(target);
+                                }
+                                catch (IOException e) {
+                                    App.logger.log(Logger.LogKind.ERROR, "No longer watching for changes in tests. Reason: " + e.getMessage());
+                                    return;
+                                }
+                                if (!watcherSymlinkTargets
+                                        .computeIfAbsent(targetTarget.toAbsolutePath().normalize(), (FunctionThrowsIOException<Path, Collection<Path>>) (e -> {
+                                            e.getParent().register(fsWatcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
+                                            return Collections.synchronizedCollection(new LinkedList<>());
+                                        }))
+                                        .add(target.toAbsolutePath().normalize()))
+                                    break;
+                                target = targetTarget;
+                            }
 
-                            for (Consumer<WatchEvent<Path>> callback : callbacks)
-                                callback.accept(event);
+                            while (!targets.isEmpty()) {
+                                Path currentTarget = targets.remove();
+
+                                Collection<Consumer<WatchEvent<Path>>> callbacks = watcherCallbacks.get(currentTarget);
+
+                                if (callbacks == null)
+                                    continue;
+
+                                for (Consumer<WatchEvent<Path>> callback : callbacks)
+                                    callback.accept(event);
+
+                                Iterator<Path> symlinks = watcherSymlinkTargets.get(currentTarget).iterator();
+                                while (symlinks.hasNext()) {
+                                    Path symlink = symlinks.next();
+                                    if (!Files.isSymbolicLink(symlink)){
+                                        symlinks.remove();
+                                        continue;
+                                    }
+
+                                    Path symlinkTarget;
+                                    try {
+                                        symlinkTarget = Files.readSymbolicLink(symlink).toAbsolutePath().normalize();
+                                    }
+                                    catch (IOException e) {
+                                        App.logger.log(Logger.LogKind.ERROR, "No longer watching for changes in tests. Reason: " + e.getMessage());
+                                        return;
+                                    }
+
+                                    if (!symlinkTarget.equals(currentTarget)) {
+                                        symlinks.remove();
+                                        continue;
+                                    }
+                                    targets.add(symlinkTarget);
+                                }
+                            }
                         }
 
-                        if (!key.reset())
+                        if (!key.reset()) {
+                            App.logger.log(Logger.LogKind.ERROR, "No longer watching for changes in tests. Reason: WatchKey is invalid");
                             break;
+                        }
                     }
                 })
                         .start();
 
                 return fsWatcher;
             });
+
             watcherCallbacks
                     .computeIfAbsent(p.toAbsolutePath().normalize(), (FunctionThrowsIOException<Path, Collection<Consumer<WatchEvent<Path>>>>) (key -> {
                         key.getParent().register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
                         return Collections.synchronizedCollection(new LinkedList<>());
                     }))
                     .add(cb);
+
+            while (Files.isSymbolicLink(p)) {
+                Path target = Files.readSymbolicLink(p);
+                if (!watcherSymlinkTargets
+                        .computeIfAbsent(target.toAbsolutePath().normalize(), (FunctionThrowsIOException<Path, Collection<Path>>) (key -> {
+                            key.getParent().register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
+                            return Collections.synchronizedCollection(new LinkedList<>());
+                        }))
+                        .add(p.toAbsolutePath().normalize()))
+                    break;
+                p = target;
+            }
         }
         catch (UncheckedIOException e) {
             throw e.getCause();
@@ -179,7 +277,7 @@ public abstract class Book {
         Preferences index = tests.node("index");
 
         return Stream.concat(
-                Arrays.stream(TEST_NAMES),
+                LOCAL_TEST_NAMES.values().stream(),
                 IntStream.range(0, index.getInt("size", 0))
                     .mapToObj(i -> index.get(Integer.toString(i), null))
                     .filter(Objects::nonNull)
