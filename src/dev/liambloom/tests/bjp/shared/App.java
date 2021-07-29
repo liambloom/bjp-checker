@@ -129,22 +129,20 @@ public class App {
     }
 
     public static Stream<Result> check(CheckArgs args)
-            throws IOException, NoSuchMethodException, SAXException, ParserConfigurationException, XPathExpressionException {
+            throws IOException, XPathExpressionException {
         List<Class<?>> classes;
         int chapter;
         try {
             AtomicInteger detectedChapter = new AtomicInteger(-1);
             classes = new PathClassLoader(args.paths()).loadAllClasses()
                     .filter(clazz -> {
-                    Chapter ch = clazz.getAnnotation(Chapter.class);
+                        Chapter ch = clazz.getAnnotation(Chapter.class);
                         if (ch == null)
                             return false;
-                        else if (ch.value() <= 0 || ch.value() > CheckArgs.MAX_CH)
-                            throw new UserErrorException("There is no chapter " + ch.value());
                         else if (args.chapter().isPresent()) {
                             return ch.value() == args.chapter().getAsInt();
                         }
-                        else if (!detectedChapter.compareAndSet(-1, ch.value()))
+                        else if (detectedChapter.updateAndGet(c -> c == -1 ? ch.value() : c) != ch.value())
                             throw new UserErrorException("Cannot auto detect chapter, as classes belonging to chapters " + ch.value() + " and " + detectedChapter + " were found");
                         return true;
                     })
@@ -163,19 +161,23 @@ public class App {
         xpaths.add(xpath1);
 
 
-        return Stream.of(new CheckerTargetGroup(Exercise.class, args.exercises()), new CheckerTargetGroup(ProgrammingProject.class, args.programmingProjects()))
-                .map(e -> e.addPotentialTargets(classes.iterator()))
-                .flatMap(CheckerTargetGroup::tests)
-                .map(d -> {
-                    XPath xpath = Optional.ofNullable(xpaths.poll()).orElseGet(xpf::newXPath);
-                    try {
-                        return d.newTest(ch, xpath);
-                    }
-                    finally {
-                        xpaths.add(xpath);
-                    }
-                })
-                .map(Test::run);
+        try {
+            return Stream.of(new CheckerTargetGroup(Exercise.class, args.exercises()), new CheckerTargetGroup(ProgrammingProject.class, args.programmingProjects()))
+                    .map(e -> e.addPotentialTargets(classes.iterator()))
+                    .flatMap(CheckerTargetGroup::tests)
+                    .map(d -> {
+                        XPath xpath = Optional.ofNullable(xpaths.poll()).orElseGet(xpf::newXPath);
+                        try {
+                            return d.newTest(ch, xpath);
+                        } finally {
+                            xpaths.add(xpath);
+                        }
+                    })
+                    .map(Test::run);
+        }
+        catch (NoSuchMethodException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private static class CheckerTargetGroup {
@@ -186,7 +188,7 @@ public class App {
         @SuppressWarnings("unchecked")
         public CheckerTargetGroup(Class<? extends Annotation> annotationType, boolean[] initWhich) throws NoSuchMethodException {
             targets = new ArrayList[initWhich.length];
-            for (int i = 0; i < CheckArgs.MAX_EX_COUNT; i++) {
+            for (int i = 0; i < initWhich.length; i++) {
                 if (initWhich[i])
                     targets[i] = Collections.synchronizedList(new ArrayList<>());
             }
@@ -196,7 +198,7 @@ public class App {
                 try {
                     return (Integer) m.invoke(a);
                 }
-                catch (IllegalAccessException | InvocationTargetException e) { throw new IllegalStateException(e); }
+                catch (IllegalAccessException | InvocationTargetException e) { throw new IllegalArgumentException(e); }
             };
 
             this.annotationType = annotationType;

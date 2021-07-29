@@ -3,6 +3,7 @@ package dev.liambloom.tests.bjp.cli;
 import dev.liambloom.tests.bjp.shared.*;
 import dev.liambloom.tests.bjp.gui.GUI;
 import javafx.application.Application;
+import org.xml.sax.SAXException;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -35,7 +36,13 @@ public class CLI {
                         System.out.println(App.VERSION);
                         break;
                     case "check":
-                        App.check(CheckArgs.fromCLIArgs(args, 1));
+                        try {
+                            App.check(CheckArgs.fromCLIArgs(args, 1));
+                        }
+                        catch (SAXException e) {
+                            // TODO: There is probably a better way to do this (should I add a ErrorHandler to Book or CheckArgs?)
+                            throw new UserErrorException(e);
+                        }
                         //throw new UserErrorException("Command `check' not supported in current checker version");
                         break;
                     case "submit":
