@@ -137,7 +137,7 @@ public abstract class Book {
 
     public static boolean testExists(String name) {
         return loadedTests.containsKey(name)
-                || Optional.ofNullable(LOCAL_TEST_NAMES.get(name)).map(n -> Book.class.getClassLoader().getResource(n)).isPresent()
+                || Optional.ofNullable(LOCAL_TEST_NAMES.get(name)).map(Book.class.getClassLoader()::getResource).isPresent()
                 || App.prefs().node("tests").get(name, null) != null;
     }
 
@@ -153,6 +153,7 @@ public abstract class Book {
         // shift everything after that 1 to the left
         // remove the last element
         // remove the name from preferences (not just the index)
+        // remove the name from loadedTests
     }
 
     protected static void addWatcher(Path p, Consumer<WatchEvent<Path>> cb) throws IOException {
