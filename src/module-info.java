@@ -7,4 +7,5 @@ module dev.liambloom.tests.bjp {
     requires org.fusesource.jansi;
     exports dev.liambloom.tests.bjp;
     exports dev.liambloom.tests.bjp.gui to javafx.graphics;
+    opens tests;
 }

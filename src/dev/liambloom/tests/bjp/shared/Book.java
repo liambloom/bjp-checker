@@ -1,12 +1,15 @@
 package dev.liambloom.tests.bjp.shared;
 
 import org.w3c.dom.Document;
+import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import java.io.*;
 import java.nio.file.*;
@@ -23,20 +26,35 @@ import java.util.stream.Stream;
 import static java.nio.file.StandardWatchEventKinds.*;
 
 public abstract class Book {
-    abstract Result validate(Validator v) throws IOException;
-    abstract Document getDocument(DocumentBuilder db) throws SAXException, IOException;
-    abstract void addWatcher(Consumer<WatchEvent<Path>> cb) throws IOException;
-    abstract boolean exists() throws IOException;
+    public abstract Result validate(Validator v) throws IOException;
+    public abstract Document getDocument(DocumentBuilder db) throws SAXException, IOException;
+    public abstract void addWatcher(Consumer<WatchEvent<Path>> cb) throws IOException;
+    public abstract boolean exists() throws IOException;
+    public abstract boolean isModifiable();
+    public abstract String getName();
+    public abstract Optional<Path> getPath();
 
     private static final Map<Path, Collection<Consumer<WatchEvent<Path>>>> watcherCallbacks = Collections.synchronizedMap(new HashMap<>());
     private static final Map<FileSystem, WatchService> watchers = Collections.synchronizedMap(new HashMap<>());
     private static final Map<Path, Collection<Path>> watcherSymlinkTargets = Collections.synchronizedMap(new HashMap<>());
     private static final Map<String, Book> loadedTests = Collections.synchronizedMap(new HashMap<>());
     private static final Map<String, String> LOCAL_TEST_NAMES;
+    private static Schema testSchema = null;
 
     static {
         LOCAL_TEST_NAMES = new HashMap<>();
         LOCAL_TEST_NAMES.put("BJP 3", "bjp3");
+    }
+
+    public static Schema loadTestSchema() throws SAXException {
+        if (testSchema == null) {
+            SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1");
+            factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
+            // TODO: factory.setErrorHandler(ErrorHandler)
+            testSchema = factory.newSchema(
+                    new StreamSource(App.class.getResourceAsStream("/book-tests.xsd")));
+        }
+        return testSchema;
     }
 
     public static Book getTest(String name) {
@@ -48,7 +66,11 @@ public abstract class Book {
 
         Book r;
 
-        InputStream stream = App.class.getClassLoader().getResourceAsStream("/tests/" + LOCAL_TEST_NAMES.get(name) + ".xml");
+        System.out.println(Book.class.getModule().isOpen("tests"));
+        System.out.println(Book.class.getClassLoader().getResource("logs/2021-07-25-17-58-25.log"));
+        System.out.println("tests/" + LOCAL_TEST_NAMES.get(name) + ".xml");
+        InputStream stream = Book.class.getClassLoader().getResourceAsStream("tests/" + LOCAL_TEST_NAMES.get(name) + ".xml");
+        System.out.println(stream);
         if (stream != null) { // Get test from jar
             Source source = new StreamSource(stream);
             r = new Book() {
@@ -78,6 +100,21 @@ public abstract class Book {
                 @Override
                 public boolean exists() {
                     return true;
+                }
+
+                @Override
+                public boolean isModifiable() {
+                    return false;
+                }
+
+                @Override
+                public String getName() {
+                    return name;
+                }
+
+                @Override
+                public Optional<Path> getPath() {
+                    return Optional.empty();
                 }
             };
         }
@@ -127,6 +164,21 @@ public abstract class Book {
                         return false;
                     }
                 }
+
+                @Override
+                public boolean isModifiable() {
+                    return true;
+                }
+
+                @Override
+                public String getName() {
+                    return name;
+                }
+
+                @Override
+                public Optional<Path> getPath() {
+                    return Optional.of(p);
+                }
             };
         }
 
@@ -141,7 +193,7 @@ public abstract class Book {
                 || App.prefs().node("tests").get(name, null) != null;
     }
 
-    public static void addTest(Path p) throws SAXException, IOException {
+    public static void addTest(String name, Path p) throws SAXException, IOException {
         // get document
         // get name from document
         // add name => p to tests
@@ -278,7 +330,7 @@ public abstract class Book {
         Preferences index = tests.node("index");
 
         return Stream.concat(
-                LOCAL_TEST_NAMES.values().stream(),
+                LOCAL_TEST_NAMES.keySet().stream(),
                 IntStream.range(0, index.getInt("size", 0))
                     .mapToObj(i -> index.get(Integer.toString(i), null))
                     .filter(Objects::nonNull)

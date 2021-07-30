@@ -39,14 +39,7 @@
                 </xs:unique>
             </xs:element>
         </xs:sequence>
-        <xs:attribute name="name" type="bookName" use="required" />
     </xs:complexType>
-
-    <xs:simpleType name="bookName">
-        <xs:restriction base="xs:string">
-            <xs:pattern value="[^/]{1,80}" />
-        </xs:restriction>
-    </xs:simpleType>
 
     <!--<xs:complexType name="definitions">
         <xs:sequence>

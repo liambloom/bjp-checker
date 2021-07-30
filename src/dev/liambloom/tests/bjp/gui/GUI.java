@@ -1,6 +1,7 @@
 package dev.liambloom.tests.bjp.gui;
 
 import dev.liambloom.tests.bjp.shared.App;
+import dev.liambloom.tests.bjp.shared.Book;
 import javafx.application.Application;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.*;
@@ -18,6 +19,8 @@ import javafx.scene.text.Text;
 import javafx.scene.transform.Affine;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+
+import java.util.stream.Collectors;
 
 public class GUI extends Application {
     public static void main(String[] args) {
@@ -63,6 +66,22 @@ public class GUI extends Application {
         testList.getChildren().add(testTitle);
         testList.backgroundProperty().bind(new BackgroundBinding(ColorSchemeManager.getAltBackgroundProperty()));
         testList.minHeightProperty().bind(pane.heightProperty());
+
+        testList.getChildren().addAll(
+                Book.getAllTests()
+                    .map(book -> {
+                        GridPane bookPane = new GridPane();
+                        Text bookName = new Text(book.getName());
+                        bookPane.add(bookName, 0, 0);
+                        book.getPath().ifPresent(p -> {
+                            Text bookPath = new Text(p.toString());
+                            bookPane.add(bookPath, 0, 1);
+                        });
+                        // TODO
+                        return bookPane;
+                    })
+                    .collect(Collectors.toList())
+        );
 
         //stage.
 

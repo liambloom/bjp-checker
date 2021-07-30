@@ -7,11 +7,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Source;
-import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -31,7 +27,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -79,14 +74,6 @@ public class App {
         App.innerLogger = logger;
     }
 
-    public static Schema loadTestSchema() throws SAXException {
-        SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1");
-        factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
-        // TODO: factory.setErrorHandler(ErrorHandler)
-        return factory.newSchema(
-                new StreamSource(App.class.getResourceAsStream("/book-tests.xsd")));
-    }
-
     // TODO: Use this somewhere
     /*public static void checkTests() throws IOException {
         for (Path p : Files.exists(App.testBase()) ? Files.newDirectoryStream(App.testBase()) : Collections.<Path>emptyList()) {
@@ -107,7 +94,7 @@ public class App {
     public static Stream<Result> validateTests(Stream<Book> books) throws SAXException, IOException {
         try {
             //final TestLoader.Factory loaderFactory = new TestLoader.Factory();
-            final Schema schema = loadTestSchema();
+            final Schema schema = Book.loadTestSchema();
             final Queue<Validator> queue = new ConcurrentLinkedQueue<>();
 
             return books
