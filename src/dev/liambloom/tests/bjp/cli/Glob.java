@@ -1,9 +1,6 @@
 package dev.liambloom.tests.bjp.cli;
 
-import dev.liambloom.tests.bjp.shared.App;
-import dev.liambloom.tests.bjp.shared.FunctionThrowsIOException;
-import dev.liambloom.tests.bjp.shared.Logger;
-import dev.liambloom.tests.bjp.shared.UserErrorException;
+import dev.liambloom.tests.bjp.shared.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -86,7 +83,7 @@ public class Glob {
             if (r.size() == 0) {
                 if (raw.contains(File.separator) && !raw.contains("/")){
                     r = new Piece(raw.replace(File.separatorChar, '/'), src).files();
-                    App.logger.log(Logger.LogKind.WARN, "Using \"\\\" instead of \"/\" is slower and does not support escaping");
+                    App.logger.log(LogKind.WARN, "Using \"\\\" instead of \"/\" is slower and does not support escaping");
                 }
                 else {
                     starWarning();
@@ -101,7 +98,7 @@ public class Glob {
 
         private void starWarning() {
             if (Arrays.stream(segments).anyMatch(s -> !s.equals("**") && s.contains("**")))
-                App.logger.log(Logger.LogKind.WARN, "\"**\" as part of a larger segment is interpreted as two single stars");
+                App.logger.log(LogKind.WARN, "\"**\" as part of a larger segment is interpreted as two single stars");
         }
 
         private Stream<Path> files(Path base, int i) throws IOException {

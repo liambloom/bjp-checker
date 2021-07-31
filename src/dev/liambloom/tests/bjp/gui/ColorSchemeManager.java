@@ -57,9 +57,19 @@ public class ColorSchemeManager {
         return altBackgroundProperty;
     }
 
-    private static final ObjectBinding<Color> menuTitleProperty = new MethodBinding<>(scheme, ColorScheme::getMenuTitle);
-    public static ObjectBinding<Color> getMenuTitleProperty() {
-        return menuTitleProperty;
+    private static final ObjectBinding<Color> altBackgroundHoverProperty = new MethodBinding<>(scheme, ColorScheme::getAltBackgroundHover);
+    public static ObjectBinding<Color> getAltBackgroundHoverProperty() {
+        return altBackgroundHoverProperty;
+    }
+
+    private static final ObjectBinding<Color> titleProperty = new MethodBinding<>(scheme, ColorScheme::getTitle);
+    public static ObjectBinding<Color> getTitleProperty() {
+        return titleProperty;
+    }
+
+    private static final ObjectBinding<Color> subTitleProperty = new MethodBinding<>(scheme, ColorScheme::getSubTitle);
+    public static ObjectBinding<Color> getSubTitleProperty() {
+        return subTitleProperty;
     }
 
     private static final ObjectBinding<Color> grayscaleIconProperty = new MethodBinding<>(scheme, ColorScheme::getGrayscaleIcon);

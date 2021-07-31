@@ -21,8 +21,18 @@ class DarkColorScheme implements ColorScheme {
     }
 
     @Override
-    public Color getMenuTitle() {
+    public Color getAltBackgroundHover() {
+        return Color.gray(0.25);
+    }
+
+    @Override
+    public Color getTitle() {
         return Color.gray(0.65);
+    }
+
+    @Override
+    public Color getSubTitle() {
+        return Color.gray(0.55);
     }
 
     @Override

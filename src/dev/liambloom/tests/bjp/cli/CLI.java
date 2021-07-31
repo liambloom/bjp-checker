@@ -6,10 +6,7 @@ import javafx.application.Application;
 import org.xml.sax.SAXException;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.util.Arrays;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 public class CLI {
     public static void main(String[] args) {
@@ -71,18 +68,18 @@ public class CLI {
             }
         }
         catch (UserErrorException e) {
-            App.logger.log(Logger.LogKind.ERROR, e.getMessage());
+            App.logger.log(LogKind.ERROR, e.getMessage());
             System.exit(1);
             //e.printStackTrace();
         }
         catch (Throwable e) {
-            App.logger.log(Logger.LogKind.ERROR, "An error was encountered internally. Check logs for more information");
+            App.logger.log(LogKind.ERROR, "An error was encountered internally. Check logs for more information");
             //e.printStackTrace();
             try {
                 App.createLogFile(e);
             }
             catch (IOException ignored) {
-                App.logger.log(Logger.LogKind.ERROR, "Failed to create log file");
+                App.logger.log(LogKind.ERROR, "Failed to create log file");
             }
 
             System.exit(1);

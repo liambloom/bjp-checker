@@ -21,8 +21,18 @@ class LightColorScheme implements ColorScheme {
     }
 
     @Override
-    public Color getMenuTitle() {
+    public Color getAltBackgroundHover() {
+        return Color.gray(0.75);
+    }
+
+    @Override
+    public Color getTitle() {
         return Color.gray(0.35);
+    }
+
+    @Override
+    public Color getSubTitle() {
+        return Color.gray(0.45);
     }
 
     @Override

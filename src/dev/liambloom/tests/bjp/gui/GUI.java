@@ -3,15 +3,25 @@ package dev.liambloom.tests.bjp.gui;
 import dev.liambloom.tests.bjp.shared.App;
 import dev.liambloom.tests.bjp.shared.Book;
 import javafx.application.Application;
+import javafx.beans.InvalidationListener;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.*;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableObjectValue;
+import javafx.beans.value.ObservableValue;
+import javafx.event.EventHandler;
+import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Paint;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -20,6 +30,7 @@ import javafx.scene.transform.Affine;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class GUI extends Application {
@@ -53,14 +64,15 @@ public class GUI extends Application {
         //pane.setGridLinesVisible(true);
 
         VBox testList = new VBox();
+        final double TEST_LIST_MARGIN = 5.0;
         pane.add(testList, 0, 1);
         Text testTitle = new Text("Tests:");
         testList.prefWidthProperty().bind(sidebarWidth);
         testList.minWidthProperty().bind(sidebarWidth);
         testList.maxWidthProperty().bind(sidebarWidth);
         testTitle.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        testTitle.fillProperty().bind(ColorSchemeManager.getMenuTitleProperty());
-        VBox.setMargin(testTitle, new Insets(5));
+        testTitle.fillProperty().bind(ColorSchemeManager.getTitleProperty());
+        VBox.setMargin(testTitle, new Insets(TEST_LIST_MARGIN));
         //testTitle.minWidthProperty().bind(testList.widthProperty());
         //testTitle.maxWidthProperty().bind(testList.widthProperty());
         testList.getChildren().add(testTitle);
@@ -70,14 +82,88 @@ public class GUI extends Application {
         testList.getChildren().addAll(
                 Book.getAllTests()
                     .map(book -> {
-                        GridPane bookPane = new GridPane();
+                        AnchorPane bookPane = new AnchorPane();
+                        bookPane.minWidthProperty().bind(testList.widthProperty());
+                        bookPane.maxWidthProperty().bind(testList.widthProperty());
                         Text bookName = new Text(book.getName());
-                        bookPane.add(bookName, 0, 0);
+                        bookName.fillProperty().bind(ColorSchemeManager.getTitleProperty());
+                        AnchorPane.setTopAnchor(bookName, TEST_LIST_MARGIN);
+                        AnchorPane.setLeftAnchor(bookName, TEST_LIST_MARGIN);
+                        bookPane.getChildren().add(bookName);
                         book.getPath().ifPresent(p -> {
                             Text bookPath = new Text(p.toString());
-                            bookPane.add(bookPath, 0, 1);
+                            bookPath.fillProperty().bind(ColorSchemeManager.getSubTitleProperty());
+                            AnchorPane.setBottomAnchor(bookPath, TEST_LIST_MARGIN);
+                            AnchorPane.setLeftAnchor(bookPane, TEST_LIST_MARGIN);
+                            bookPane.getChildren().add(bookPath);
                         });
-                        // TODO
+                        Pane threeDots = new Pane();
+                        final int DOTS_PANE_SIZE = 16;
+                        /*threeDots.setMinSize(DOTS_PANE_SIZE, DOTS_PANE_SIZE);
+                        threeDots.setMaxSize(DOTS_PANE_SIZE, DOTS_PANE_SIZE);*/
+                        final double DOT_RADIUS = 1.2;
+                        Circle topDot = new Circle(DOTS_PANE_SIZE / 2.0, 4, DOT_RADIUS);
+                        topDot.fillProperty().bind(ColorSchemeManager.getTitleProperty());
+                        Circle middleDot = new Circle(DOTS_PANE_SIZE / 2.0, DOTS_PANE_SIZE / 2.0, DOT_RADIUS);
+                        middleDot.fillProperty().bind(ColorSchemeManager.getTitleProperty());
+                        Circle bottomDot = new Circle(DOTS_PANE_SIZE / 2.0, 12, DOT_RADIUS);
+                        bottomDot.fillProperty().bind(ColorSchemeManager.getTitleProperty());
+                        threeDots.getChildren().addAll(topDot, middleDot, bottomDot);
+                        Button menuButton = new Button();
+                        menuButton.setGraphic(threeDots);
+                        menuButton.setPadding(Insets.EMPTY);
+                        menuButton.setBackground(Background.EMPTY);
+                        //menuButton.getItems().add(new MenuItem("Delete"));
+                        menuButton.setMinSize(DOTS_PANE_SIZE, DOTS_PANE_SIZE);
+                        menuButton.setMaxSize(DOTS_PANE_SIZE, DOTS_PANE_SIZE);
+                        menuButton.backgroundProperty().bind(new ObjectBinding<>() {
+                            { bind(ColorSchemeManager.getAltBackgroundHoverProperty(), menuButton.hoverProperty()); }
+
+                            @Override
+                            protected Background computeValue() {
+                                return menuButton.isHover()
+                                        ? new Background(new BackgroundFill(ColorSchemeManager.getAltBackgroundHoverProperty().get(), new CornerRadii(2), Insets.EMPTY))
+                                        : Background.EMPTY;
+                            }
+                        });
+                        ContextMenu menu = new ContextMenu();
+                        MenuItem rename = new MenuItem("Rename");
+                        MenuItem delete = new MenuItem("Delete");
+                        delete.setStyle("-fx-text-fill: red");
+                        menu.getItems().addAll(rename, new SeparatorMenuItem(), delete);
+
+                        EventHandler<? super MouseEvent> onClick = e -> {
+                            if (e.getButton() != MouseButton.PRIMARY)
+                                return;
+                            System.out.println("foo");
+                        };
+                        bookPane.setOnMouseClicked(onClick);
+
+                        bookPane.setOnContextMenuRequested(e -> {
+                            Bounds bounds = bookPane.localToScreen(bookPane.getBoundsInLocal());
+                            menu.show(bookPane, e.getX() + bounds.getMinX(), e.getY() + bounds.getMinY());
+                            bookPane.setOnMouseClicked(e2 -> {
+                                menu.hide();
+                                bookPane.setOnMouseClicked(onClick);
+                                onClick.handle(e2);
+                            });
+                            menu.setOnAutoHide(e2 -> bookPane.setOnMouseClicked(onClick));
+                        });
+
+                        AtomicBoolean menuButtonIsShowing = new AtomicBoolean(false);
+                        menuButton.setOnAction(e -> {
+                            if (menuButtonIsShowing.compareAndSet(false, true))
+                                menu.show(menuButton, Side.RIGHT, 0, 0);
+                            else
+                                menu.hide();
+                        });
+
+                        menu.setOnHiding(e -> menuButtonIsShowing.set(false));
+
+                        AnchorPane.setTopAnchor(menuButton, TEST_LIST_MARGIN);
+                        AnchorPane.setRightAnchor(menuButton, TEST_LIST_MARGIN);
+                        bookPane.getChildren().add(menuButton);
+
                         return bookPane;
                     })
                     .collect(Collectors.toList())
@@ -173,6 +259,7 @@ public class GUI extends Application {
         chooserDisplay.prefWidthProperty().bind(pane.widthProperty().subtract(sidebarWidth));
         chooserDisplay.prefHeightProperty().bind(pane.heightProperty());
 
+        // FIXME: This scales the hitbox (is that the right word?), which is not what I want.
         chooserDisplay.scaleXProperty().bind(chooserDisplayScale);
         chooserDisplay.scaleYProperty().bind(chooserDisplayScale);
         chooserDisplay.maxWidthProperty().bind(pane.widthProperty().subtract(sidebarWidth));

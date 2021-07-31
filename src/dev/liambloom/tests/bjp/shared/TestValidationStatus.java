@@ -43,6 +43,7 @@ import java.util.regex.Pattern;
     public enum TestValidationStatus implements Result.Status {
         VALID(Color.GREEN),
         NOT_FOUND(Color.YELLOW),
+        VALID_WITH_WARNINGS(Color.YELLOW),
         INVALID(Color.RED);
 
         private final Color color;

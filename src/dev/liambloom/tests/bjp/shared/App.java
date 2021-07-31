@@ -42,7 +42,7 @@ public class App {
     private static Path here = null;
     private static Preferences prefs = null;
     private static Logger innerLogger = (logKind, msg, args) -> {
-        if (logKind == Logger.LogKind.ERROR || logKind == Logger.LogKind.FATAL_ERROR)
+        if (logKind == LogKind.ERROR)
             throw new UserErrorException(String.format(msg, args));
     };
     // TODO: Use logger more & better

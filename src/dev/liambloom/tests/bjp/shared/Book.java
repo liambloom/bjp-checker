@@ -1,11 +1,12 @@
 package dev.liambloom.tests.bjp.shared;
 
+import dev.liambloom.tests.bjp.cli.CLILogger;
 import org.w3c.dom.Document;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
@@ -14,25 +15,40 @@ import javax.xml.validation.Validator;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.prefs.Preferences;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import static java.nio.file.StandardWatchEventKinds.*;
 
 public abstract class Book {
-    public abstract Result validate(Validator v) throws IOException;
+    public Result validate(Validator v) throws IOException {
+        if (exists()) try (ValidationErrorHandler handler = new ValidationErrorHandler()) {
+            ErrorHandler prevErrHandler = v.getErrorHandler();
+            v.setErrorHandler(handler);
+            try {
+                v.validate(getSource());
+            } catch (SAXException ignored) {
+            }
+            v.setErrorHandler(prevErrHandler);
+
+            if (handler.getMaxErrorKind() == null)
+                return new Result(getName(), TestValidationStatus.VALID);
+            else if (handler.getMaxErrorKind() == LogKind.WARN)
+                return new Result(getName(), TestValidationStatus.VALID_WITH_WARNINGS, Optional.of(handler.getLogs()));
+            else
+                return new Result(getName(), TestValidationStatus.INVALID, Optional.of(handler.getLogs()));
+        }
+        else
+            return new Result(getName(), TestValidationStatus.NOT_FOUND);
+    }
     public abstract Document getDocument(DocumentBuilder db) throws SAXException, IOException;
     public abstract void addWatcher(Consumer<WatchEvent<Path>> cb) throws IOException;
     public abstract boolean exists() throws IOException;
     public abstract boolean isModifiable();
     public abstract String getName();
     public abstract Optional<Path> getPath();
+    protected abstract Source getSource() throws IOException;
 
     private static final Map<Path, Collection<Consumer<WatchEvent<Path>>>> watcherCallbacks = Collections.synchronizedMap(new HashMap<>());
     private static final Map<FileSystem, WatchService> watchers = Collections.synchronizedMap(new HashMap<>());
@@ -75,18 +91,6 @@ public abstract class Book {
             Source source = new StreamSource(stream);
             r = new Book() {
                 @Override
-                public Result validate(Validator v) throws IOException {
-                    // TODO: v.setErrorHandler()
-                    try {
-                        v.validate(source);
-                        return new Result(name, TestValidationStatus.VALID/* Generate ByteArrayOutputStream from ErrorHandler */);
-                    }
-                    catch (SAXException e) {
-                        return new Result(name, TestValidationStatus.INVALID/*, Generate ByteArrayOutputStream from ErrorHandler */);
-                    }
-                }
-
-                @Override
                 public Document getDocument(DocumentBuilder db) throws SAXException, IOException {
                     return db.parse(stream);
                 }
@@ -115,6 +119,11 @@ public abstract class Book {
                 @Override
                 public Optional<Path> getPath() {
                     return Optional.empty();
+                }
+
+                @Override
+                protected Source getSource() {
+                    return source;
                 }
             };
         }
@@ -179,6 +188,11 @@ public abstract class Book {
                 public Optional<Path> getPath() {
                     return Optional.of(p);
                 }
+
+                @Override
+                protected Source getSource() throws IOException {
+                    return new StreamSource(new BufferedInputStream(Files.newInputStream(p)));
+                }
             };
         }
 
@@ -220,7 +234,7 @@ public abstract class Book {
                             key = fsWatcher.take();
                         }
                         catch (InterruptedException e) {
-                            App.logger.log(Logger.LogKind.ERROR, e.toString());
+                            App.logger.log(LogKind.ERROR, e.toString());
                             throw new RuntimeException(e);
                         }
 
@@ -240,7 +254,7 @@ public abstract class Book {
                                     targetTarget = Files.readSymbolicLink(target);
                                 }
                                 catch (IOException e) {
-                                    App.logger.log(Logger.LogKind.ERROR, "No longer watching for changes in tests. Reason: " + e.getMessage());
+                                    App.logger.log(LogKind.ERROR, "No longer watching for changes in tests. Reason: " + e.getMessage());
                                     return;
                                 }
                                 if (!watcherSymlinkTargets
@@ -277,7 +291,7 @@ public abstract class Book {
                                         symlinkTarget = Files.readSymbolicLink(symlink).toAbsolutePath().normalize();
                                     }
                                     catch (IOException e) {
-                                        App.logger.log(Logger.LogKind.ERROR, "No longer watching for changes in tests. Reason: " + e.getMessage());
+                                        App.logger.log(LogKind.ERROR, "No longer watching for changes in tests. Reason: " + e.getMessage());
                                         return;
                                     }
 
@@ -291,7 +305,7 @@ public abstract class Book {
                         }
 
                         if (!key.reset()) {
-                            App.logger.log(Logger.LogKind.ERROR, "No longer watching for changes in tests. Reason: WatchKey is invalid");
+                            App.logger.log(LogKind.ERROR, "No longer watching for changes in tests. Reason: WatchKey is invalid");
                             break;
                         }
                     }
@@ -338,5 +352,61 @@ public abstract class Book {
                     .filter(Objects::nonNull)
         )
                 .map(Book::getTest);
+    }
+
+    private class ValidationErrorHandler implements ErrorHandler, Closeable {
+        private final ByteArrayOutputStream log = new ByteArrayOutputStream();
+        private final CLILogger logger  = new CLILogger(new PrintStream(log));
+        private LogKind maxErrorKind = null;
+
+        @Override
+        public void warning(SAXParseException exception) {
+            if (maxErrorKind == null)
+                maxErrorKind = LogKind.WARN;
+            logger.log(LogKind.WARN, getMessage(exception));
+        }
+
+        @Override
+        public void error(SAXParseException exception) {
+            if (maxErrorKind != LogKind.ERROR)
+                maxErrorKind = LogKind.ERROR;
+            logger.log(LogKind.ERROR, getMessage(exception));
+        }
+
+        @Override
+        public void fatalError(SAXParseException exception) {
+            if (maxErrorKind != LogKind.ERROR)
+                maxErrorKind = LogKind.ERROR;
+            logger.log(LogKind.ERROR, getMessage(exception));
+            // TODO: Maybe log something that indicates parsing stopped here?
+        }
+
+        private String getMessage(SAXParseException e) {
+            StringBuilder message = new StringBuilder(e.getMessage());
+            if (message.charAt(message.length() - 1) == '.')
+                message.deleteCharAt(message.length() - 1);
+
+            return message.append(" at ")
+                    .append(getPath().map(Object::toString).orElse(getName()))
+                    .append(':')
+                    .append(e.getLineNumber())
+                    .append(':')
+                    .append(e.getColumnNumber())
+                    .toString();
+        }
+
+        public ByteArrayOutputStream getLogs() {
+            return log;
+        }
+
+        public LogKind getMaxErrorKind() {
+            return maxErrorKind;
+        }
+
+        @Override
+        public void close() throws IOException {
+            log.close();
+            logger.close();
+        }
     }
 }
