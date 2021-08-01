@@ -7,6 +7,8 @@ import org.xml.sax.SAXException;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CLI {
@@ -14,71 +16,91 @@ public class CLI {
         App.setLogger(new CLILogger());
 
         try {
-            if (args.length == 0) {
-                printHelp("checker");
-            }
-            else if (args.length > 1 && (args[1].equals("-h") || args[1].equals("--help"))) {
+            /*if (args.length > 1 && (args[1].equals("-h") || args[1].equals("--help"))) {
                 // TODO: handle help better
                 assertLength(args, 2);
                 printHelp(args[0]);
             }
-            else {
-                switch (args[0]) {
-                    case "-h":
-                    case "--help":
-                        assertLength(args, 1);
-                        printHelp("checker");
-                        break;
-                    case "-v":
-                    case "--version":
-                        assertLength(args, 1);
-                        System.out.println(App.VERSION);
-                        break;
-                    case "check":
-                        try {
-                            App.check(CheckArgs.fromCLIArgs(args, 1));
-                        }
-                        catch (SAXException e) {
-                            // TODO: There is probably a better way to do this (should I add a ErrorHandler to Book or CheckArgs?)
-                            throw new UserErrorException(e);
-                        }
-                        //throw new UserErrorException("Command `check' not supported in current checker version");
-                        break;
-                    case "submit":
-                        throw new UserErrorException("Command `submit' not supported in current checker version");
-                        // break;
-                    case "tests":
-                        if (args.length < 2)
-                            throw new UserErrorException(""); // TODO
-                        switch (args[1]) {
-                            // TODO: handle errors
-                            case "add":
-                                Book.addTest(args[2], new Glob(args[3]).single());
-                                break;
-                            case "remove":
-                                throw new UserErrorException("Command `tests remove' not supported in current checker version");
-                                /*Book.removeTest(args[2]);
-                                break;*/
-                            case "validate":
-                                try {
-                                    printResults((args.length == 2
-                                            ? Book.getAllTests()
-                                            : Arrays.stream(args).skip(2).map(Book::getTest))
-                                            .map((FunctionThrowsIOException<Book, Result>) Book::validate));
-                                }
-                                catch (UncheckedIOException e) {
-                                    throw e.getCause();
-                                }
-                                break;
-                        }
-                        break;
-                    case "gui":
-                        Application.launch(GUI.class, Arrays.copyOfRange(args, 1, args.length));
-                        break;
-                    default:
-                        throw new UserErrorException("Command `" + args[0] + "' not recognized. See `checker --help' for a list of commands.");
-                }
+            else {*/
+            switch (args.length == 0 ? "-h" : args[0]) {
+                case "-h":
+                case "--help":
+                    assertArgsPresent(args, 1);
+                    printHelp("checker");
+                    break;
+                case "-v":
+                case "--version":
+                    assertArgsPresent(args, 1);
+                    System.out.println(App.VERSION);
+                    break;
+                case "check":
+                    try {
+                        App.check(CheckArgs.fromCLIArgs(args, 1));
+                    }
+                    catch (SAXException e) {
+                        // TODO: There is probably a better way to do this (should I add a ErrorHandler to Book or CheckArgs?)
+                        throw new UserErrorException(e);
+                    }
+                    //throw new UserErrorException("Command `check' not supported in current checker version");
+                    break;
+                case "submit":
+                    throw new UserErrorException("Command `submit' not supported in current checker version");
+                    // break;
+                case "tests":
+                    if (args.length == 1)
+                        throw new UserErrorException("Missing argument, expected one of: add, remove, rename, list, validate"); // TODO
+                    switch (args[1]) {
+                        // TODO: handle errors
+                        case "add":
+                            assertArgsPresent(args, 2, "name", "path");
+                            Book.addTest(args[2], new Glob(args[3]).single());
+                            break;
+                        case "remove":
+                            Book.removeTest(args[2]);
+                            break;
+                        case "rename":
+                            assertArgsPresent(args, 2, "old-name", "new-name");
+                            if (Book.getTest(args[2]) instanceof ModifiableBook book)
+                                book.setName(args[3]);
+                            else
+                                throw new UserErrorException("Book `" + args[2] + "' can't be renamed");
+                            break;
+                        case "list":
+                            assertArgsPresent(args, 2);
+                            List<Book> books = Book.getAllTests().collect(Collectors.toList());
+                            String[][] names = new String[books.size()][2];
+                            int maxBookNameLength = 0;
+                            for (int i = 0; i < names.length; i++) {
+                                Book book = books.get(i);
+                                String name = book.getName();
+                                if (name.length() > maxBookNameLength)
+                                    maxBookNameLength = name.length();
+                                names[i][0] = name;
+                                names[i][1] = book instanceof PathBook pathBook ? pathBook.getPath().toString() : "";
+                            }
+                            for (String[] book : names)
+                                System.out.printf("%-" + maxBookNameLength + "s  %s%n", book[0], book[1]);
+                            break;
+                        case "validate":
+                            try {
+                                printResults((args[2].equals("-a") || args[2].equals("--all")
+                                        ? Book.getAllTests()
+                                        : Arrays.stream(args).skip(2).map(Book::getTest))
+                                        .map((FunctionThrowsIOException<Book, Result>) Book::validate));
+                            }
+                            catch (UncheckedIOException e) {
+                                throw e.getCause();
+                            }
+                            break;
+                    }
+                    break;
+                case "gui":
+                    Application.launch(GUI.class, Arrays.copyOfRange(args, 1, args.length));
+                    break;
+                default:
+                    throw new UserErrorException("Command `" + args[0] + "' not recognized. See `checker --help' for a list of commands.");
             }
+            //}
         }
         catch (UserErrorException e) {
             App.logger.log(LogKind.ERROR, e.getMessage());
@@ -108,9 +130,12 @@ public class CLI {
             System.out.write(next);
     }
 
-    private static void assertLength(Object[] a, int l) {
-        if (a.length != l)
-            throw new UserErrorException("Unexpected argument after `" + a[l - 1] + "'");
+    private static void assertArgsPresent(String[] args, int i, String... names) {
+        int rem = args.length - i;
+        if (rem < names.length)
+            throw new UserErrorException("Missing argument: " + names[rem]);
+        else if (rem > names.length)
+            throw new UserErrorException("Unexpected argument: `" + args[i + names.length] + '\'');
     }
 
     public static void printResults(Stream<Result> s) throws IOException {

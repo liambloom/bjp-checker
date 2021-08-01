@@ -85,7 +85,7 @@ public class App {
 
     public static void createLogFile(Throwable err) throws IOException {
         final Path log = here().resolve("logs").resolve(DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");
-        Files.createDirectory(log.getParent());
+        Files.createDirectories(log.getParent());
         Files.createFile(log);
         err.printStackTrace(new PrintStream(Files.newOutputStream(log)));
         // System.err.println(log); // I can't remember if this was just for debugging

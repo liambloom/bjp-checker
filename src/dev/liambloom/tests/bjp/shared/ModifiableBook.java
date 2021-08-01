@@ -11,9 +11,8 @@ public abstract class ModifiableBook extends Book {
         super(name);
     }
 
-    @Override
     public void setName(String name) {
-        super.setName(name);
+        renameLoadedTest(getName(), name);
         Book.getCustomTests().put(name, Book.getCustomTests().get(this.name, null));
         Book.getCustomTests().remove(this.name);
         Preferences index = Book.getCustomTests().node("index");

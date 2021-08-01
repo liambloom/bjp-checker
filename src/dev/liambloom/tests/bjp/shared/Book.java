@@ -48,6 +48,7 @@ public abstract class Book {
                 v.validate(getSource());
             } catch (SAXException ignored) {
             }
+            validatorPool.add(v);
 
             if (handler.getMaxErrorKind() == null)
                 return new Result(getName(), TestValidationStatus.VALID);
@@ -62,16 +63,10 @@ public abstract class Book {
     public String getName() {
         return name;
     }
-    protected void setName(String name) {
-        loadedTests.compute(name, (k, v) -> {
-            if (v != null)
-                throw new UserErrorException("Name already taken");
-            return loadedTests.remove(getName());
-        });
-    }
     public boolean exists() throws IOException {
         return loadedTests.containsKey(getName());
     }
+    // This should probably also be not abstract
     public abstract Document getDocument(DocumentBuilder db) throws SAXException, IOException;
     protected abstract Source getSource() throws IOException;
 
@@ -146,7 +141,11 @@ public abstract class Book {
                 || App.prefs().node("tests").get(name, null) != null;
     }
 
-    public static void addTest(String name, Path p) {
+    public static void addTest(String name, Path p) throws IOException {
+        if (testExists(name))
+            throw new UserErrorException("Test `" + name + "' already exists");
+        if (!Files.exists(p) || !p.toRealPath().toString().endsWith(".xml"))
+            throw new UserErrorException("Path `" + p + "' is not xml");
         getCustomTests().put(name, p.toString());
         Preferences index = getCustomTests().node("index");
         int size = index.getInt("size", 0);
@@ -155,13 +154,36 @@ public abstract class Book {
     }
 
     public static void removeTest(String name) {
+        loadedTests.remove(name);
+        if (getCustomTests().get(name, null) == null)
+            throw new UserErrorException("Test \"" + name + "\" not found");
         getCustomTests().remove(name);
-        // TODO
-        // find the name in the index (same as indexOf, just iterate over it until you find it)
-        // shift everything after that 1 to the left
-        // remove the last element
-        // remove the name from preferences (not just the index)
-        // remove the name from loadedTests
+        Preferences index = getCustomTests().node("index");
+        int size = index.getInt("size", 0);
+        int i;
+        for (i = 0; i < size; i++) {
+            if (index.get(Integer.toString(i), null).equals(name)){
+                index.remove(Integer.toString(i));
+                break;
+            }
+        }
+        if (i == size)
+            throw new IllegalStateException("Test \"" + name + "\" not found in index");
+        for (; i < size - 1; i++)
+            index.put(Integer.toString(i), index.get(Integer.toString(i + 1), null));
+        index.remove(Integer.toString(size - 1));
+        index.putInt("size", size - 1);
+    }
+
+    protected static void renameLoadedTest(String oldName, String newName) {
+        synchronized (loadedTests) {
+            loadedTests.compute(newName, (k, v) -> {
+                if (v != null)
+                    throw new UserErrorException("Name already taken");
+                return loadedTests.get(oldName);
+            });
+            loadedTests.remove(oldName);
+        }
     }
 
     protected static void addWatcher(Path p, Consumer<WatchEvent<Path>> cb) throws IOException {
@@ -281,7 +303,7 @@ public abstract class Book {
         }
     }
 
-    public static Stream<Book> getAllTests() {;
+    public static Stream<Book> getAllTests() {
         Preferences index = getCustomTests().node("index");
 
         return Stream.concat(
@@ -289,8 +311,8 @@ public abstract class Book {
                 IntStream.range(0, index.getInt("size", 0))
                     .mapToObj(i -> index.get(Integer.toString(i), null))
                     .filter(Objects::nonNull)
-                    .map(name -> getCustomTests().get(name, null))
-                    .filter(Objects::nonNull)
+                    /*.map(name -> getCustomTests().get(name, null))
+                    .filter(Objects::nonNull)*/
         )
                 .map(Book::getTest);
     }

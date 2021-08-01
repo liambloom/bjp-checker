@@ -31,7 +31,7 @@ public class Glob {
         this(Arrays.asList(s));
     }
 
-    private class Piece {
+    private static class Piece {
         final Path base;
         final String[] segments;
         final String raw;
@@ -83,7 +83,7 @@ public class Glob {
             if (r.size() == 0) {
                 if (raw.contains(File.separator) && !raw.contains("/")){
                     r = new Piece(raw.replace(File.separatorChar, '/'), src).files();
-                    App.logger.log(LogKind.WARN, "Using \"\\\" instead of \"/\" is slower and does not support escaping");
+                    //App.logger.log(LogKind.WARN, "Using \"\\\" instead of \"/\" is slower and does not support escaping");
                 }
                 else {
                     starWarning();
@@ -188,7 +188,7 @@ public class Glob {
                     //@SuppressWarnings("ConstantConditions")
                     Stream<Path> r = Files.list(base)
                             .filter(p -> {
-                                String name = p.toString();
+                                String name = p.getFileName().toString();
                                 Matcher matcher;
                                 if ((matcher = patternCaseSensitive.matcher(name)).matches()
                                         || (matcher = patternCaseInsensitive.matcher(name)).matches())
