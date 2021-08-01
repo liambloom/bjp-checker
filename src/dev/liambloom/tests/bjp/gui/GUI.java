@@ -2,6 +2,8 @@ package dev.liambloom.tests.bjp.gui;
 
 import dev.liambloom.tests.bjp.shared.App;
 import dev.liambloom.tests.bjp.shared.Book;
+import dev.liambloom.tests.bjp.shared.ModifiableBook;
+import dev.liambloom.tests.bjp.shared.PathBook;
 import javafx.application.Application;
 import javafx.beans.InvalidationListener;
 import javafx.beans.binding.ObjectBinding;
@@ -90,13 +92,13 @@ public class GUI extends Application {
                         AnchorPane.setTopAnchor(bookName, TEST_LIST_MARGIN);
                         AnchorPane.setLeftAnchor(bookName, TEST_LIST_MARGIN);
                         bookPane.getChildren().add(bookName);
-                        book.getPath().ifPresent(p -> {
-                            Text bookPath = new Text(p.toString());
+                        if (book instanceof PathBook pathBook) {
+                            Text bookPath = new Text(pathBook.getPath().toString());
                             bookPath.fillProperty().bind(ColorSchemeManager.getSubTitleProperty());
                             AnchorPane.setBottomAnchor(bookPath, TEST_LIST_MARGIN);
                             AnchorPane.setLeftAnchor(bookPane, TEST_LIST_MARGIN);
                             bookPane.getChildren().add(bookPath);
-                        });
+                        }
                         Pane threeDots = new Pane();
                         final int DOTS_PANE_SIZE = 16;
                         /*threeDots.setMinSize(DOTS_PANE_SIZE, DOTS_PANE_SIZE);
@@ -129,13 +131,31 @@ public class GUI extends Application {
                         ContextMenu menu = new ContextMenu();
                         MenuItem rename = new MenuItem("Rename");
                         MenuItem delete = new MenuItem("Delete");
+                        if (book instanceof ModifiableBook modifiableBook) {
+                            rename.setOnAction(e -> {
+                                TextInputDialog dialog = new TextInputDialog(book.getName());
+                                dialog.showAndWait()
+                                        .ifPresent(modifiableBook::setName);
+                            });
+                            delete.setOnAction(e -> {
+                                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to remove test '" + book.getName() + '\'');
+                                confirm.showAndWait()
+                                        .ifPresent(b -> {
+                                            if (b == ButtonType.OK)
+                                                Book.removeTest(book.getName());
+                                        });
+                            });
+                        }
+                        else {
+                            rename.setDisable(true);
+                            delete.setDisable(true);
+                        }
                         delete.setStyle("-fx-text-fill: red");
                         menu.getItems().addAll(rename, new SeparatorMenuItem(), delete);
 
                         EventHandler<? super MouseEvent> onClick = e -> {
                             if (e.getButton() != MouseButton.PRIMARY)
                                 return;
-                            System.out.println("foo");
                         };
                         bookPane.setOnMouseClicked(onClick);
 
@@ -233,8 +253,6 @@ public class GUI extends Application {
                 1, -SQRT3 / 3, 280 * SQRT3 / 3,
                 0, SQRT3 / 2 , 280 - 140 * SQRT3));
 
-        final int CHOOSER_IMG_GRAY = 30;
-
         for (SVGPath i : new SVGPath[]{folderImageBack, folderImageFront}) {
             i.fillProperty().bind(ColorSchemeManager.getGrayscaleIconProperty());
             i.strokeProperty().bind(ColorSchemeManager.getBackgroundProperty());
@@ -269,7 +287,6 @@ public class GUI extends Application {
         MenuBar menuBar = new MenuBar();
         //Platform.runLater(() -> menuBar.setUseSystemMenuBar(true));
         menuBar.setUseSystemMenuBar(true); // This only works on "supported platforms," which does not include windows
-        System.out.println(menuBar.isUseSystemMenuBar());
         Menu fileMenu = new Menu("File");
         menuBar.getMenus().add(fileMenu);
         MenuItem openProject = new MenuItem("Open Project");

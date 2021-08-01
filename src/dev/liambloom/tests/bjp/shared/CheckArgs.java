@@ -88,7 +88,7 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
             testName = DEFAULT_TEST_NAME;
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        dbf.setSchema(Book.loadTestSchema());
+        dbf.setSchema(Book.getTestSchema());
         Document tests = Book.getTest(testName).getDocument(dbf.newDocumentBuilder());
 
         Stream<Path> paths = new Glob(globArgs).files();

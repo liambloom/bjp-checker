@@ -91,30 +91,6 @@ public class App {
         // System.err.println(log); // I can't remember if this was just for debugging
     }
 
-    public static Stream<Result> validateTests(Stream<Book> books) throws SAXException, IOException {
-        try {
-            //final TestLoader.Factory loaderFactory = new TestLoader.Factory();
-            final Schema schema = Book.loadTestSchema();
-            final Queue<Validator> queue = new ConcurrentLinkedQueue<>();
-
-            return books
-                    .map((FunctionThrowsIOException<Book, Result>) (book -> {
-                        Validator v = queue.poll();
-                        if (v == null)
-                            v = schema.newValidator();
-                        else
-                            v.reset();
-
-                        Result r = book.validate(v);
-                        queue.add(v);
-                        return r;
-                    }));
-        }
-        catch (UncheckedIOException e) {
-            throw e.getCause();
-        }
-    }
-
     public static Stream<Result> check(CheckArgs args)
             throws IOException, XPathExpressionException {
         List<Class<?>> classes;

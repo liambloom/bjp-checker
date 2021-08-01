@@ -1,5 +1,6 @@
 package dev.liambloom.tests.bjp.shared;
 
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -14,11 +15,11 @@ public enum Case {
     CONST,
     SPACE;
 
-    private static final Pattern WHITESPACE = Pattern.compile("\\w");
+    private static final Pattern WHITESPACE = Pattern.compile("\\s");
 
     public static String convert(String s, Case c) {
         String[] words = s.split(
-                WHITESPACE.matcher(s).find() ? "\\w+"
+                WHITESPACE.matcher(s).find() ? "\\s+"
                         : s.contains("_") ? "_"
                         : "\"(?=(?<!^)[A-Z])\""
         );

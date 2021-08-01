@@ -15,6 +15,7 @@ import javax.xml.validation.Validator;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.prefs.Preferences;
 import java.util.stream.IntStream;
@@ -22,15 +23,31 @@ import java.util.stream.Stream;
 import static java.nio.file.StandardWatchEventKinds.*;
 
 public abstract class Book {
-    public Result validate(Validator v) throws IOException {
-        if (exists()) try (ValidationErrorHandler handler = new ValidationErrorHandler()) {
-            ErrorHandler prevErrHandler = v.getErrorHandler();
+    protected String name;
+
+    public Book(String name) {
+        this.name = name;
+    }
+
+    public Result validate() throws IOException {
+        if (exists()) {
+            Validator v = validatorPool.poll();
+            ValidationErrorHandler handler;
+            if (v == null) {
+                v = getTestSchema().newValidator();
+                handler = new ValidationErrorHandler();
+            }
+            else {
+                handler = (ValidationErrorHandler) v.getErrorHandler();
+                handler.reset();
+                v.reset();
+            }
             v.setErrorHandler(handler);
+
             try {
                 v.validate(getSource());
             } catch (SAXException ignored) {
             }
-            v.setErrorHandler(prevErrHandler);
 
             if (handler.getMaxErrorKind() == null)
                 return new Result(getName(), TestValidationStatus.VALID);
@@ -42,12 +59,20 @@ public abstract class Book {
         else
             return new Result(getName(), TestValidationStatus.NOT_FOUND);
     }
+    public String getName() {
+        return name;
+    }
+    protected void setName(String name) {
+        loadedTests.compute(name, (k, v) -> {
+            if (v != null)
+                throw new UserErrorException("Name already taken");
+            return loadedTests.remove(getName());
+        });
+    }
+    public boolean exists() throws IOException {
+        return loadedTests.containsKey(getName());
+    }
     public abstract Document getDocument(DocumentBuilder db) throws SAXException, IOException;
-    public abstract void addWatcher(Consumer<WatchEvent<Path>> cb) throws IOException;
-    public abstract boolean exists() throws IOException;
-    public abstract boolean isModifiable();
-    public abstract String getName();
-    public abstract Optional<Path> getPath();
     protected abstract Source getSource() throws IOException;
 
     private static final Map<Path, Collection<Consumer<WatchEvent<Path>>>> watcherCallbacks = Collections.synchronizedMap(new HashMap<>());
@@ -55,22 +80,35 @@ public abstract class Book {
     private static final Map<Path, Collection<Path>> watcherSymlinkTargets = Collections.synchronizedMap(new HashMap<>());
     private static final Map<String, Book> loadedTests = Collections.synchronizedMap(new HashMap<>());
     private static final Map<String, String> LOCAL_TEST_NAMES;
+    private static final Queue<Validator> validatorPool = new ConcurrentLinkedQueue<>();
     private static Schema testSchema = null;
+    private static Preferences customTests;
 
     static {
         LOCAL_TEST_NAMES = new HashMap<>();
         LOCAL_TEST_NAMES.put("BJP 3", "bjp3");
     }
 
-    public static Schema loadTestSchema() throws SAXException {
+    public static Schema getTestSchema() {
         if (testSchema == null) {
-            SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1");
-            factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
-            // TODO: factory.setErrorHandler(ErrorHandler)
-            testSchema = factory.newSchema(
-                    new StreamSource(App.class.getResourceAsStream("/book-tests.xsd")));
+            try {
+                SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1");
+                factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
+                // TODO: factory.setErrorHandler(ErrorHandler)
+                testSchema = factory.newSchema(
+                        new StreamSource(App.class.getResourceAsStream("/book-tests.xsd")));
+            }
+            catch (SAXException e) {
+                throw new RuntimeException(e);
+            }
         }
         return testSchema;
+    }
+
+    public static Preferences getCustomTests() {
+        if (customTests == null)
+            customTests = App.prefs().node("tests");
+        return customTests;
     }
 
     public static Book getTest(String name) {
@@ -82,50 +120,9 @@ public abstract class Book {
 
         Book r;
 
-        System.out.println(Book.class.getModule().isOpen("tests"));
-        System.out.println(Book.class.getClassLoader().getResource("logs/2021-07-25-17-58-25.log"));
-        System.out.println("tests/" + LOCAL_TEST_NAMES.get(name) + ".xml");
         InputStream stream = Book.class.getClassLoader().getResourceAsStream("tests/" + LOCAL_TEST_NAMES.get(name) + ".xml");
-        System.out.println(stream);
         if (stream != null) { // Get test from jar
-            Source source = new StreamSource(stream);
-            r = new Book() {
-                @Override
-                public Document getDocument(DocumentBuilder db) throws SAXException, IOException {
-                    return db.parse(stream);
-                }
-
-                @Override
-                public void addWatcher(Consumer<WatchEvent<Path>> cb) {
-                    // Watch creates a watcher for changed, but since this resource can't
-                    //  be changed while the program is running, I don't need to do anything
-                }
-
-                @Override
-                public boolean exists() {
-                    return true;
-                }
-
-                @Override
-                public boolean isModifiable() {
-                    return false;
-                }
-
-                @Override
-                public String getName() {
-                    return name;
-                }
-
-                @Override
-                public Optional<Path> getPath() {
-                    return Optional.empty();
-                }
-
-                @Override
-                protected Source getSource() {
-                    return source;
-                }
-            };
+            r = new StreamBook(name, stream);
         }
         else { // Get tests from preferences
             String pathString = App.prefs().node("tests").get(name, null);
@@ -135,65 +132,7 @@ public abstract class Book {
 
             Path p = Path.of(pathString);
 
-            r = new Book() {
-                @Override
-                public Result validate(Validator v) throws IOException {
-                    if (exists()) {
-                        try {
-                            v.validate(new StreamSource(new BufferedInputStream(Files.newInputStream(p))));
-                            return new Result(name, TestValidationStatus.VALID/* Generate ByteArrayOutputStream from ErrorHandler */);
-                        }
-                        catch (SAXException e) {
-                            return new Result(name, TestValidationStatus.INVALID/*, Generate ByteArrayOutputStream from ErrorHandler */);
-                        }
-                    }
-                    else
-                        return new Result(name, TestValidationStatus.NOT_FOUND);
-                }
-
-                @Override
-                public Document getDocument(DocumentBuilder db) throws SAXException, IOException {
-                    if (exists())
-                        return db.parse(Files.newInputStream(p));
-                    else
-                        throw new NoSuchFileException(p.toString());
-                }
-
-                @Override
-                public void addWatcher(Consumer<WatchEvent<Path>> cb) throws IOException {
-                    Book.addWatcher(p, cb);
-                }
-
-                @Override
-                public boolean exists() throws IOException {
-                    try {
-                        return p.toRealPath().toString().endsWith(".xml");
-                    }
-                    catch (NoSuchFileException e) {
-                        return false;
-                    }
-                }
-
-                @Override
-                public boolean isModifiable() {
-                    return true;
-                }
-
-                @Override
-                public String getName() {
-                    return name;
-                }
-
-                @Override
-                public Optional<Path> getPath() {
-                    return Optional.of(p);
-                }
-
-                @Override
-                protected Source getSource() throws IOException {
-                    return new StreamSource(new BufferedInputStream(Files.newInputStream(p)));
-                }
-            };
+            r = new PathBook(name, p);
         }
 
 
@@ -207,14 +146,17 @@ public abstract class Book {
                 || App.prefs().node("tests").get(name, null) != null;
     }
 
-    public static void addTest(String name, Path p) throws SAXException, IOException {
-        // get document
-        // get name from document
-        // add name => p to tests
-        // add the name to the index
+    public static void addTest(String name, Path p) {
+        getCustomTests().put(name, p.toString());
+        Preferences index = getCustomTests().node("index");
+        int size = index.getInt("size", 0);
+        index.put(Integer.toString(size), name);
+        index.putInt("size", size + 1);
     }
 
     public static void removeTest(String name) {
+        getCustomTests().remove(name);
+        // TODO
         // find the name in the index (same as indexOf, just iterate over it until you find it)
         // shift everything after that 1 to the left
         // remove the last element
@@ -339,25 +281,28 @@ public abstract class Book {
         }
     }
 
-    public static Stream<Book> getAllTests() {
-        Preferences tests = App.prefs().node("tests");
-        Preferences index = tests.node("index");
+    public static Stream<Book> getAllTests() {;
+        Preferences index = getCustomTests().node("index");
 
         return Stream.concat(
                 LOCAL_TEST_NAMES.keySet().stream(),
                 IntStream.range(0, index.getInt("size", 0))
                     .mapToObj(i -> index.get(Integer.toString(i), null))
                     .filter(Objects::nonNull)
-                    .map(name -> tests.get(name, null))
+                    .map(name -> getCustomTests().get(name, null))
                     .filter(Objects::nonNull)
         )
                 .map(Book::getTest);
     }
 
-    private class ValidationErrorHandler implements ErrorHandler, Closeable {
-        private final ByteArrayOutputStream log = new ByteArrayOutputStream();
-        private final CLILogger logger  = new CLILogger(new PrintStream(log));
-        private LogKind maxErrorKind = null;
+    private class ValidationErrorHandler implements ErrorHandler {
+        private ByteArrayOutputStream log;
+        private CLILogger logger;
+        private LogKind maxErrorKind;
+
+        public ValidationErrorHandler() {
+            reset();
+        }
 
         @Override
         public void warning(SAXParseException exception) {
@@ -387,7 +332,7 @@ public abstract class Book {
                 message.deleteCharAt(message.length() - 1);
 
             return message.append(" at ")
-                    .append(getPath().map(Object::toString).orElse(getName()))
+                    .append(Book.this instanceof PathBook pathBook ? pathBook.getPath() : getName())
                     .append(':')
                     .append(e.getLineNumber())
                     .append(':')
@@ -403,10 +348,10 @@ public abstract class Book {
             return maxErrorKind;
         }
 
-        @Override
-        public void close() throws IOException {
-            log.close();
-            logger.close();
+        public void reset() {
+            log = new ByteArrayOutputStream();
+            logger = new CLILogger(new PrintStream(log));
+            maxErrorKind = null;
         }
     }
 }

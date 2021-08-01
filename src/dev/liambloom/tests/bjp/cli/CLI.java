@@ -7,6 +7,7 @@ import org.xml.sax.SAXException;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 public class CLI {
     public static void main(String[] args) {
@@ -17,6 +18,7 @@ public class CLI {
                 printHelp("checker");
             }
             else if (args.length > 1 && (args[1].equals("-h") || args[1].equals("--help"))) {
+                // TODO: handle help better
                 assertLength(args, 2);
                 printHelp(args[0]);
             }
@@ -45,20 +47,31 @@ public class CLI {
                     case "submit":
                         throw new UserErrorException("Command `submit' not supported in current checker version");
                         // break;
-                    case "validate":
-                        try {
-                            App.validateTests(args.length == 1
-                                    ? Book.getAllTests()
-                                    : Arrays.stream(args).skip(1).map(Book::getTest))
-                                    .forEachOrdered((ConsumerThrowsIOException<Result>) CLI::printResult);
-                        }
-                        catch (UncheckedIOException e) {
-                            throw e.getCause();
+                    case "tests":
+                        if (args.length < 2)
+                            throw new UserErrorException(""); // TODO
+                        switch (args[1]) {
+                            // TODO: handle errors
+                            case "add":
+                                Book.addTest(args[2], new Glob(args[3]).single());
+                                break;
+                            case "remove":
+                                throw new UserErrorException("Command `tests remove' not supported in current checker version");
+                                /*Book.removeTest(args[2]);
+                                break;*/
+                            case "validate":
+                                try {
+                                    printResults((args.length == 2
+                                            ? Book.getAllTests()
+                                            : Arrays.stream(args).skip(2).map(Book::getTest))
+                                            .map((FunctionThrowsIOException<Book, Result>) Book::validate));
+                                }
+                                catch (UncheckedIOException e) {
+                                    throw e.getCause();
+                                }
+                                break;
                         }
                         break;
-                    /*case "results":
-                        throw new UserErrorException("Command `results' not supported in current checker version");
-                        // break;*/
                     case "gui":
                         Application.launch(GUI.class, Arrays.copyOfRange(args, 1, args.length));
                         break;
@@ -100,10 +113,12 @@ public class CLI {
             throw new UserErrorException("Unexpected argument after `" + a[l - 1] + "'");
     }
 
-    private static void printResult(Result r) throws IOException {
-        System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), r.status().getName());
+    public static void printResults(Stream<Result> s) throws IOException {
         try {
-            r.console().ifPresent((ConsumerThrowsIOException<ByteArrayOutputStream>) (c -> c.writeTo(System.out)));
+            s.forEachOrdered(r -> {
+                System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), r.status().getName());
+                r.console().ifPresent((ConsumerThrowsIOException<ByteArrayOutputStream>) (c -> c.writeTo(System.out)));
+            });
         }
         catch (UncheckedIOException e) {
             throw e.getCause();
