@@ -144,9 +144,14 @@ public abstract class Book {
     public static void addTest(String name, Path p) throws IOException {
         if (testExists(name))
             throw new UserErrorException("Test `" + name + "' already exists");
-        if (!Files.exists(p) || !p.toRealPath().toString().endsWith(".xml"))
+        if (name.contains("/"))
+            throw new UserErrorException("Test names cannot contain the '/' character");
+        if (name.equals("-a") || name.equals("--all"))
+            throw new UserErrorException("Invalid test name: `-a' and `--all' are reserved");
+        /*if (!Files.exists(p) || !p.toRealPath().toString().endsWith(".xml"))
             throw new UserErrorException("Path `" + p + "' is not xml");
-        getCustomTests().put(name, p.toString());
+        getCustomTests().put(name, p.toString());*/
+        PathBook.setPath(name, p);
         Preferences index = getCustomTests().node("index");
         int size = index.getInt("size", 0);
         index.put(Integer.toString(size), name);

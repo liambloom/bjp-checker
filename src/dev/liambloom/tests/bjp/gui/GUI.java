@@ -5,12 +5,10 @@ import dev.liambloom.tests.bjp.shared.Book;
 import dev.liambloom.tests.bjp.shared.ModifiableBook;
 import dev.liambloom.tests.bjp.shared.PathBook;
 import javafx.application.Application;
-import javafx.beans.InvalidationListener;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableObjectValue;
-import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
@@ -22,8 +20,10 @@ import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -32,6 +32,7 @@ import javafx.scene.transform.Affine;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,19 @@ public class GUI extends Application {
 
     private static final double SQRT3 = Math.sqrt(3);
     private final SimpleBooleanProperty isProjectOpen = new SimpleBooleanProperty(false);
+
+//    public void start2(Stage stage) {
+//        Pane pane = new Pane();
+//        Text text = new Text(10, 20, "Foo");
+//        Bounds bounds = text.getBoundsInLocal();
+//        Rectangle box = new Rectangle(bounds.getMinX(), bounds.getMinY(), bounds.getWidth(), bounds.getHeight());
+//        box.setFill(Color.TRANSPARENT);
+//        box.setStroke(Color.RED);
+//        pane.getChildren().add(text);
+//        pane.getChildren().add(box);
+//        stage.setScene(new Scene(pane));
+//        stage.show();
+//    }
 
     @Override
     public void start(Stage stage) {
@@ -84,21 +98,36 @@ public class GUI extends Application {
         testList.getChildren().addAll(
                 Book.getAllTests()
                     .map(book -> {
+                        // I think a grid would be better for this
                         AnchorPane bookPane = new AnchorPane();
                         bookPane.minWidthProperty().bind(testList.widthProperty());
                         bookPane.maxWidthProperty().bind(testList.widthProperty());
-                        Text bookName = new Text(book.getName());
-                        bookName.fillProperty().bind(ColorSchemeManager.getTitleProperty());
+                        Label bookName = new Label(book.getName());
+                        bookName.textFillProperty().bind(ColorSchemeManager.getTitleProperty());
                         AnchorPane.setTopAnchor(bookName, TEST_LIST_MARGIN);
                         AnchorPane.setLeftAnchor(bookName, TEST_LIST_MARGIN);
                         bookPane.getChildren().add(bookName);
+                        Font bookPathFont = Font.getDefault();
                         if (book instanceof PathBook pathBook) {
-                            Text bookPath = new Text(pathBook.getPath().toString());
-                            bookPath.fillProperty().bind(ColorSchemeManager.getSubTitleProperty());
+                            Label bookPath = new Label(pathBook.getPath().getParent() + File.separator);
+                            Label bookFileName = new Label(pathBook.getPath().getFileName().toString());
+                            bookPath.maxWidthProperty().bind(testList.widthProperty().subtract(bookFileName.widthProperty()).subtract(TEST_LIST_MARGIN * 2));
+                            bookPath.setFont(bookPathFont);
+                            bookPath.textFillProperty().bind(ColorSchemeManager.getSubTitleProperty());
+                            bookFileName.setFont(bookPathFont);
+                            bookFileName.textFillProperty().bind(ColorSchemeManager.getSubTitleProperty());
                             AnchorPane.setBottomAnchor(bookPath, TEST_LIST_MARGIN);
-                            AnchorPane.setLeftAnchor(bookPane, TEST_LIST_MARGIN);
-                            bookPane.getChildren().add(bookPath);
+                            AnchorPane.setLeftAnchor(bookPath, TEST_LIST_MARGIN);
+                            AnchorPane.setBottomAnchor(bookFileName, TEST_LIST_MARGIN);
+                            AnchorPane.setRightAnchor(bookFileName, TEST_LIST_MARGIN); // TODO: better ellipsis positioning
+                            //bookPath.widthProperty().addListener((a1, a2, a3) -> AnchorPane.setLeftAnchor(bookFileName, bookPath.getWidth() + TEST_LIST_MARGIN));
+                            bookPane.getChildren().addAll(bookPath, bookFileName);
                         }
+                        Text dummyText = new Text();
+                        dummyText.setFont(bookPathFont);
+                        double height = TEST_LIST_MARGIN * 3 + bookName.getBoundsInLocal().getHeight() + dummyText.getBoundsInLocal().getHeight();
+                        bookPane.setMinHeight(height);
+                        bookPane.setMaxHeight(height);
                         Pane threeDots = new Pane();
                         final int DOTS_PANE_SIZE = 16;
                         /*threeDots.setMinSize(DOTS_PANE_SIZE, DOTS_PANE_SIZE);
@@ -134,11 +163,16 @@ public class GUI extends Application {
                         if (book instanceof ModifiableBook modifiableBook) {
                             rename.setOnAction(e -> {
                                 TextInputDialog dialog = new TextInputDialog(book.getName());
+                                dialog.setHeaderText(null);
                                 dialog.showAndWait()
-                                        .ifPresent(modifiableBook::setName);
+                                        .ifPresent(name -> {
+                                            modifiableBook.rename(name);
+                                            bookName.setText(name);
+                                        });
                             });
                             delete.setOnAction(e -> {
                                 Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to remove test '" + book.getName() + '\'');
+                                confirm.setHeaderText(null);
                                 confirm.showAndWait()
                                         .ifPresent(b -> {
                                             if (b == ButtonType.OK)

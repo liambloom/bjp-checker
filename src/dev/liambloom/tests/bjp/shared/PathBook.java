@@ -18,7 +18,7 @@ import java.util.function.Consumer;
 import java.util.prefs.Preferences;
 
 public class PathBook extends ModifiableBook {
-    private final Path path;
+    private Path path;
 
     PathBook(String name, Path path) {
         super(name);
@@ -57,8 +57,15 @@ public class PathBook extends ModifiableBook {
         return path;
     }
 
-    public void setPath(Path path) {
+    public void setPath(Path path) throws IOException {
+        this.path = path;
+        setPath(getName(), path);
+    }
 
+    protected static void setPath(String name, Path path) throws IOException {
+        if (!Files.exists(path) || !path.toRealPath().toString().endsWith(".xml"))
+            throw new UserErrorException("Path `" + path + "' is not xml");
+        Book.getCustomTests().put(name, path.toString());
     }
 
     @Override

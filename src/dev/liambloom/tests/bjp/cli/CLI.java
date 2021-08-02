@@ -6,6 +6,7 @@ import javafx.application.Application;
 import org.xml.sax.SAXException;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -59,11 +60,18 @@ public class CLI {
                             Book.removeTest(args[2]);
                             break;
                         case "rename":
-                            assertArgsPresent(args, 2, "old-name", "new-name");
+                            assertArgsPresent(args, 2, "old name", "new name");
                             if (Book.getTest(args[2]) instanceof ModifiableBook book)
-                                book.setName(args[3]);
+                                book.rename(args[3]);
                             else
                                 throw new UserErrorException("Book `" + args[2] + "' can't be renamed");
+                            break;
+                        case "change":
+                            assertArgsPresent(args, 2, "name", "new path");
+                            if (Book.getTest(args[2]) instanceof PathBook book)
+                                book.setPath(new Glob(args[3]).single());
+                            else
+                                throw new UserErrorException("Book `" + args[2] + "' has no path associated with it");
                             break;
                         case "list":
                             assertArgsPresent(args, 2);
@@ -82,6 +90,8 @@ public class CLI {
                                 System.out.printf("%-" + maxBookNameLength + "s  %s%n", book[0], book[1]);
                             break;
                         case "validate":
+                            if (args.length == 2)
+                                throw new UserErrorException("Missing argument after validate");
                             try {
                                 printResults((args[2].equals("-a") || args[2].equals("--all")
                                         ? Book.getAllTests()
