@@ -144,10 +144,10 @@ public abstract class Book {
     public static void addTest(String name, Path p) throws IOException {
         if (testExists(name))
             throw new UserErrorException("Test `" + name + "' already exists");
-        if (name.contains("/"))
-            throw new UserErrorException("Test names cannot contain the '/' character");
         if (name.equals("-a") || name.equals("--all"))
             throw new UserErrorException("Invalid test name: `-a' and `--all' are reserved");
+        if (name.length() > Preferences.MAX_KEY_LENGTH)
+            throw new UserErrorException("Invalid test name: must not have a length greater than " + Preferences.MAX_KEY_LENGTH);
         /*if (!Files.exists(p) || !p.toRealPath().toString().endsWith(".xml"))
             throw new UserErrorException("Path `" + p + "' is not xml");
         getCustomTests().put(name, p.toString());*/
