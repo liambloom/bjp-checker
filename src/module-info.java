@@ -6,6 +6,9 @@ module dev.liambloom.tests.bjp {
     requires javafx.controls;
     requires org.fusesource.jansi;
     exports dev.liambloom.tests.bjp;
-    exports dev.liambloom.tests.bjp.gui to javafx.graphics;
+    exports dev.liambloom.tests.bjp.shared;
+    exports dev.liambloom.tests.bjp.cli;
+    exports dev.liambloom.tests.bjp.gui;
+    //exports dev.liambloom.tests.bjp.gui to javafx.graphics;
     opens tests;
 }

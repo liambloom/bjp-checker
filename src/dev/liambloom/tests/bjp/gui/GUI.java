@@ -30,12 +30,15 @@ import javafx.scene.transform.Affine;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Pair;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class GUI extends Application {
@@ -46,18 +49,6 @@ public class GUI extends Application {
     private static final double SQRT3 = Math.sqrt(3);
     private static final int DOTS_PANE_SIZE = 16;
     private final SimpleBooleanProperty isProjectOpen = new SimpleBooleanProperty(false);
-//    public void start2(Stage stage) {
-//        Pane pane = new Pane();
-//        Text text = new Text(10, 20, "Foo");
-//        Bounds bounds = text.getBoundsInLocal();
-//        Rectangle box = new Rectangle(bounds.getMinX(), bounds.getMinY(), bounds.getWidth(), bounds.getHeight());
-//        box.setFill(Color.TRANSPARENT);
-//        box.setStroke(Color.RED);
-//        pane.getChildren().add(text);
-//        pane.getChildren().add(box);
-//        stage.setScene(new Scene(pane));
-//        stage.show();
-//    }
 
     @Override
     public void start(Stage stage) {
@@ -82,7 +73,6 @@ public class GUI extends Application {
         //pane.setGridLinesVisible(true);
 
         VBox testList = new VBox();
-        final double TEST_LIST_MARGIN = 5.0;
         pane.add(testList, 0, 1);
         AnchorPane testListHeader = new AnchorPane();
         Label testTitle = new Label("Tests:");
@@ -142,168 +132,12 @@ public class GUI extends Application {
 
         // TODO: add a way to select a test
         // TODO: show test validation results
-        testList.getChildren().addAll(
-                Book.getAllTests()
-                    .map(book -> {
-                        // I think a grid would be better for this
-                        AnchorPane bookPane = new AnchorPane();
-                        bookPane.minWidthProperty().bind(testList.widthProperty());
-                        bookPane.maxWidthProperty().bind(testList.widthProperty());
-                        Label bookName = new Label(book.getName());
-                        bookName.textFillProperty().bind(ColorSchemeManager.getTitleProperty());
-                        bookName.maxWidthProperty().bind(sidebarWidth.subtract(TEST_LIST_MARGIN * 3).subtract(DOTS_PANE_SIZE));
-                        AnchorPane.setTopAnchor(bookName, TEST_LIST_MARGIN);
-                        AnchorPane.setLeftAnchor(bookName, TEST_LIST_MARGIN);
-                        bookPane.getChildren().add(bookName);
-                        MenuItem changePath = new MenuItem("Change Path");
-                        double pathHeight;
-                        if (book instanceof PathBook pathBook) {
-                            Label bookPath = new Label(pathBook.getPath().getParent() + File.separator);
-                            Label bookFileName = new Label(pathBook.getPath().getFileName().toString());
-                            bookPath.maxWidthProperty().bind(testList.widthProperty().subtract(bookFileName.widthProperty()).subtract(TEST_LIST_MARGIN * 2));
-                            bookPath.textFillProperty().bind(ColorSchemeManager.getSubTitleProperty());
-                            bookFileName.setFont(bookPath.getFont());
-                            bookFileName.textFillProperty().bind(ColorSchemeManager.getSubTitleProperty());
-                            AnchorPane.setBottomAnchor(bookPath, TEST_LIST_MARGIN);
-                            AnchorPane.setLeftAnchor(bookPath, TEST_LIST_MARGIN);
-                            AnchorPane.setBottomAnchor(bookFileName, TEST_LIST_MARGIN);
-                            AnchorPane.setRightAnchor(bookFileName, TEST_LIST_MARGIN); // TODO: better ellipsis positioning
-                            //bookPath.widthProperty().addListener((a1, a2, a3) -> AnchorPane.setLeftAnchor(bookFileName, bookPath.getWidth() + TEST_LIST_MARGIN));
-                            bookPane.getChildren().addAll(bookPath, bookFileName);
-
-                            Text dummyPathText = new Text();
-                            dummyPathText.setFont(bookPath.getFont());
-                            pathHeight = dummyPathText.getBoundsInLocal().getHeight();
-
-                            changePath.setOnAction(e -> {
-                                FileChooser chooser = new FileChooser();
-                                chooser.setTitle("Open Test");
-                                if (Files.exists(pathBook.getPath()))
-                                    chooser.setInitialDirectory(pathBook.getPath().getParent().toFile());
-                                chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
-                                Optional.ofNullable(chooser.showOpenDialog(stage))
-                                        .map(File::toPath)
-                                        .ifPresent((ConsumerThrowsIOException<Path>) p -> {
-                                            pathBook.setPath(p);
-                                            bookPath.setText(p.getParent().toString() + File.separator);
-                                            bookFileName.setText(p.getFileName().toString());
-                                        });
-                            });
-                        }
-                        else {
-                            pathHeight = 0;
-                            changePath.setDisable(true);
-                        }
-                        Text dummyTitleText = new Text();
-                        dummyTitleText.setFont(bookName.getFont());
-                        double height = TEST_LIST_MARGIN * (pathHeight == 0 ? 2 : 3) + dummyTitleText.getBoundsInLocal().getHeight() + pathHeight;
-                        bookPane.setMinHeight(height);
-                        bookPane.setMaxHeight(height);
-                        Pane threeDots = new Pane();
-                        /*threeDots.setMinSize(DOTS_PANE_SIZE, DOTS_PANE_SIZE);
-                        threeDots.setMaxSize(DOTS_PANE_SIZE, DOTS_PANE_SIZE);*/
-                        final double DOT_RADIUS = 1.2;
-                        Circle topDot = new Circle(DOTS_PANE_SIZE / 2.0, 4, DOT_RADIUS);
-                        topDot.fillProperty().bind(ColorSchemeManager.getTitleProperty());
-                        Circle middleDot = new Circle(DOTS_PANE_SIZE / 2.0, DOTS_PANE_SIZE / 2.0, DOT_RADIUS);
-                        middleDot.fillProperty().bind(ColorSchemeManager.getTitleProperty());
-                        Circle bottomDot = new Circle(DOTS_PANE_SIZE / 2.0, 12, DOT_RADIUS);
-                        bottomDot.fillProperty().bind(ColorSchemeManager.getTitleProperty());
-                        threeDots.getChildren().addAll(topDot, middleDot, bottomDot);
-                        Button menuButton = new Button();
-                        menuButton.setGraphic(threeDots);
-                        menuButton.setPadding(Insets.EMPTY);
-                        //menuButton.setBackground(Background.EMPTY);
-                        //menuButton.getItems().add(new MenuItem("Delete"));
-                        menuButton.setMinSize(DOTS_PANE_SIZE, DOTS_PANE_SIZE);
-                        menuButton.setMaxSize(DOTS_PANE_SIZE, DOTS_PANE_SIZE);
-                        menuButton.backgroundProperty().bind(new ObjectBinding<>() {
-                            { bind(ColorSchemeManager.getAltBackgroundHoverProperty(), menuButton.hoverProperty()); }
-
-                            @Override
-                            protected Background computeValue() {
-                                return menuButton.isHover()
-                                        ? new Background(new BackgroundFill(ColorSchemeManager.getAltBackgroundHoverProperty().get(), new CornerRadii(2), Insets.EMPTY))
-                                        : Background.EMPTY;
-                            }
-                        });
-                        ContextMenu menu = new ContextMenu();
-                        MenuItem rename = new MenuItem("Rename");
-                        MenuItem delete = new MenuItem("Delete");
-                        if (book instanceof ModifiableBook modifiableBook) {
-                            rename.setOnAction(e -> {
-                                TextInputDialog dialog = new TextInputDialog(book.getName());
-                                dialog.setHeaderText(null);
-                                dialog.showAndWait()
-                                        .ifPresent(name -> {
-                                            modifiableBook.rename(name);
-                                            bookName.setText(name);
-                                        });
-                            });
-                            delete.setOnAction(e -> {
-                                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to remove test '" + book.getName() + '\'');
-                                confirm.setHeaderText(null);
-                                confirm.showAndWait()
-                                        .ifPresent(b -> {
-                                            if (b == ButtonType.OK)
-                                                Book.removeTest(book.getName());
-                                        });
-                            });
-                        }
-                        else {
-                            rename.setDisable(true);
-                            delete.setDisable(true);
-                        }
-                        delete.setStyle("-fx-text-fill: red");
-                        menu.getItems().addAll(rename, changePath, new SeparatorMenuItem(), delete);
-
-                        EventHandler<? super MouseEvent> onClick = e -> {
-                            if (e.getButton() != MouseButton.PRIMARY)
-                                return;
-                        };
-                        bookPane.setOnMouseClicked(onClick);
-
-                        bookPane.setOnContextMenuRequested(e -> {
-                            Bounds bounds = bookPane.localToScreen(bookPane.getBoundsInLocal());
-                            menu.show(bookPane, e.getX() + bounds.getMinX(), e.getY() + bounds.getMinY());
-                            bookPane.setOnMouseClicked(e2 -> {
-                                menu.hide();
-                                bookPane.setOnMouseClicked(onClick);
-                                onClick.handle(e2);
-                            });
-                            menu.setOnAutoHide(e2 -> bookPane.setOnMouseClicked(onClick));
-                            e.consume();
-                        });
-
-                        AtomicBoolean menuButtonIsShowing = new AtomicBoolean(false);
-                        menuButton.setOnAction(e -> {
-                            if (menuButtonIsShowing.compareAndSet(false, true)) {
-                                menu.show(menuButton, Side.RIGHT, 0, 0);
-                                testListMenu.hide();
-                            }
-                            else
-                                menu.hide();
-                        });
-
-                        menu.setOnHiding(e -> menuButtonIsShowing.set(false));
-
-                        AnchorPane.setTopAnchor(menuButton, TEST_LIST_MARGIN);
-                        AnchorPane.setRightAnchor(menuButton, TEST_LIST_MARGIN);
-                        bookPane.getChildren().add(menuButton);
-
-                        bookPane.borderProperty().bind(new ObjectBinding<>() {
-                            { bind(ColorSchemeManager.getTitleProperty()); }
-
-                            @Override
-                            protected Border computeValue() {
-                                return new Border(new BorderStroke(ColorSchemeManager.getTitleProperty().get(), BorderStrokeStyle.DOTTED, CornerRadii.EMPTY, new BorderWidths(0, 0, 1, 0)));
-                            }
-                        });
-
-                        return bookPane;
-                    })
-                    .collect(Collectors.toList())
-        );
+        ToggleGroup selectedTest = new ToggleGroup();
+        List<Label> books = Book.getAllTests()
+                .map(GUI::testNode)
+                .collect(Collectors.toList());
+        ((RadioButton) books.get(0).getLabelFor()).setSelected(true);
+        testList.getChildren().addAll(books);
 
         //stage.
 
@@ -409,6 +243,7 @@ public class GUI extends Application {
         MenuItem openProject = new MenuItem("Open Project");
         openProject.setOnAction(e -> openProject(stage));
         MenuItem selectFile = new MenuItem("Open File");
+        selectFile.setOnAction(e -> notYetSupported());
         Menu openRecent = new Menu("Open Recent");
         openRecent.setDisable(App.prefs().get("recent", "").equals(""));
         MenuItem addFile = new MenuItem("Add File to Project");
@@ -467,26 +302,58 @@ public class GUI extends Application {
     private void openProject(Stage stage) {
         DirectoryChooser chooser = new DirectoryChooser();
         chooser.setTitle("Open Project");
-        chooser.showDialog(stage);
-        // TODO
-    }
-
-    private static ObjectBinding<Background> getBoundBackgroundProperty(ObservableObjectValue<Paint> c) {
-        return new ObjectBinding<>() {
-            { bind(c); }
-
-            @Override
-            protected Background computeValue() {
-                return new Background(new BackgroundFill(c.get(), CornerRadii.EMPTY, Insets.EMPTY));
-            }
-        };
+        File f = chooser.showDialog(stage);
+        if (f == null)
+            return;
+        Path path = f.toPath();
+        notYetSupported();
     }
 
     private static void addTests(ActionEvent e) {
-        // TODO
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        Dialog<Pair<String, File>> dialog = new Dialog<>();
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        dialog.setHeaderText(null);
+        dialog.setTitle("New Test");
+        GridPane pane = new GridPane();
+        pane.setHgap(10);
+        pane.setVgap(10);
+        TextField name = new TextField();
+        name.setPromptText("name");
+        pane.add(name, 0, 0);
+        Button file = new Button("File");
+        AtomicReference<File> fileInputValue = new AtomicReference<>();
+        file.setOnAction(e2 -> {
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle("Select Test File");
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML File", "*.xml"));
+            Optional.ofNullable(fileInputValue.get())
+                    .map(File::getParentFile)
+                    .ifPresent(chooser::setInitialDirectory);
+            File f = chooser.showOpenDialog(dialog.getOwner());
+            if (f != null)
+                fileInputValue.set(f);
+        });
+        pane.add(file, 0, 1);
+        dialog.getDialogPane().setContent(pane);
+        dialog.setResultConverter(button -> {
+            if (button == ButtonType.OK) {
+                return new Pair<>(name.getText(), fileInputValue.get());
+            }
+            else
+                return null;
+        });
+
+        dialog.showAndWait()
+                .ifPresent((ConsumerThrowsIOException<Pair<String, File>>) (pair -> {
+                    Book.addTest(pair.getKey(), pair.getValue().toPath());
+
+                }));
+    }
+
+    private static void notYetSupported() {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setHeaderText(null);
-        alert.setContentText("It worked!");
+        alert.setContentText("That functionality is not supported in checker " + App.VERSION);
         alert.showAndWait();
     }
 }

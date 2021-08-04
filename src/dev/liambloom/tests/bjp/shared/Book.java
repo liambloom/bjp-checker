@@ -148,6 +148,10 @@ public abstract class Book {
             throw new UserErrorException("Invalid test name: `-a' and `--all' are reserved");
         if (name.length() > Preferences.MAX_KEY_LENGTH)
             throw new UserErrorException("Invalid test name: must not have a length greater than " + Preferences.MAX_KEY_LENGTH);
+        if (!p.toString().endsWith(".xml"))
+            throw new UserErrorException("Invalid test path: " + p + " is not xml");
+        if (Files.notExists(p))
+            throw new UserErrorException("Invalid test path: " + p + " does not exist");
         /*if (!Files.exists(p) || !p.toRealPath().toString().endsWith(".xml"))
             throw new UserErrorException("Path `" + p + "' is not xml");
         getCustomTests().put(name, p.toString());*/
