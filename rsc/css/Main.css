@@ -21,7 +21,13 @@ Button {
     -fx-font-size: 12;
 }
 
-#addTest {
+.testListMenuButton {
     -fx-background-color: -fx-theme-alt-background;
     -fx-background-radius: 2;
+    -fx-min-width: 16;
+    -fx-max-width: 16;
+    -fx-min-height: 16;
+    -fx-max-height: 16;
+    -fx-padding: 0;
+    /* -fx-insets: empty; */
 }

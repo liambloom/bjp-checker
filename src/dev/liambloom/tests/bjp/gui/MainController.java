@@ -7,7 +7,11 @@ import javafx.beans.property.*;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Bounds;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
+import javafx.scene.input.ContextMenuEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
@@ -23,7 +27,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class MainController {
-    public final DoubleProperty sidebarWidth = new SimpleDoubleProperty(200);
+    public static final double INITIAL_SIDEBAR_WIDTH = 200;
+    public final DoubleProperty sidebarWidth = new SimpleDoubleProperty(INITIAL_SIDEBAR_WIDTH);
+    public final ContextMenu testListMenu;
     public GridPane root;
     public VBox testList;
     public ToggleGroup testToggleGroup = new ToggleGroup();
@@ -56,6 +62,13 @@ public class MainController {
 
     public void setThemeName(double value) {
         sidebarWidth.set(value);
+    }
+
+    public MainController() {
+        testListMenu = new ContextMenu();
+        MenuItem addTestMenuItem = new MenuItem("Add Test");
+        addTestMenuItem.setOnAction(this::addTests);
+        testListMenu.getItems().add(addTestMenuItem);
     }
 
     @FXML
@@ -103,13 +116,15 @@ public class MainController {
     }
 
     private void addTests(Book book) throws IOException {
+        // TODO: Do I need to add the stylesheet?
         FXMLLoader loader = new FXMLLoader(getClass().getClassLoader().getResource("views/ListTestItem.fxml"));
 //        loader.getNamespace().put("TEST_LIST_MARGIN", TEST_LIST_MARGIN);
-        Label node = loader.load();
+        Parent node = loader.load();
         ListTestItemController controller = loader.getController();
         controller.setListNode(testList);
         controller.setBook(book);
         controller.setToggleGroup(testToggleGroup);
+        controller.sidebarWidthProperty().bind(sidebarWidth);
         if (testToggleGroup.getSelectedToggle() == null)
             controller.toggle.setSelected(true);
         testList.getChildren().add(node);
@@ -123,5 +138,17 @@ public class MainController {
         catch (UncheckedIOException e) {
             throw e.getCause();
         }
+    }
+
+    public void openListContextMenu(ContextMenuEvent e) {
+        Bounds bounds = testList.localToScreen(testList.getBoundsInLocal());
+        testListMenu.show(testList, e.getX() + bounds.getMinX(), e.getY() + bounds.getMinY());
+        testList.setOnMouseClicked(e2 -> {
+            testListMenu.hide();
+        });
+        testListMenu.setOnHiding(e2 -> {
+            testList.setOnMouseClicked(null);
+            testListMenu.setOnHiding(null);
+        });
     }
 }

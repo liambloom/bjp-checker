@@ -7,20 +7,27 @@
 <?import javafx.scene.layout.*?>
 
 
-<Label xmlns="http://javafx.com/javafx"
-        xmlns:fx="http://javafx.com/fxml"
-        fx:controller="dev.liambloom.tests.bjp.gui.ListTestItemController"
-        labelFor="${toggle}"
-        onMouseClicked="#select"> <!--  -->
+<?import javafx.scene.shape.Circle?>
+<AnchorPane xmlns="http://javafx.com/javafx"
+       xmlns:fx="http://javafx.com/fxml"
+       fx:controller="dev.liambloom.tests.bjp.gui.ListTestItemController"
+       minWidth="${controller.listNode.width}"
+       maxWidth="${controller.listNode.width}"
+       onMouseClicked="#select"
+       onContextMenuRequested="#openContextMenuAndConsume">
     <fx:define> <!-- FIXME: Defining constants in two places is BAD -->
         <Double fx:id="TEST_LIST_MARGIN" fx:value="5.0"/>
         <Integer fx:id="LIST_BUTTON_SIZE" fx:value="16"/>
     </fx:define>
-
-    <graphic>
-        <AnchorPane minWidth="${controller.listNode.width}" maxWidth="${controller.listNode.width}">
-            <RadioButton fx:id="toggle" toggleGroup="${controller.toggleGroup}" AnchorPane.topAnchor="5.0" AnchorPane.leftAnchor="5.0"/> <!--  -->
-            <Label text="${controller.book.name}" AnchorPane.topAnchor="5.0" AnchorPane.leftAnchor="26.0" />
-        </AnchorPane>
-    </graphic>
-</Label>
+    <RadioButton fx:id="toggle" toggleGroup="${controller.toggleGroup}" AnchorPane.topAnchor="5.0" AnchorPane.leftAnchor="5.0"/>
+    <Label text="${controller.book.name}" AnchorPane.topAnchor="5.0" AnchorPane.leftAnchor="26.0" maxWidth="${controller.nameWidth}" />
+    <Button AnchorPane.topAnchor="5.0" AnchorPane.rightAnchor="5.0" styleClass="hoverable, testListMenuButton" onAction="#openContextMenu">
+        <graphic>
+            <Pane>
+                <Circle styleClass="titleShape" radius="1.2" centerX="8" centerY="4"/>
+                <Circle styleClass="titleShape" radius="1.2" centerX="8" centerY="8"/>
+                <Circle styleClass="titleShape" radius="1.2" centerX="8" centerY="12"/>
+            </Pane>
+        </graphic>
+    </Button>
+</AnchorPane>
