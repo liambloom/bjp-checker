@@ -121,9 +121,10 @@ public class MainController {
 //        loader.getNamespace().put("TEST_LIST_MARGIN", TEST_LIST_MARGIN);
         Parent node = loader.load();
         ListTestItemController controller = loader.getController();
-        controller.setListNode(testList);
+//        controller.setListNode(testList);
         controller.setBook(book);
         controller.setToggleGroup(testToggleGroup);
+        controller.setTestListMenu(testListMenu);
         controller.sidebarWidthProperty().bind(sidebarWidth);
         if (testToggleGroup.getSelectedToggle() == null)
             controller.toggle.setSelected(true);

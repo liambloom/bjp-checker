@@ -6,7 +6,6 @@ import javafx.application.Application;
 import org.xml.sax.SAXException;
 
 import java.io.*;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -62,7 +61,7 @@ public class CLI {
                         case "rename":
                             assertArgsPresent(args, 2, "old name", "new name");
                             if (Book.getTest(args[2]) instanceof ModifiableBook book)
-                                book.rename(args[3]);
+                                book.setName(args[3]);
                             else
                                 throw new UserErrorException("Book `" + args[2] + "' can't be renamed");
                             break;

@@ -6,16 +6,13 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
-import javax.xml.validation.Validator;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
-import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.prefs.Preferences;
 
 public class PathBook extends ModifiableBook {
     private Path path;

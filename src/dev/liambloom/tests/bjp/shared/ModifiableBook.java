@@ -11,7 +11,7 @@ public abstract class ModifiableBook extends Book {
         super(name);
     }
 
-    public void rename(String name) {
+    public void setName(String name) {
         if (name.length() > Preferences.MAX_KEY_LENGTH)
             throw new UserErrorException("Test names may not be longer than " + Preferences.MAX_KEY_LENGTH + " characters long");
         renameLoadedTest(getName(), name);
