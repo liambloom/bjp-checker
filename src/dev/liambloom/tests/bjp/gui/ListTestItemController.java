@@ -1,9 +1,6 @@
 package dev.liambloom.tests.bjp.gui;
 
-import dev.liambloom.tests.bjp.shared.Book;
-import dev.liambloom.tests.bjp.shared.ConsumerThrowsIOException;
-import dev.liambloom.tests.bjp.shared.ModifiableBook;
-import dev.liambloom.tests.bjp.shared.PathBook;
+import dev.liambloom.tests.bjp.shared.*;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.*;
 import javafx.geometry.Bounds;
@@ -16,6 +13,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.stage.FileChooser;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -29,18 +27,11 @@ public class ListTestItemController {
     private boolean isContextMenuButtonActive = false;
     //public AnchorPane node;
     //private ObjectProperty<VBox> listNode = new SimpleObjectProperty<>(new VBox());
-    private Book book;
+    private final ObjectProperty<BeanBook> book = new SimpleObjectProperty<>();
     private ToggleGroup toggleGroup = new ToggleGroup();
-    public final BooleanProperty isValid = new SimpleBooleanProperty(true);
     public final DoubleProperty sidebarWidth = new SimpleDoubleProperty(MainController.INITIAL_SIDEBAR_WIDTH);
-    public final DoubleBinding nameWidth = new DoubleBinding() {
-        { bind(sidebarWidth, isValid); }
-
-        @Override
-        protected double computeValue() {
-            return sidebarWidth.get() - (isValid.get() ? 52 : 73);
-        }
-    };
+    private final ReadOnlyDoubleWrapper nameWidthWrapper = new ReadOnlyDoubleWrapper(0.0);
+    public final ReadOnlyDoubleProperty nameWidth = nameWidthWrapper.getReadOnlyProperty();
 //    public static final double TEST_LIST_MARGIN = MainController.TEST_LIST_MARGIN;
 
 //    public VBox getListNode() {
@@ -63,38 +54,44 @@ public class ListTestItemController {
         return new ReadOnlyObjectWrapper<>(getParent());
     }*/
 
-    public Book getBook() {
-        return book;
-    }
+//    public Book getBook() {
+//        return book.getInner();
+//    }
 
     public RadioButton getToggle() {
         return toggle;
     }
 
-    public void setBook(Book book) {
-        if (book instanceof ModifiableBook modifiableBook1) {
-            this.book = new BeanBook(modifiableBook1);
+    public BeanBook getBook() {
+        return book.get();
+    }
 
-        }
-        else
-            this.book = book;
-        contextMenu = new ContextMenu();
-        contextMenu.setOnAutoHide(e -> {
-            isContextMenuButtonActive = false;
+    public void setBook(Book book) throws IOException {
+        this.book.set(new BeanBook(book));
+        nameWidthWrapper.bind(new DoubleBinding() {
+            { bind(sidebarWidth, ListTestItemController.this.book.get().validationResultProperty()); }
+
+            @Override
+            protected double computeValue() {
+                return sidebarWidth.get() - (ListTestItemController.this.book.get().getValidationResult().status() == TestValidationStatus.VALID ? 52 : 73);
+            }
         });
+        contextMenu = new ContextMenu();
+        contextMenu.setOnAutoHide(e -> isContextMenuButtonActive = false);
         MenuItem rename = new MenuItem("Rename");
         MenuItem changePath = new MenuItem("Change Path");
         MenuItem delete = new MenuItem("Delete");
-        if (book instanceof PathBook pathBook) {
+        if (this.book.get().hasPath()) {
+            assert this.book.get().getPath().isPresent();
             changePath.setOnAction(e -> {
                 FileChooser chooser = new FileChooser();
                 chooser.setTitle("Open Test");
-                if (Files.exists(pathBook.getPath()))
-                    chooser.setInitialDirectory(pathBook.getPath().getParent().toFile());
+                if (Files.exists(this.book.get().getPath().get()))
+                    chooser.setInitialDirectory(this.book.get().getPath().get().getParent().toFile());
                 chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
                 Optional.ofNullable(chooser.showOpenDialog(node.getScene().getWindow()))
                         .map(File::toPath)
-                        .ifPresent((ConsumerThrowsIOException<Path>) pathBook::setPath);
+                        .ifPresent((ConsumerThrowsIOException<Path>) this.book.get()::setPath);
                 // bookPath.setText(p.getParent().toString() + File.separator);
                 // bookFileName.setText(p.getFileName().toString());
             });
@@ -102,22 +99,21 @@ public class ListTestItemController {
         else {
             changePath.setDisable(true);
         }
-        System.out.println(book.getName() + " " + (book instanceof ModifiableBook));
-        if (this.book instanceof ModifiableBook modifiableBook) {
+        if (this.book.get().isModifiable()) {
             rename.setOnAction(e -> {
-                TextInputDialog dialog = new TextInputDialog(book.getName());
+                TextInputDialog dialog = new TextInputDialog(this.book.get().getName());
                 dialog.setHeaderText(null);
                 dialog.setTitle("Rename Test");
                 dialog.showAndWait()
-                        .ifPresent(modifiableBook::setName);
+                        .ifPresent(this.book.get()::setName);
             });
             delete.setOnAction(e -> {
-                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to remove test \"" + book.getName() + '"');
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to remove test \"" + this.book.get().getName() + '"');
                 confirm.setHeaderText(null);
                 confirm.showAndWait()
                         .ifPresent(b -> {
                             if (b == ButtonType.OK)
-                                Book.removeTest(book.getName());
+                                Book.removeTest(this.book.get().getName());
                         });
             });
         }
@@ -127,6 +123,10 @@ public class ListTestItemController {
         }
         delete.setStyle("-fx-text-fill: red");
         contextMenu.getItems().addAll(rename, changePath, new SeparatorMenuItem(), delete);
+    }
+
+    public ObjectProperty<BeanBook> bookProperty() {
+        return book;
     }
 
     public ToggleGroup getToggleGroup() {
@@ -149,7 +149,7 @@ public class ListTestItemController {
         return sidebarWidth;
     }
 
-    public DoubleBinding nameWidthProperty() {
+    public ReadOnlyDoubleProperty nameWidthProperty() {
         return nameWidth;
     }
 
@@ -185,7 +185,7 @@ public class ListTestItemController {
     }
 
     public void initialize() {
-        new Thread(() -> {
+        /*new Thread(() -> {
             while (true) {
                 try {
                     Thread.sleep(5000);
@@ -194,6 +194,6 @@ public class ListTestItemController {
                 }
                 isValid.set(!isValid.get());
             }
-        }).start();
+        }).start();*/
     }
 }
