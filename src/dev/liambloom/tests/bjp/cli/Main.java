@@ -1,7 +1,6 @@
 package dev.liambloom.tests.bjp.cli;
 
 import dev.liambloom.tests.bjp.shared.*;
-import dev.liambloom.tests.bjp.gui.GUI;
 import javafx.application.Application;
 import org.xml.sax.SAXException;
 
@@ -11,7 +10,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class CLI {
+public class Main {
     public static void main(String[] args) {
         App.setLogger(new CLILogger());
 
@@ -104,7 +103,7 @@ public class CLI {
                     }
                     break;
                 case "gui":
-                    Application.launch(GUI.class, Arrays.copyOfRange(args, 1, args.length));
+                    Application.launch(dev.liambloom.tests.bjp.gui.Main.class, Arrays.copyOfRange(args, 1, args.length));
                     break;
                 default:
                     throw new UserErrorException("Command `" + args[0] + "' not recognized. See `checker --help' for a list of commands.");
@@ -132,7 +131,7 @@ public class CLI {
 
     private static void printHelp(String arg) throws IOException {
         InputStream stream;
-        if (arg.contains("/") || (stream = CLI.class.getResourceAsStream("/help/" + arg + ".txt")) == null)
+        if (arg.contains("/") || (stream = Main.class.getResourceAsStream("/help/" + arg + ".txt")) == null)
             throw new UserErrorException("Unable to find help for `" + arg + "'");
         int next;
         while ((next = stream.read()) != -1)

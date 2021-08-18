@@ -2,7 +2,6 @@ package dev.liambloom.tests.bjp.gui;
 
 import dev.liambloom.tests.bjp.shared.Book;
 import dev.liambloom.tests.bjp.shared.ConsumerThrowsIOException;
-import dev.liambloom.tests.bjp.shared.FunctionThrowsIOException;
 import javafx.beans.property.*;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -11,8 +10,6 @@ import javafx.geometry.Bounds;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.input.ContextMenuEvent;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -21,10 +18,8 @@ import javafx.util.Pair;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 public class MainController {
     public static final double INITIAL_SIDEBAR_WIDTH = 200;
@@ -117,10 +112,12 @@ public class MainController {
 
     private void addTests(Book book) throws IOException {
         // TODO: Do I need to add the stylesheet?
-        FXMLLoader loader = new FXMLLoader(getClass().getClassLoader().getResource("views/ListTestItem.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getClassLoader().getResource("views/TestListItem.fxml"));
 //        loader.getNamespace().put("TEST_LIST_MARGIN", TEST_LIST_MARGIN);
         Parent node = loader.load();
-        ListTestItemController controller = loader.getController();
+        if (testList.getChildren().size() == 1)
+            node.setId("firstTestListItem");
+        TestListItemController controller = loader.getController();
 //        controller.setListNode(testList);
         controller.setBook(book);
         controller.setToggleGroup(testToggleGroup);

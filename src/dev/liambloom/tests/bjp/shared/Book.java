@@ -201,6 +201,12 @@ public abstract class Book {
                 WatchService fsWatcher = fileSystem.newWatchService();
 
                 new Thread(() -> {
+                    // FIXME: This isn't working
+                    // Notes: Msot of the changes seem to happen to custom-tests.xml~, which I assume is
+                    //         some kind of temp file created by intellij. More importantly, however, is
+                    //         that it is getting change events for C:\Users\liamr\Documents\GitHub\bjp3-tests\custom-test__.xml
+                    //         which does not exist and is not (as far as I know) being watched. Either
+                    //         intellij is doing something weird and "helpful", or my code is *very* broken.
                     while (true) {
                         WatchKey key;
                         try {
@@ -217,7 +223,7 @@ public abstract class Book {
 
                             @SuppressWarnings("unchecked")
                             WatchEvent<Path> event = (WatchEvent<Path>) eventUnfiltered;
-                            Path target = event.context().toAbsolutePath().normalize();
+                            Path target = ((Path) key.watchable()).resolve(event.context());//.toAbsolutePath().normalize();
                             Queue<Path> targets = new LinkedList<>();
                             targets.add(target);
 
@@ -251,7 +257,9 @@ public abstract class Book {
                                 for (Consumer<WatchEvent<Path>> callback : callbacks)
                                     callback.accept(event);
 
-                                Iterator<Path> symlinks = watcherSymlinkTargets.get(currentTarget).iterator();
+                                Iterator<Path> symlinks = Optional.ofNullable(watcherSymlinkTargets.get(currentTarget))
+                                        .map(Collection::iterator)
+                                        .orElseGet(Collections::emptyIterator);
                                 while (symlinks.hasNext()) {
                                     Path symlink = symlinks.next();
                                     if (!Files.isSymbolicLink(symlink)){

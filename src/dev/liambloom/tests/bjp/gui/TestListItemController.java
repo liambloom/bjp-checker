@@ -1,7 +1,7 @@
 package dev.liambloom.tests.bjp.gui;
 
 import dev.liambloom.tests.bjp.shared.*;
-import javafx.beans.binding.DoubleBinding;
+import javafx.beans.binding.*;
 import javafx.beans.property.*;
 import javafx.geometry.Bounds;
 import javafx.geometry.Side;
@@ -10,6 +10,7 @@ import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 
 import java.io.File;
@@ -18,7 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-public class ListTestItemController {
+public class TestListItemController {
     public RadioButton toggle;
     public AnchorPane node;
     public Button menuButton;
@@ -32,6 +33,64 @@ public class ListTestItemController {
     public final DoubleProperty sidebarWidth = new SimpleDoubleProperty(MainController.INITIAL_SIDEBAR_WIDTH);
     private final ReadOnlyDoubleWrapper nameWidthWrapper = new ReadOnlyDoubleWrapper(0.0);
     public final ReadOnlyDoubleProperty nameWidth = nameWidthWrapper.getReadOnlyProperty();
+    public final StringBinding icon = new StringBinding() {
+        {
+            bind(book);
+            book.addListener((observable, oldValue, newValue) -> {
+                if (oldValue != null)
+                    unbind(oldValue.validationResultProperty());
+                bind(newValue.validationResultProperty());
+            });
+        }
+
+        @Override
+        protected String computeValue() {
+            return switch ((TestValidationStatus) Optional.ofNullable(book.get())
+                    .map(BeanBook::getValidationResult)
+                    .map(Result::status)
+                    .orElse(TestValidationStatus.NOT_FOUND)) {
+                case VALID -> "";
+                case NOT_FOUND -> "M 0 13.85640646 L 8 0 L 16 13.85640646 M 5 7 A 3 3 0 1 1 10.12132034 9.12132034 l -1.414213562 -1.414213562 A 1 1 0 1 0 7 7 M 7 10 v 2 h 2 v -2 h -2";
+                case INVALID, VALID_WITH_WARNINGS -> "M 0 13.85640646 L 8 0 L 16 13.85640646 M 7 3.8 V 7 L 7.5 9 h 1 L 9 7 V 3.8 H 7 M 7 10 v 2 h 2 v -2 h -2";
+            };
+        }
+    };
+    // This doesn't seem like it should be necessary, but I couldn't find another way
+    public final ObjectBinding<Color> iconFill = new ObjectBinding<>() {
+        {
+            bind(book);
+            book.addListener((observable, oldValue, newValue) -> {
+                if (oldValue != null)
+                    unbind(oldValue.validationResultProperty());
+                bind(newValue.validationResultProperty());
+            });
+        }
+
+        @Override
+        protected Color computeValue() {
+            return Optional.ofNullable(book.get())
+                    .map(BeanBook::getValidationResult)
+                    .map(Result::status)
+                    .orElse(TestValidationStatus.NOT_FOUND)
+                    .color()
+                    .jfx();
+        }
+    };
+    /*public final ObjectBinding<Color> iconColor = new ObjectBinding<>() {
+        {
+            bind(book);
+            book.addListener((observable, oldValue, newValue) -> {
+                if (oldValue != null)
+                    unbind(oldValue.validationResultProperty());
+                bind(newValue.validationResultProperty());
+            });
+        }
+
+        @Override
+        protected Color computeValue() {
+            return book.get().getValidationResult().status().color().getJavaFX();
+        }
+    };*/
 //    public static final double TEST_LIST_MARGIN = MainController.TEST_LIST_MARGIN;
 
 //    public VBox getListNode() {
@@ -69,11 +128,11 @@ public class ListTestItemController {
     public void setBook(Book book) throws IOException {
         this.book.set(new BeanBook(book));
         nameWidthWrapper.bind(new DoubleBinding() {
-            { bind(sidebarWidth, ListTestItemController.this.book.get().validationResultProperty()); }
+            { bind(sidebarWidth, TestListItemController.this.book.get().validationResultProperty()); }
 
             @Override
             protected double computeValue() {
-                return sidebarWidth.get() - (ListTestItemController.this.book.get().getValidationResult().status() == TestValidationStatus.VALID ? 52 : 73);
+                return sidebarWidth.get() - (TestListItemController.this.book.get().getValidationResult().status() == TestValidationStatus.VALID ? 52 : 73);
             }
         });
         contextMenu = new ContextMenu();
@@ -123,11 +182,41 @@ public class ListTestItemController {
         }
         delete.setStyle("-fx-text-fill: red");
         contextMenu.getItems().addAll(rename, changePath, new SeparatorMenuItem(), delete);
+//        System.out.println(getBook().getName());
+//        Platform.runLater(() -> {
+//            System.out.println(getBook().getName());
+//            System.out.println(foo.getText());
+//            System.out.println(foo.textProperty());
+//        });
     }
 
     public ObjectProperty<BeanBook> bookProperty() {
         return book;
     }
+
+    public String getIcon() {
+        return icon.get();
+    }
+
+    public StringBinding iconProperty() {
+        return icon;
+    }
+
+    public Color getIconFill() {
+        return iconFill.get();
+    }
+
+    public ObjectBinding<Color> iconFillProperty() {
+        return iconFill;
+    }
+
+    /*public Color getIconColor() {
+        return iconColor.get();
+    }
+
+    public ObjectBinding<Color> iconColorProperty() {
+        return iconColor;
+    }*/
 
     public ToggleGroup getToggleGroup() {
         return toggleGroup;

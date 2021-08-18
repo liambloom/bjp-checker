@@ -2,54 +2,19 @@ package dev.liambloom.tests.bjp.gui;
 
 import dev.liambloom.tests.bjp.shared.*;
 import javafx.application.Application;
-import javafx.application.Platform;
-import javafx.beans.binding.ObjectBinding;
-import javafx.beans.property.*;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableObjectValue;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
-import javafx.geometry.Bounds;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.geometry.Side;
-import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
-import javafx.scene.shape.Circle;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.shape.SVGPath;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
-import javafx.scene.transform.Affine;
-import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.util.Pair;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class GUI extends Application {
+public class Main extends Application {
     public static void main(String[] args) {
         Application.launch(args);
     }
@@ -61,7 +26,7 @@ public class GUI extends Application {
     private ColorScheme colorScheme;
     private ArrayList<Scene> scenes = new ArrayList<>(1);
 
-    public GUI() {
+    public Main() {
         setColorScheme(ColorScheme.valueOf(App.prefs().get("colorScheme", ColorScheme.LIGHT.name())));
     }
 
@@ -70,7 +35,7 @@ public class GUI extends Application {
         // FIXME: When the monitor size changes, the gui scaling doesn't change
         GridPane content;
         try {
-             content = FXMLLoader.load(GUI.class.getClassLoader().getResource("views/Main.fxml"));
+             content = FXMLLoader.load(Main.class.getClassLoader().getResource("views/Main.fxml"));
         } catch (IOException e) {
             e.printStackTrace();
             return;
@@ -78,7 +43,7 @@ public class GUI extends Application {
         Scene scene = new Scene(content);
         scene.getStylesheets().addAll(Stream.of("Main")
                 .map(s -> "css/" + s + ".css")
-                .map(GUI.class.getClassLoader()::getResource)
+                .map(Main.class.getClassLoader()::getResource)
                 .map(URL::toExternalForm)
                 .collect(Collectors.toList()));
         scenes.add(scene);
@@ -105,7 +70,7 @@ public class GUI extends Application {
     }
 
     private void addColorSchemeStyles(Scene scene) {
-        scene.getStylesheets().add(GUI.class.getClassLoader().getResource("css/" + getColorScheme().name().toLowerCase(Locale.ENGLISH) + "-theme.css").toExternalForm());
+        scene.getStylesheets().add(Main.class.getClassLoader().getResource("css/" + getColorScheme().name().toLowerCase(Locale.ENGLISH) + "-theme.css").toExternalForm());
     }
 
 //    public void start2(Stage stage) {

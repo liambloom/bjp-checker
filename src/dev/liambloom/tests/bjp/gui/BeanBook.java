@@ -1,14 +1,12 @@
 package dev.liambloom.tests.bjp.gui;
 
-import dev.liambloom.tests.bjp.shared.Book;
-import dev.liambloom.tests.bjp.shared.ModifiableBook;
-import dev.liambloom.tests.bjp.shared.PathBook;
-import dev.liambloom.tests.bjp.shared.Result;
+import dev.liambloom.tests.bjp.shared.*;
 import javafx.beans.property.*;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.nio.file.WatchEvent;
 import java.util.Optional;
 
 public class BeanBook {
@@ -48,7 +46,12 @@ public class BeanBook {
         validationResult = validationResultWrapper.getReadOnlyProperty();
         existsWrapper = new ReadOnlyBooleanWrapper(inner.exists());
         exists = existsWrapper.getReadOnlyProperty();
-        // TODO: Add watcher to inner to listen for changes and refresh values of validationResult and exists
+        if (inner instanceof ModifiableBook mb) { // TODO: Test this
+            mb.addWatcher((ConsumerThrowsIOException<WatchEvent<Path>>) (e -> {
+                validationResultWrapper.set(inner.validate());
+                existsWrapper.set(inner.exists());
+            }));
+        }
     }
 
     public boolean isModifiable() {
@@ -59,20 +62,28 @@ public class BeanBook {
         return inner instanceof PathBook;
     }
 
-    public Book getInner() {
-        return inner;
-    }
-
     public String getName() {
         return name.get();
     }
 
-    public void setName(String name) {
-        this.name.set(name);
+    public void setName(String value) {
+        name.set(value);
     }
 
     public StringProperty nameProperty() {
         return name;
+    }
+
+    public Optional<Path> getPath() {
+        return path.get();
+    }
+
+    public void setPath(Path value) {
+        path.set(Optional.of(value));
+    }
+
+    public ObjectProperty<Optional<Path>> pathProperty() {
+        return path;
     }
 
     public Result getValidationResult() {
@@ -89,17 +100,5 @@ public class BeanBook {
 
     public ReadOnlyBooleanProperty existsProperty() {
         return exists;
-    }
-
-    public Optional<Path> getPath() {
-        return path.get();
-    }
-
-    public void setPath(Path path) {
-        this.path.set(Optional.of(path));
-    }
-
-    public ObjectProperty<Optional<Path>> pathProperty() {
-        return path;
     }
 }
