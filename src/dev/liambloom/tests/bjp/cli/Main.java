@@ -149,7 +149,7 @@ public class Main {
     public static void printResults(Stream<Result> s) throws IOException {
         try {
             s.forEachOrdered(r -> {
-                System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), r.status().getName());
+                System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), Case.convert(r.status().toString(), Case.SPACE));
                 r.console().ifPresent((ConsumerThrowsIOException<ByteArrayOutputStream>) (c -> c.writeTo(System.out)));
             });
         }

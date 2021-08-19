@@ -13,7 +13,8 @@ public enum Case {
     PASCAL,
     SNAKE,
     CONST,
-    SPACE;
+    SPACE,
+    TITLE;
 
     private static final Pattern WHITESPACE = Pattern.compile("\\s");
 
@@ -33,7 +34,7 @@ public enum Case {
                     yield r.toLowerCase(Locale.ENGLISH);
             }
             case SPACE -> String.join(" ", words).toLowerCase(Locale.ENGLISH);
-            case CAMEL, PASCAL -> {
+            case CAMEL, PASCAL, TITLE -> {
                 StringBuilder builder = new StringBuilder(s.length());
                 for (int i = 0; i < words.length; i++) {
                     char[] chars = words[i].toCharArray();
@@ -46,6 +47,8 @@ public enum Case {
                     }
                     for (; j < chars.length; j++)
                         chars[j] = Character.toLowerCase(chars[j]);
+                    if (i > 0 && c == TITLE)
+                        builder.append(' ');
                     builder.append(chars);
                 }
                 yield builder.toString();

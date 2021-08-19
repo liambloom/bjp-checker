@@ -11,6 +11,7 @@ import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 
@@ -24,6 +25,7 @@ public class TestListItemController {
     public RadioButton toggle;
     public AnchorPane node;
     public Button menuButton;
+    public Pane iconPane;
     private ContextMenu contextMenu;
     private ContextMenu testListMenu;
     private boolean isContextMenuButtonActive = false;
@@ -283,15 +285,23 @@ public class TestListItemController {
     }
 
     public void initialize() {
-        /*new Thread(() -> {
-            while (true) {
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                isValid.set(!isValid.get());
+        Tooltip iconTooltip = new Tooltip();
+        iconTooltip.textProperty().bind(new StringBinding() {
+            {
+                bind(book);
+                book.addListener((observable, oldValue, newValue) -> {
+                    if (oldValue != null)
+                        unbind(oldValue.validationResultProperty());
+                    bind(newValue.validationResultProperty());
+                });
             }
-        }).start();*/
+
+            @Override
+            protected String computeValue() {
+                return getBook() == null ? null : Case.convert(getBook().getValidationResult().status().toString(), Case.TITLE);
+            }
+        });
+        Tooltip.install(iconPane, iconTooltip);
+            }
     }
 }

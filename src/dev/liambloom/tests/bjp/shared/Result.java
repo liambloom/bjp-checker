@@ -23,9 +23,5 @@ public record Result(String name, Status status, Optional<ByteArrayOutputStream>
     // This makes more sense as an abstract class, but enums can't extend abstract classes
     public interface Status {
         Color color();
-
-        default String getName() {
-            return Case.convert(toString(), Case.SPACE); // toString().replace("_", " ").toLowerCase();
-        }
     }
 }

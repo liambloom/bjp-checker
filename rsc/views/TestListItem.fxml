@@ -24,7 +24,7 @@
     </fx:define>
     <RadioButton fx:id="toggle" toggleGroup="${controller.toggleGroup}" AnchorPane.topAnchor="5.0" AnchorPane.leftAnchor="5.0"/>
     <Label text="${controller.book.name}" AnchorPane.topAnchor="5.0" AnchorPane.leftAnchor="26.0" maxWidth="${controller.nameWidth}" disable="${controller.toggle.disable}"/>
-    <Pane AnchorPane.topAnchor="5.0" AnchorPane.rightAnchor="26.0">
+    <Pane fx:id="iconPane" AnchorPane.topAnchor="5.0" AnchorPane.rightAnchor="26.0">
         <SVGPath content="${controller.icon}" fill="${controller.iconFill}" fillRule="EVEN_ODD"/>
     </Pane>
     <Button AnchorPane.topAnchor="5.0" AnchorPane.rightAnchor="5.0" styleClass="hoverable, testListMenuButton" onAction="#openContextMenuFromButton" fx:id="menuButton">
