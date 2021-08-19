@@ -1,5 +1,6 @@
 package dev.liambloom.tests.bjp.gui;
 
+import dev.liambloom.tests.bjp.shared.App;
 import dev.liambloom.tests.bjp.shared.Book;
 import dev.liambloom.tests.bjp.shared.ConsumerThrowsIOException;
 import javafx.beans.property.*;
@@ -119,12 +120,12 @@ public class MainController {
             node.setId("firstTestListItem");
         TestListItemController controller = loader.getController();
 //        controller.setListNode(testList);
-        controller.setBook(book);
         controller.setToggleGroup(testToggleGroup);
+        controller.setBook(book);
         controller.setTestListMenu(testListMenu);
         controller.sidebarWidthProperty().bind(sidebarWidth);
-        if (testToggleGroup.getSelectedToggle() == null)
-            controller.toggle.setSelected(true);
+//        if (testToggleGroup.getSelectedToggle() == null)
+//            controller.toggle.setSelected(true);
         testList.getChildren().add(node);
     }
 
@@ -132,6 +133,8 @@ public class MainController {
         try {
             Book.getAllTests()
                     .forEachOrdered((ConsumerThrowsIOException<Book>) this::addTests);
+            if (testToggleGroup.getSelectedToggle() == null)
+                ((Toggle) ((Parent) testList.getChildren().get(1)).getChildrenUnmodifiable().get(0)).setSelected(true);
         }
         catch (UncheckedIOException e) {
             throw e.getCause();

@@ -3,6 +3,7 @@ package dev.liambloom.tests.bjp.gui;
 import dev.liambloom.tests.bjp.shared.*;
 import javafx.beans.binding.*;
 import javafx.beans.property.*;
+import javafx.beans.value.ObservableValue;
 import javafx.geometry.Bounds;
 import javafx.geometry.Side;
 import javafx.scene.Parent;
@@ -194,11 +195,14 @@ public class TestListItemController {
 //        });
         toggle.disableProperty().bind(this.book.get().existsProperty().not());
         toggle.disableProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
+            if (newValue && toggle.isSelected()) {
                 toggle.setSelected(false);
                 ((Toggle) ((Parent) node.getParent().getChildrenUnmodifiable().get(1)).getChildrenUnmodifiable().get(0)).setSelected(true);
             }
         });
+
+        if (getBook().getName().equals(App.prefs().get("selectedTests", null)))
+            toggle.setSelected(true);
     }
 
     public ObjectProperty<BeanBook> bookProperty() {
@@ -268,6 +272,10 @@ public class TestListItemController {
         toggle.requestFocus();
     }
 
+    private void updateSelectedName(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+        App.prefs().put("selectedTests", newValue);
+    }
+
     public void openContextMenuFromButton() {
         if (isContextMenuButtonActive)
             contextMenu.hide();
@@ -302,6 +310,14 @@ public class TestListItemController {
             }
         });
         Tooltip.install(iconPane, iconTooltip);
+
+        toggle.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                App.prefs().put("selectedTests", getBook().getName());
+                getBook().nameProperty().addListener(this::updateSelectedName);
             }
+            else
+                getBook().nameProperty().removeListener(this::updateSelectedName);
+        });
     }
 }
