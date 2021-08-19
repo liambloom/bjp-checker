@@ -5,6 +5,7 @@ import javafx.beans.binding.*;
 import javafx.beans.property.*;
 import javafx.geometry.Bounds;
 import javafx.geometry.Side;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.MouseButton;
@@ -50,8 +51,8 @@ public class TestListItemController {
                     .map(Result::status)
                     .orElse(TestValidationStatus.NOT_FOUND)) {
                 case VALID -> "";
-                case NOT_FOUND -> "M 0 13.85640646 L 8 0 L 16 13.85640646 M 5 7 A 3 3 0 1 1 10.12132034 9.12132034 l -1.414213562 -1.414213562 A 1 1 0 1 0 7 7 M 7 10 v 2 h 2 v -2 h -2";
-                case INVALID, VALID_WITH_WARNINGS -> "M 0 13.85640646 L 8 0 L 16 13.85640646 M 7 3.8 V 7 L 7.5 9 h 1 L 9 7 V 3.8 H 7 M 7 10 v 2 h 2 v -2 h -2";
+                case NOT_FOUND -> "M 0 8 A 8 8 0 0 1 16 8 A 8 8 0 0 1 0 8 M 5.171572875 6 A 2.828427125 2.828427125 0 1 1 10 8 A 3.414213562 3.414213562 0 0 0 9 10.41421356 h -2 A 5.414213562 5.414213562 0 0 1 8.585786438 6.585786438 A 0.8284271247 0.8284271247 0 1 0 7.171572875 6 M 7 11.8 v 2 h 2 v -2 h -2";
+                case INVALID, VALID_WITH_WARNINGS -> "M 0 14.92820323 L 8 1.07179677 L 16 14.92820323 M 7 4.8 V 8 L 7.5 10 h 1 L 9 8 V 4.8 H 7 M 7 11 v 2 h 2 v -2 h -2";
             };
         }
     };
@@ -145,8 +146,9 @@ public class TestListItemController {
             changePath.setOnAction(e -> {
                 FileChooser chooser = new FileChooser();
                 chooser.setTitle("Open Test");
-                if (Files.exists(this.book.get().getPath().get()))
-                    chooser.setInitialDirectory(this.book.get().getPath().get().getParent().toFile());
+                Path initialDir = this.book.get().getPath().get().getParent();
+                if (Files.exists(initialDir))
+                    chooser.setInitialDirectory(initialDir.toFile());
                 chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
                 Optional.ofNullable(chooser.showOpenDialog(node.getScene().getWindow()))
                         .map(File::toPath)
@@ -188,6 +190,13 @@ public class TestListItemController {
 //            System.out.println(foo.getText());
 //            System.out.println(foo.textProperty());
 //        });
+        toggle.disableProperty().bind(this.book.get().existsProperty().not());
+        toggle.disableProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                toggle.setSelected(false);
+                ((Toggle) ((Parent) node.getParent().getChildrenUnmodifiable().get(1)).getChildrenUnmodifiable().get(0)).setSelected(true);
+            }
+        });
     }
 
     public ObjectProperty<BeanBook> bookProperty() {
@@ -251,7 +260,7 @@ public class TestListItemController {
     }
 
     public void select(MouseEvent e) {
-        if (e.getButton() != MouseButton.PRIMARY)
+        if (e.getButton() != MouseButton.PRIMARY || toggle.isDisabled())
             return;
         toggle.setSelected(true);
         toggle.requestFocus();

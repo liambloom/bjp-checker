@@ -15,10 +15,10 @@ public class BeanBook {
     public final ObjectProperty<Optional<Path>> path;
 //    private final ReadOnlyBooleanWrapper isValidWrapper;
 //    public final ReadOnlyBooleanProperty isValid;
-    private final ReadOnlyObjectWrapper<Result> validationResultWrapper;
-    public final ReadOnlyObjectProperty<Result> validationResult;
-    private final ReadOnlyBooleanWrapper existsWrapper;
-    public final ReadOnlyBooleanProperty exists;
+    private final ReadOnlyObjectWrapper<Result> validationResultWrapper = new ReadOnlyObjectWrapper<>();
+    public final ReadOnlyObjectProperty<Result> validationResult = validationResultWrapper.getReadOnlyProperty();
+    private final ReadOnlyBooleanWrapper existsWrapper = new ReadOnlyBooleanWrapper();
+    public final ReadOnlyBooleanProperty exists = existsWrapper.getReadOnlyProperty();
 
     public BeanBook(Book inner) throws IOException {
         this.inner = inner;
@@ -34,24 +34,24 @@ public class BeanBook {
             if (inner instanceof PathBook pb) {
                 try {
                     pb.setPath(newValue.orElseThrow());
+                    onChange(null);
                 }
                 catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
+
             }
             else
                 throw new UnsupportedOperationException("Attempt to change path of BeanBook that wraps a non-path book");
         }));
-        validationResultWrapper = new ReadOnlyObjectWrapper<>(inner.validate());
-        validationResult = validationResultWrapper.getReadOnlyProperty();
-        existsWrapper = new ReadOnlyBooleanWrapper(inner.exists());
-        exists = existsWrapper.getReadOnlyProperty();
-        if (inner instanceof ModifiableBook mb) { // TODO: Test this
-            mb.addWatcher((ConsumerThrowsIOException<WatchEvent<Path>>) (e -> {
-                validationResultWrapper.set(inner.validate());
-                existsWrapper.set(inner.exists());
-            }));
-        }
+        onChange(null);
+        if (inner instanceof ModifiableBook mb)
+            mb.addWatcher((ConsumerThrowsIOException<WatchEvent<Path>>) this::onChange);
+    }
+
+    private void onChange(WatchEvent<Path> e) throws IOException {
+        validationResultWrapper.set(inner.validate());
+        existsWrapper.set(inner.exists());
     }
 
     public boolean isModifiable() {

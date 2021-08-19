@@ -30,4 +30,5 @@ public abstract class ModifiableBook extends Book {
     }
 
     public abstract void addWatcher(Consumer<WatchEvent<Path>> cb) throws IOException;
+    public abstract void removeWatcher(Consumer<WatchEvent<Path>> cb);
 }
