@@ -85,7 +85,7 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
         if (programmingProjects == null)
             programmingProjects = new boolean[0];
         if (testName == null)
-            testName = DEFAULT_TEST_NAME;
+            testName = App.prefs().get("selectedTests", DEFAULT_TEST_NAME);
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setSchema(Book.getTestSchema());

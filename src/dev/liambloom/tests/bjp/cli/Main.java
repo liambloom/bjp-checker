@@ -22,56 +22,49 @@ public class Main {
             }
             else {*/
             switch (args.length == 0 ? "-h" : args[0]) {
-                case "-h":
-                case "--help":
+                case "-h", "--help" -> {
                     assertArgsPresent(args, 1);
                     printHelp("checker");
-                    break;
-                case "-v":
-                case "--version":
+                }
+                case "-v", "--version" -> {
                     assertArgsPresent(args, 1);
                     System.out.println(App.VERSION);
-                    break;
-                case "check":
+                }
+                case "check" -> {
                     try {
                         App.check(CheckArgs.fromCLIArgs(args, 1));
-                    }
-                    catch (SAXException e) {
+                    } catch (SAXException e) {
                         // TODO: There is probably a better way to do this (should I add a ErrorHandler to Book or CheckArgs?)
                         throw new UserErrorException(e);
                     }
-                    //throw new UserErrorException("Command `check' not supported in current checker version");
-                    break;
-                case "submit":
-                    throw new UserErrorException("Command `submit' not supported in current checker version");
+                }
+                case "submit" -> throw new UserErrorException("Command `submit' not supported in current checker version");
                     // break;
-                case "tests":
+                case "tests" -> {
                     if (args.length == 1)
-                        throw new UserErrorException("Missing argument, expected one of: add, remove, rename, list, validate"); // TODO
+                        throw new UserErrorException("Missing argument, expected one of: add, remove, rename, list, validate, get-default, set-default"); // TODO
                     switch (args[1]) {
                         // TODO: handle errors
-                        case "add":
+                        case "add" -> {
                             assertArgsPresent(args, 2, "name", "path");
                             Book.addTest(args[2], new Glob(args[3]).single());
-                            break;
-                        case "remove":
-                            Book.removeTest(args[2]);
-                            break;
-                        case "rename":
+                        }
+                        case "remove" -> Book.removeTest(args[2]);
+                        case "rename" -> {
                             assertArgsPresent(args, 2, "old name", "new name");
                             if (Book.getTest(args[2]) instanceof ModifiableBook book)
                                 book.setName(args[3]);
                             else
                                 throw new UserErrorException("Book `" + args[2] + "' can't be renamed");
-                            break;
-                        case "change":
+                        }
+                        case "change" -> {
                             assertArgsPresent(args, 2, "name", "new path");
                             if (Book.getTest(args[2]) instanceof PathBook book)
                                 book.setPath(new Glob(args[3]).single());
                             else
                                 throw new UserErrorException("Book `" + args[2] + "' has no path associated with it");
-                            break;
-                        case "list":
+                        }
+                        case "list" -> {
                             assertArgsPresent(args, 2);
                             List<Book> books = Book.getAllTests().collect(Collectors.toList());
                             String[][] names = new String[books.size()][2];
@@ -86,8 +79,8 @@ public class Main {
                             }
                             for (String[] book : names)
                                 System.out.printf("%-" + maxBookNameLength + "s  %s%n", book[0], book[1]);
-                            break;
-                        case "validate":
+                        }
+                        case "validate" -> {
                             if (args.length == 2)
                                 throw new UserErrorException("Missing argument after validate");
                             try {
@@ -95,18 +88,22 @@ public class Main {
                                         ? Book.getAllTests()
                                         : Arrays.stream(args).skip(2).map(Book::getTest))
                                         .map((FunctionThrowsIOException<Book, Result>) Book::validate));
-                            }
-                            catch (UncheckedIOException e) {
+                            } catch (UncheckedIOException e) {
                                 throw e.getCause();
                             }
-                            break;
+                        }
+                        case "get-default" -> System.out.println(App.prefs().get("selectedTests", CheckArgs.DEFAULT_TEST_NAME));
+                        case "set-default" -> {
+                            assertArgsPresent(args, 2, "name");
+                            if (!Book.testExists(args[2]))
+                                throw new UserErrorException("Tests \"" + args[2] + "\" not found");
+                            App.prefs().put("selectedTests", args[2]);
+                        }
+                        default -> throw new UserErrorException("Command `tests " + args[1] + "' not recognized. See `checker tests --help' for a list of subcommands of `tests'");
                     }
-                    break;
-                case "gui":
-                    Application.launch(dev.liambloom.tests.bjp.gui.Main.class, Arrays.copyOfRange(args, 1, args.length));
-                    break;
-                default:
-                    throw new UserErrorException("Command `" + args[0] + "' not recognized. See `checker --help' for a list of commands.");
+                }
+                case "gui" -> Application.launch(dev.liambloom.tests.bjp.gui.Main.class, Arrays.copyOfRange(args, 1, args.length));
+                default -> throw new UserErrorException("Command `" + args[0] + "' not recognized. See `checker --help' for a list of commands.");
             }
             //}
         }

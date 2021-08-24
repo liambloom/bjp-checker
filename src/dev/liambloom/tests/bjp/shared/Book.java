@@ -134,7 +134,7 @@ public abstract class Book {
 
     public static boolean testExists(String name) {
         return loadedTests.containsKey(name)
-                || Optional.ofNullable(LOCAL_TEST_NAMES.get(name)).map(Book.class.getClassLoader()::getResource).isPresent()
+                || Optional.ofNullable(LOCAL_TEST_NAMES.get(name)).map(s -> "tests/" + s + ".xml").map(Book.class.getClassLoader()::getResource).isPresent()
                 || App.prefs().node("tests").get(name, null) != null;
     }
 
