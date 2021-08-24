@@ -5,24 +5,13 @@
         xsi:noNamespaceSchemaLocation="../book-tests.xsd">
     <chapter num="1">
         <exercise num="1">
-            <mutuals>
-                <chapter num="1">
-                    <exercise>2</exercise>
-                </chapter>
-                <chapter num="2">
-                    <exercise>3</exercise>
-                </chapter>
-            </mutuals>
             <program name="Stewie">
                 <test>
-                    <System.in>foo</System.in>
                     <prints>
                         //////////////////////
                         || Victory is mine! ||
                         \\\\\\\\\\\\\\\\\\\\\\
                     </prints>
-
-                    <!--<returns></returns> -->
                 </test>
             </program>
         </exercise>
@@ -37,9 +26,6 @@
                          //\\
                           /\
                     </prints>
-                    <!--<post var="this">
-                        <Scanner><File>foo</File></Scanner>
-                    </post>-->
                 </test>
             </program>
         </exercise>
@@ -98,7 +84,10 @@
         <exercise num="7">
             <program name="Mantra">
                 <test>
-                    <prints repeated="2">
+                    <prints>
+                        There's one thing every coder must understand:
+                        The System.out.println command.
+
                         There's one thing every coder must understand:
                         The System.out.println command.
                     </prints>
@@ -814,11 +803,6 @@
             </program>
         </exercise>
         <exercise num="10">
-            <mutuals>
-                <chapter num="2">
-                    <exercise>11</exercise>
-                </chapter>
-            </mutuals>
             <program>
                 <test>
                     <prints>
@@ -829,11 +813,6 @@
             </program>
         </exercise>
         <exercise num="11">
-            <mutuals>
-                <chapter num="2">
-                    <exercise>10</exercise>
-                </chapter>
-            </mutuals>
             <program>
                 <test>
                     <prints>
@@ -846,12 +825,6 @@
             </program>
         </exercise>
         <exercise num="12">
-            <mutuals>
-                <chapter num="2">
-                    <exercise>13</exercise>
-                    <exercise>14</exercise>
-                </chapter>
-            </mutuals>
             <program>
                 <test>
                     <prints>
@@ -863,12 +836,6 @@
             </program>
         </exercise>
         <exercise num="13">
-            <mutuals>
-                <chapter num="2">
-                    <exercise>12</exercise>
-                    <exercise>14</exercise>
-                </chapter>
-            </mutuals>
             <program>
                 <test>
                     <prints>
@@ -882,12 +849,6 @@
             </program>
         </exercise>
         <exercise num="14">
-            <mutuals>
-                <chapter num="14">
-                    <exercise>12</exercise>
-                    <exercise>13</exercise>
-                </chapter>
-            </mutuals>
             <program>
                 <test>
                     <prints>
@@ -932,7 +893,7 @@
                     <this>
                         <pre>
                             <class>
-                                <field static="true" name="(slash)?(figure)?height">
+                                <field static="true">
                                     <pre>
                                         <int>4</int>
                                     </pre>
@@ -951,7 +912,7 @@
                     <this>
                         <pre>
                             <class>
-                                <field static="true" name="(slash)?(figure)?height">
+                                <field static="true">
                                     <pre>
                                         <int>4</int>
                                     </pre>
@@ -989,11 +950,6 @@
             </program>
         </exercise>
         <exercise num="20">
-            <mutuals>
-                <chapter num="2">
-                    <exercise>21</exercise>
-                </chapter>
-            </mutuals>
             <program name="StarFigure">
                 <test>
                     <prints>
@@ -1007,17 +963,12 @@
             </program>
         </exercise>
         <exercise num="21">
-            <mutuals>
-                <chapter num="2">
-                    <exercise>20</exercise>
-                </chapter>
-            </mutuals>
             <program name="StarFigure2">
                 <test>
                     <this>
                         <pre>
                             <class>
-                                <field static="true" name="(star)?(figure)?height">
+                                <field static="true">
                                     <pre>
                                         <int>3</int>
                                     </pre>
@@ -1035,7 +986,7 @@
                     <this>
                         <pre>
                             <class>
-                                <field static="true" name="(star)?(figure)?height">
+                                <field static="true">
                                     <pre>
                                         <int>6</int>
                                     </pre>
@@ -1055,11 +1006,6 @@
             </program>
         </exercise>
         <exercise num="22">
-            <mutuals>
-                <chapter num="2">
-                    <exercise>23</exercise>
-                </chapter>
-            </mutuals>
             <program name="DollarFigure">
                 <test>
                     <prints>
@@ -1075,17 +1021,12 @@
             </program>
         </exercise>
         <exercise num="23">
-            <mutuals>
-                <chapter num="2">
-                    <exercise>22</exercise>
-                </chapter>
-            </mutuals>
             <program name="DollarFigure2">
                 <test>
                     <this>
                         <pre>
                             <class>
-                                <field static="true" name="(dollar)?(figure)?height">
+                                <field static="true">
                                     <pre>
                                         <int>3</int>
                                     </pre>
@@ -1103,7 +1044,7 @@
                     <this>
                         <pre>
                             <class>
-                                <field static="true" name="(star)?(figure)?height">
+                                <field static="true">
                                     <pre>
                                         <int>7</int>
                                     </pre>
@@ -1337,5 +1278,179 @@
                 </test>
             </program>
         </programmingProject>
+    </chapter>
+    <chapter num="3">
+        <exercise num="1">
+            <method name="printNumbers">
+                <parameters>
+                    <parameter>int</parameter>
+                </parameters>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>15</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <prints>
+                        [1] [2] [3] [4] [5] [6] [7] [8] [9] [10] [11] [12] [13] [14] [15]
+                    </prints>
+                </test>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>5</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <prints>
+                        [1] [2] [3] [4] [5]
+                    </prints>
+                </test>
+            </method>
+        </exercise>
+        <exercise num="2">
+            <method name="printPowersOf2">
+                <parameters>
+                    <parameter>int</parameter>
+                </parameters>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>3</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <prints>
+                        1 2 4 8
+                    </prints>
+                </test>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>10</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <prints>
+                        1 2 4 8 16 32 64 128 256 512 1024
+                    </prints>
+                </test>
+            </method>
+        </exercise>
+        <exercise num="3">
+            <method  name="printPowersOfN">
+                <parameters>
+                    <parameter>int</parameter>
+                    <parameter>int</parameter>
+                </parameters>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>4</int>
+                            </pre>
+                        </argument>
+                        <argument>
+                            <pre>
+                                <int>3</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <prints>
+                        1 4 16 64
+                    </prints>
+                </test>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>5</int>
+                            </pre>
+                        </argument>
+                        <argument>
+                            <pre>
+                                <int>6</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <prints>
+                        1 5 25 125 625 3125 15625
+                    </prints>
+                </test>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>-2</int>
+                            </pre>
+                        </argument>
+                        <argument>
+                            <pre>
+                                <int>8</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <prints>
+                        1 –2 4 –8 16 –32 64 –128 256
+                    </prints>
+                </test>
+            </method>
+        </exercise>
+        <exercise num="4">
+            <method name="printSquare">
+                <parameters>
+                    <parameter>int</parameter>
+                    <parameter>int</parameter>
+                </parameters>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>3</int>
+                            </pre>
+                        </argument>
+                        <argument>
+                            <pre>
+                                <int>7</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <prints>
+                        34567
+                        45673
+                        56734
+                        67345
+                        73456
+                    </prints>
+                </test>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>4</int>
+                            </pre>
+                        </argument>
+                        <argument>
+                            <pre>
+                                <int>9</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <prints>
+                        456789
+                        567894
+                        678945
+                        789456
+                        894567
+                        945678
+                    </prints>
+                </test>
+            </method>
+        </exercise>
     </chapter>
 </book>
