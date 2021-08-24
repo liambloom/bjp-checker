@@ -14,689 +14,803 @@
                 </chapter>
             </mutuals>
             <program name="Stewie">
-                <method>
-                    <test>
-                        <System.in>foo</System.in>
-                        <prints>
-                            //////////////////////
-                            || Victory is mine! ||
-                            \\\\\\\\\\\\\\\\\\\\\\
-                        </prints>
+                <test>
+                    <System.in>foo</System.in>
+                    <prints>
+                        //////////////////////
+                        || Victory is mine! ||
+                        \\\\\\\\\\\\\\\\\\\\\\
+                    </prints>
 
-                        <!--<returns></returns> -->
-                    </test>
-                </method>
+                    <!--<returns></returns> -->
+                </test>
             </program>
         </exercise>
         <exercise num="2">
             <program name="Spikey">
-                <method>
-                    <test>
-                        <prints>
-                            \/
-                            \\//
-                            \\\///
-                            ///\\\
-                            //\\
-                            /\
-                        </prints>
-                        <!--<post var="this">
-                            <Scanner><File>foo</File></Scanner>
-                        </post>-->
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                          \/
+                         \\//
+                        \\\///
+                        ///\\\
+                         //\\
+                          /\
+                    </prints>
+                    <!--<post var="this">
+                        <Scanner><File>foo</File></Scanner>
+                    </post>-->
+                </test>
             </program>
         </exercise>
         <exercise num="3">
             <program name="WellFormed">
-                <method>
-                    <test>
-                        <prints>
-                            A well–formed Java program has
-                            a main method with { and }
-                            braces.
-                            A System.out.println statement
-                            has ( and ) and usually a
-                            String that starts and ends
-                            with a " character.
-                            (But we type \" instead!)
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        A well–formed Java program has
+                        a main method with { and }
+                        braces.
+                        A System.out.println statement
+                        has ( and ) and usually a
+                        String that starts and ends
+                        with a " character.
+                        (But we type \" instead!)
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="4">
             <program name="Difference">
-                <method>
-                    <test>
-                        <prints>
-                            What is the difference between
-                            a ' and a "? Or between a " and a \"?
+                <test>
+                    <prints>
+                        What is the difference between
+                        a ' and a "? Or between a " and a \"?
 
-                            One is what we see when we're typing our program.
-                            The other is what appears on the "console."
-                        </prints>
-                    </test>
-                </method>
+                        One is what we see when we're typing our program.
+                        The other is what appears on the "console."
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="5">
             <program name="MuchBetter">
-                <method>
-                    <test>
-                        <prints>
-                            A "quoted" String is
-                            'much' better if you learn
-                            the rules of "escape sequences."
-                            Also, "" represents an empty String.
-                            Don't forget: use \" instead of " !
-                            '' is not the same as "
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        A "quoted" String is
+                        'much' better if you learn
+                        the rules of "escape sequences."
+                        Also, "" represents an empty String.
+                        Don't forget: use \" instead of " !
+                        '' is not the same as "
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="6">
             <program name="Meta">
-                <method>
-                    <test>
-                        <prints>
-                            <!-- TODO -->
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        <!-- TODO -->
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="7">
             <program name="Mantra">
-                <method>
-                    <test>
-                        <prints>
-                            There's one thing every coder must understand:
-                            The System.out.println command.
-
-                            There's one thing every coder must understand:
-                            The System.out.println command.
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints repeated="2">
+                        There's one thing every coder must understand:
+                        The System.out.println command.
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="8">
             <program name="Stewie2">
-                <method>
-                    <test>
-                        <prints>
-                            //////////////////////
-                            || Victory is mine! ||
-                            \\\\\\\\\\\\\\\\\\\\\\
-                            || Victory is mine! ||
-                            \\\\\\\\\\\\\\\\\\\\\\
-                            || Victory is mine! ||
-                            \\\\\\\\\\\\\\\\\\\\\\
-                            || Victory is mine! ||
-                            \\\\\\\\\\\\\\\\\\\\\\
-                            || Victory is mine! ||
-                            \\\\\\\\\\\\\\\\\\\\\\
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        //////////////////////
+                        || Victory is mine! ||
+                        \\\\\\\\\\\\\\\\\\\\\\
+                        || Victory is mine! ||
+                        \\\\\\\\\\\\\\\\\\\\\\
+                        || Victory is mine! ||
+                        \\\\\\\\\\\\\\\\\\\\\\
+                        || Victory is mine! ||
+                        \\\\\\\\\\\\\\\\\\\\\\
+                        || Victory is mine! ||
+                        \\\\\\\\\\\\\\\\\\\\\\
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="9">
             <program name="Egg">
-                <method>
-                    <test>
-                        <prints>
-                            _______
-                            / \
-                            / \
-                            -"-'-"-'-"-
-                            \ /
-                            \_______/
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                          _______
+                         /       \
+                        /         \
+                        -"-'-"-'-"-
+                        \         /
+                         \_______/
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="10">
             <program name="Egg2">
-                <method>
-                    <test>
-                        <prints>
-                            _______
-                            / \
-                            / \
-                            \ /
-                            \_______/
-                            -"-'-"-'-"-
-                            _______
-                            / \
-                            / \
-                            \ /
-                            \_______/
-                            -"-'-"-'-"-
-                            \ /
-                            \_______/
-                            _______
-                            / \
-                            / \
-                            -"-'-"-'-"-
-                            \ /
-                            \_______/
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                          _______
+                         /       \
+                        /         \
+                        \         /
+                         \_______/
+                        -"-'-"-'-"-
+                          _______
+                         /       \
+                        /         \
+                        \         /
+                         \_______/
+                        -"-'-"-'-"-
+                        \         /
+                         \_______/
+                          _______
+                         /       \
+                        /         \
+                        -"-'-"-'-"-
+                        \         /
+                         \_______/
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="11">
             <program name="TwoRockets">
-                <method>
-                    <test>
-                        <prints>
-                            /\ /\
-                            / \ / \
-                            / \ / \
-                            +------+ +------+
-                            | | | |
-                            | | | |
-                            +------+ +------+
-                            |United| |United|
-                            |States| |States|
-                            +------+ +------+
-                            | | | |
-                            | | | |
-                            +------+ +------+
-                            /\ /\
-                            / \ / \
-                            / \ / \
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                           /\       /\
+                          /  \     /  \
+                         /    \   /    \
+                        +------+ +------+
+                        |      | |      |
+                        |      | |      |
+                        +------+ +------+
+                        |United| |United|
+                        |States| |States|
+                        +------+ +------+
+                        |      | |      |
+                        |      | |      |
+                        +------+ +------+
+                           /\       /\
+                          /  \     /  \
+                         /    \   /    \
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="12">
             <program name="FightSong">
-                <method>
-                    <test>
-                        <prints>
-                            Go, team, go!
-                            You can do it.
-                            Go, team, go!
-                            You can do it.
-                            You're the best,
-                            In the West.
-                            Go, team, go!
-                            You can do it.
-                            Go, team, go!
-                            You can do it.
-                            You're the best,
-                            in the West.
-                            Go, team, go!
-                            You can do it.
-                            Go, team, go!
-                            You can do it.
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        Go, team, go!
+                        You can do it.
+                        Go, team, go!
+                        You can do it.
+                        You're the best,
+                        In the West.
+                        Go, team, go!
+                        You can do it.
+                        Go, team, go!
+                        You can do it.
+                        You're the best,
+                        in the West.
+                        Go, team, go!
+                        You can do it.
+                        Go, team, go!
+                        You can do it.
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="13">
             <program name="StarFigures">
-                <method>
-                    <test>
-                        <prints>
-                            *****
-                            *****
-                            * *
-                            *
-                            * *
+                <test>
+                    <prints>
+                        *****
+                        *****
+                         * *
+                          *
+                         * *
 
-                            *****
-                            *****
-                            * *
-                            *
-                            * *
-                            *****
-                            *****
+                        *****
+                        *****
+                         * *
+                          *
+                         * *
+                        *****
+                        *****
 
-                            *
-                            *
-                            *
-                            *****
-                            *****
-                            * *
-                            *
-                            * *
-                        </prints>
-                    </test>
-                </method>
+                          *
+                          *
+                          *
+                        *****
+                        *****
+                         * *
+                          *
+                         * *
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="14">
             <program name="Lanterns">
-                <method>
-                    <test>
-                        <prints>
+                <test>
+                    <prints>
                             *****
-                            *********
-                            *************
+                          *********
+                        *************
 
                             *****
-                            *********
-                            *************
-                            * | | | | | *
-                            *************
+                          *********
+                        *************
+                        * | | | | | *
+                        *************
                             *****
-                            *********
-                            *************
+                          *********
+                        *************
 
                             *****
-                            *********
-                            *************
+                          *********
+                        *************
                             *****
-                            * | | | | | *
-                            * | | | | | *
+                        * | | | | | *
+                        * | | | | | *
                             *****
                             *****
-                        </prints>
-                    </test>
-                </method>
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="15">
             <program name="EggStop">
-                <method>
-                    <test>
-                        <prints>
-                            _______
-                            / \
-                            / \
-                            \ /
-                            \_______/
-                            \ /
-                            \_______/
-                            +-------+
-                            _______
-                            / \
-                            / \
-                            | STOP |
-                            \ /
-                            \_______/
-                            _______
-                            / \
-                            / \
-                            +---------+
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                          _______
+                         /       \
+                        /         \
+                        \         /
+                         \_______/
+                        \         /
+                         \_______/
+                         +-------+
+                          _______
+                         /       \
+                        /         \
+                        |   STOP  |
+                        \         /
+                         \_______/
+                          _______
+                         /       \
+                        /         \
+                        +---------+
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="16">
             <program name="Shining">
-                <method>
-                    <test>
-                        <prints repeated="1000">
-                            All work and no play makes Jack a dull boy.
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints repeated="1000">
+                        All work and no play makes Jack a dull boy.
+                    </prints>
+                </test>
             </program>
         </exercise>
         <programmingProject num="1">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            <!-- TODO -->
-                        </prints>
-                    </test>
-                </method>
-            </program>
-        </programmingProject>
-        <programmingProject num="2">
-            <program>
-                <method>
-                    <test>
-                        <prints>
-                            <!-- TODO -->
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        M     M
+                        MM   MM
+                        M M M M
+                        M  M  M
+                        M     M
+                        M     M
+                        M     M
+                        IIIII
+                          I
+                          I
+                          I
+                          I
+                          I
+                        IIIII
+                         SSSSS
+                        S     S
+                        S
+                         SSSSS
+                              S
+                        S     S
+                         SSSSS
+                         SSSSS
+                        S     S
+                        S
+                         SSSSS
+                              S
+                        S     S
+                         SSSSS
+                        IIIII
+                          I
+                          I
+                          I
+                          I
+                          I
+                        IIIII
+                         SSSSS
+                        S     S
+                        S
+                         SSSSS
+                              S
+                        S     S
+                         SSSSS
+                         SSSSS
+                        S     S
+                        S
+                         SSSSS
+                              S
+                        S     S
+                         SSSSS
+                        IIIII
+                          I
+                          I
+                          I
+                          I
+                          I
+                        IIIII
+                        PPPPPP
+                        P     P
+                        P     P
+                        PPPPPP
+                        P
+                        P
+                        P
+                        PPPPPP
+                        P     P
+                        P     P
+                        PPPPPP
+                        P
+                        P
+                        P
+                        IIIII
+                          I
+                          I
+                          I
+                          I
+                          I
+                        IIIII
+                    </prints>
+                </test>
             </program>
         </programmingProject>
         <programmingProject num="3">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            There was an old lady who swallowed a fly
-                            I don’t know why she swallowed the fly
-                            Perhaps she’ll die
-                            But it’s only a fly
-                            I think I’ll cry
-                            She gulped it out of the sky
-                            Oh, my!
+                <test>
+                    <prints>
+                        There was an old lady who swallowed a fly
+                        I don’t know why she swallowed the fly
+                        Perhaps she’ll die
+                        But it’s only a fly
+                        I think I’ll cry
+                        She gulped it out of the sky
+                        Oh, my!
 
-                            There was an old lady who swallowed a spider
-                            That wiggled and jiggled and tickled inside her.
-                            She swallowed the spider to catch the fly
-                            I don’t know why
-                            She swallowed the fly
-                            Perhaps she’ll die.
-                            Gone to the by and by
-                            Sigh
+                        There was an old lady who swallowed a spider
+                        That wiggled and jiggled and tickled inside her.
+                        She swallowed the spider to catch the fly
+                        I don’t know why
+                        She swallowed the fly
+                        Perhaps she’ll die.
+                        Gone to the by and by
+                        Sigh
 
-                            There was an old lady who swallowed a bird.
-                            How absurd! She swallowed a bird!
-                            She swallowed the bird to catch the spider.
-                            She swallowed the spider to catch the fly
-                            I don’t know why
-                            She swallowed the fly
-                            Perhaps she’ll die.
-                            She’ll leave us high and dry.
+                        There was an old lady who swallowed a bird.
+                        How absurd! She swallowed a bird!
+                        She swallowed the bird to catch the spider.
+                        She swallowed the spider to catch the fly
+                        I don’t know why
+                        She swallowed the fly
+                        Perhaps she’ll die.
+                        She’ll leave us high and dry.
 
-                            There was an old lady who swallowed a cat.
-                            Imagine that! She swallowed a cat.
-                            She swallowed the cat to catch the bird.
-                            She swallowed the bird to catch the spider.
-                            She swallowed the spider to catch the fly.
-                            I don’t know why
-                            She swallowed the fly
-                            Perhaps she’ll die.
-                            I hope it’s a lie.
+                        There was an old lady who swallowed a cat.
+                        Imagine that! She swallowed a cat.
+                        She swallowed the cat to catch the bird.
+                        She swallowed the bird to catch the spider.
+                        She swallowed the spider to catch the fly.
+                        I don’t know why
+                        She swallowed the fly
+                        Perhaps she’ll die.
+                        I hope it’s a lie.
 
-                            There was an old lady who swallowed a dog.
-                            She went whole hog to swallow the dog.
-                            She swallowed the dog to catch the cat.
-                            She swallowed the cat to catch the bird.
-                            She swallowed the bird to catch the spider.
-                            She swallowed the spider to catch the fly.
-                            I don’t know why
-                            She swallowed the fly
-                            Perhaps she’ll die.
-                            There’s a tear in my eye.
+                        There was an old lady who swallowed a dog.
+                        She went whole hog to swallow the dog.
+                        She swallowed the dog to catch the cat.
+                        She swallowed the cat to catch the bird.
+                        She swallowed the bird to catch the spider.
+                        She swallowed the spider to catch the fly.
+                        I don’t know why
+                        She swallowed the fly
+                        Perhaps she’ll die.
+                        There’s a tear in my eye.
 
-                            There was an old lady who swallowed a cow.
-                            I don’t know how she swallowed the cow.
-                            She swallowed the cow to catch the dog.
-                            She swallowed the dog to catch the cat.
-                            She swallowed the cat to catch the bird.
-                            She swallowed the bird to catch the spider.
-                            She swallowed the spider to catch the fly.
-                            I don’t know why
-                            She swallowed the fly
-                            Perhaps she’ll die.
-                            I’d rather have ham on rye.
-                            And she had a frog on the sly.
-                            She did it in one try.
+                        There was an old lady who swallowed a cow.
+                        I don’t know how she swallowed the cow.
+                        She swallowed the cow to catch the dog.
+                        She swallowed the dog to catch the cat.
+                        She swallowed the cat to catch the bird.
+                        She swallowed the bird to catch the spider.
+                        She swallowed the spider to catch the fly.
+                        I don’t know why
+                        She swallowed the fly
+                        Perhaps she’ll die.
+                        I’d rather have ham on rye.
+                        And she had a frog on the sly.
+                        She did it in one try.
 
-                            There was an old lady who swallowed a horse.
-                            She died, of course.
-                            It was the last course.
-                            I’m filled with remorse.
-                            What’s left to say...
-                            Even the artist is crying.
-                            We’ll miss her dearly.
-                            It is such a loss.
-                            She had no time to floss.
-                            She missed out on the sauce.
+                        There was an old lady who swallowed a horse.
+                        She died, of course.
+                        It was the last course.
+                        I’m filled with remorse.
+                        What’s left to say...
+                        Even the artist is crying.
+                        We’ll miss her dearly.
+                        It is such a loss.
+                        She had no time to floss.
+                        She missed out on the sauce.
 
-                            Moral: Never swallow a horse.
-                        </prints>
-                    </test>
-                </method>
+                        Moral: Never swallow a horse.
+                    </prints>
+                </test>
             </program>
         </programmingProject>
         <programmingProject num="4">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            <!-- TODO -->
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        On the first of Christmas
+                        my true love sent to me
+                        a partridge in a pear tree.
+
+                        On the second of Christmas
+                        my true love sent to me
+                        two turle doves, and
+                        a partridge in a pear tree.
+
+                        On the third of Christmas
+                        my true love sent to me
+                        three Frence hens,
+                        two turle doves, and
+                        a partridge in a pear tree.
+
+                        On the fourth of Christmas
+                        my true love sent to me
+                        four falling birds,
+                        three Frence hens,
+                        two turle doves, and
+                        a partridge in a pear tree.
+
+                        On the fifth of Christmas
+                        my true love sent to me
+                        five goldn rings,
+                        four falling birds,
+                        three Frence hens,
+                        two turle doves, and
+                        a partridge in a pear tree.
+
+                        On the sixth of Christmas
+                        my true love sent to me
+                        six geese a-layin,
+                        five goldn rings,
+                        four falling birds,
+                        three Frence hens,
+                        two turle doves, and
+                        a partridge in a pear tree.
+
+                        On the seventh of Christmas
+                        my true love sent to me
+                        seven swans a-swimming,
+                        six geese a-layin,
+                        five goldn rings,
+                        four falling birds,
+                        three Frence hens,
+                        two turle doves, and
+                        a partridge in a pear tree.
+
+                        On the eighth of Christmas
+                        my true love sent to me
+                        eight mains a-milking,
+                        seven swans a-swimming,
+                        six geese a-layin,
+                        five goldn rings,
+                        four falling birds,
+                        three Frence hens,
+                        two turle doves, and
+                        a partridge in a pear tree.
+
+                        On the ninth of Christmas
+                        my true love sent to me
+                        nine ladies dancing,
+                        eight mains a-milking,
+                        seven swans a-swimming,
+                        six geese a-layin,
+                        five goldn rings,
+                        four falling birds,
+                        three Frence hens,
+                        two turle doves, and
+                        a partridge in a pear tree.
+
+                        On the tenth of Christmas
+                        my true love sent to me
+                        ten lords a-leaping,
+                        nine ladies dancing,
+                        eight mains a-milking,
+                        seven swans a-swimming,
+                        six geese a-layin,
+                        five goldn rings,
+                        four falling birds,
+                        three Frence hens,
+                        two turle doves, and
+                        a partridge in a pear tree.
+
+                        On the eleventh of Christmas
+                        my true love sent to me
+                        eleven pipers piping,
+                        ten lords a-leaping,
+                        nine ladies dancing,
+                        eight mains a-milking,
+                        seven swans a-swimming,
+                        six geese a-layin,
+                        five goldn rings,
+                        four falling birds,
+                        three Frence hens,
+                        two turle doves, and
+                        a partridge in a pear tree.
+
+                        On the twelfth of Christmas
+                        my true love sent to me
+                        Twelve drummers drumming
+                        eleven pipers piping,
+                        ten lords a-leaping,
+                        nine ladies dancing,
+                        eight mains a-milking,
+                        seven swans a-swimming,
+                        six geese a-layin,
+                        five goldn rings,
+                        four falling birds,
+                        three Frence hens,
+                        two turle doves, and
+                        a partridge in a pear tree.
+                    </prints>
+                </test>
             </program>
         </programmingProject>
         <programmingProject num="5">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            This is the house that Jack built.
+                <test>
+                    <prints>
+                        This is the house that Jack built.
 
-                            This is the malt
-                            That lay in the house that Jack built.
+                        This is the malt
+                        That lay in the house that Jack built.
 
-                            This is the rat,
-                            That ate the malt
-                            That lay in the house that Jack built.
+                        This is the rat,
+                        That ate the malt
+                        That lay in the house that Jack built.
 
-                            This is the cat,
-                            That killed the rat,
-                            That ate the malt
-                            That lay in the house that Jack built.
+                        This is the cat,
+                        That killed the rat,
+                        That ate the malt
+                        That lay in the house that Jack built.
 
-                            This is the dog,
-                            That worried the cat,
-                            That killed the rat,
-                            That ate the malt
-                            That lay in the house that Jack built.
+                        This is the dog,
+                        That worried the cat,
+                        That killed the rat,
+                        That ate the malt
+                        That lay in the house that Jack built.
 
-                            This is the cow with the crumpled horn,
-                            That tossed the dog,
-                            That worried the cat,
-                            That killed the rat,
-                            That ate the malt
-                            That lay in the house that Jack built.
+                        This is the cow with the crumpled horn,
+                        That tossed the dog,
+                        That worried the cat,
+                        That killed the rat,
+                        That ate the malt
+                        That lay in the house that Jack built.
 
-                            This is the maiden all forlorn
-                            That milked the cow with the crumpled horn,
-                            That tossed the dog,
-                            That worried the cat,
-                            That killed the rat,
-                            That ate the malt
-                            That lay in the house that Jack built.
-                        </prints>
-                    </test>
-                </method>
+                        This is the maiden all forlorn
+                        That milked the cow with the crumpled horn,
+                        That tossed the dog,
+                        That worried the cat,
+                        That killed the rat,
+                        That ate the malt
+                        That lay in the house that Jack built.
+                    </prints>
+                </test>
             </program>
         </programmingProject>
         <programmingProject num="6">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            Bought me a cat and the cat pleased me,
-                            I fed my cat under yonder tree.
-                            Cat goes fiddle-i-fee.
+                <test>
+                    <prints>
+                        Bought me a cat and the cat pleased me,
+                        I fed my cat under yonder tree.
+                        Cat goes fiddle-i-fee.
 
-                            Bought me a hen and the hen pleased me,
-                            I fed my hen under yonder tree.
-                            Hen goes chimmy-chuck, chimmy-chuck,
-                            Cat goes fiddle-i-fee.
+                        Bought me a hen and the hen pleased me,
+                        I fed my hen under yonder tree.
+                        Hen goes chimmy-chuck, chimmy-chuck,
+                        Cat goes fiddle-i-fee.
 
-                            Bought me a duck and the duck pleased me,
-                            I fed my duck under yonder tree.
-                            Duck goes quack, quack,
-                            Hen goes chimmy-chuck, chimmy-chuck,
-                            Cat goes fiddle-i-fee.
+                        Bought me a duck and the duck pleased me,
+                        I fed my duck under yonder tree.
+                        Duck goes quack, quack,
+                        Hen goes chimmy-chuck, chimmy-chuck,
+                        Cat goes fiddle-i-fee.
 
-                            Bought me a goose and the goose pleased me,
-                            I fed my goose under yonder tree.
-                            Goose goes hissy, hissy,
-                            Duck goes quack, quack,
-                            Hen goes chimmy-chuck, chimmy-chuck,
-                            Cat goes fiddle-i-fee.
+                        Bought me a goose and the goose pleased me,
+                        I fed my goose under yonder tree.
+                        Goose goes hissy, hissy,
+                        Duck goes quack, quack,
+                        Hen goes chimmy-chuck, chimmy-chuck,
+                        Cat goes fiddle-i-fee.
 
-                            Bought me a sheep and the sheep pleased me,
-                            I fed my sheep under yonder tree.
-                            Sheep goes baa, baa,
-                            Goose goes hissy, hissy,
-                            Duck goes quack, quack,
-                            Hen goes chimmy-chuck, chimmy-chuck,
-                            Cat goes fiddle-i-fee.
-                        </prints>
-                    </test>
-                </method>
+                        Bought me a sheep and the sheep pleased me,
+                        I fed my sheep under yonder tree.
+                        Sheep goes baa, baa,
+                        Goose goes hissy, hissy,
+                        Duck goes quack, quack,
+                        Hen goes chimmy-chuck, chimmy-chuck,
+                        Cat goes fiddle-i-fee.
+                    </prints>
+                </test>
             </program>
         </programmingProject>
         <programmingProject num="7">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            I once wrote a program that wouldn't compile
-                            I don't know why it wouldn't compile,
-                            My TA just smiled.
+                <test>
+                    <prints>
+                        I once wrote a program that wouldn't compile
+                        I don't know why it wouldn't compile,
+                        My TA just smiled.
 
-                            My program did nothing
-                            So I started typing.
-                            I added System.out.println("I &lt;3 coding"),
-                            I don't know why it wouldn't compile,
-                            My TA just smiled.
+                        My program did nothing
+                        So I started typing.
+                        I added System.out.println("I &lt;3 coding"),
+                        I don't know why it wouldn't compile,
+                        My TA just smiled.
 
-                            "Parse error," cried the compiler
-                            Luckily I'm such a code baller.
-                            I added a backslash to escape the quotes,
-                            I added System.out.println("I &lt;3 coding"),
-                            I don't know why it wouldn't compile,
-                            My TA just smiled.
+                        "Parse error," cried the compiler
+                        Luckily I'm such a code baller.
+                        I added a backslash to escape the quotes,
+                        I added System.out.println("I &lt;3 coding"),
+                        I don't know why it wouldn't compile,
+                        My TA just smiled.
 
-                            Now the compiler wanted an identifier
-                            And I thought the situation was getting dire.
-                            I added a main method with its String[] args,
-                            I added a backslash to escape the quotes,
-                            I added System.out.println("I &lt;3 coding"),
-                            I don't know why it wouldn't compile,
-                            My TA just smiled.
+                        Now the compiler wanted an identifier
+                        And I thought the situation was getting dire.
+                        I added a main method with its String[] args,
+                        I added a backslash to escape the quotes,
+                        I added System.out.println("I &lt;3 coding"),
+                        I don't know why it wouldn't compile,
+                        My TA just smiled.
 
-                            Java complained it expected an enum
-                            Boy, these computers really are dumb!
-                            I added a public class and called it Scum,
-                            I added a main method with its String[] args,
-                            I added a backslash to escape the quotes,
-                            I added System.out.println("I &lt;3 coding"),
-                            I don't know why it wouldn't compile,
-                            My TA just smiled.
-                        </prints>
-                    </test>
-                </method>
+                        Java complained it expected an enum
+                        Boy, these computers really are dumb!
+                        I added a public class and called it Scum,
+                        I added a main method with its String[] args,
+                        I added a backslash to escape the quotes,
+                        I added System.out.println("I &lt;3 coding"),
+                        I don't know why it wouldn't compile,
+                        My TA just smiled.
+                    </prints>
+                </test>
             </program>
         </programmingProject>
     </chapter>
     <chapter num="2">
         <exercise num="2">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            1 4 9 16 25 36 49 64 81 100
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        1 4 9 16 25 36 49 64 81 100
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="3">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            1 1 2 3 5 8 13 21 34 55 89 144
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        1 1 2 3 5 8 13 21 34 55 89 144
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="4">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            *****
-                            *****
-                            *****
-                            *****
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        *****
+                        *****
+                        *****
+                        *****
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="5">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            *
-                            **
-                            ***
-                            ****
-                            *****
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        *
+                        **
+                        ***
+                        ****
+                        *****
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="6">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            1
-                            22
-                            333
-                            4444
-                            55555
-                            666666
-                            7777777
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        1
+                        22
+                        333
+                        4444
+                        55555
+                        666666
+                        7777777
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="7">
             <program>
-                <method>
-                    <test>
-                        <prints>
+                <test>
+                    <prints>
                             1
-                            2
-                            3
-                            4
-                            5
-                        </prints>
-                    </test>
-                </method>
+                           2
+                          3
+                         4
+                        5
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="8">
             <program>
-                <method>
-                    <test>
-                        <prints>
+                <test>
+                    <prints>
                             1
-                            22
-                            333
-                            4444
-                            55555
-                        </prints>
-                    </test>
-                </method>
+                           22
+                          333
+                         4444
+                        55555
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="9">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            ----------------------------------------
-                            _-∧-_-∧-_-∧-_-∧-_-∧-_-∧-_-∧-_-∧-_-∧-_-∧-
-                            1122334455667788990011223344556677889900
-                            ----------------------------------------
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        ----------------------------------------
+                        _-∧-_-∧-_-∧-_-∧-_-∧-_-∧-_-∧-_-∧-_-∧-_-∧-
+                        1122334455667788990011223344556677889900
+                        ----------------------------------------
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="10">
@@ -706,14 +820,12 @@
                 </chapter>
             </mutuals>
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            | | | | | |
-                            123456789012345678901234567890123456789012345678901234567890
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                                 |         |         |         |         |         |
+                        123456789012345678901234567890123456789012345678901234567890
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="11">
@@ -723,16 +835,14 @@
                 </chapter>
             </mutuals>
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            | | | | | | | | | |
-                            12340123401234012340123401234012340123401234012340
-                            | | | | | | |
-                            12345670123456701234567012345670123456701234567012345670
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                            |    |    |    |    |    |    |    |    |    |
+                        12340123401234012340123401234012340123401234012340
+                               |       |       |       |       |       |       |
+                        12345670123456701234567012345670123456701234567012345670
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="12">
@@ -743,15 +853,13 @@
                 </chapter>
             </mutuals>
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            000111222333444555666777888999
-                            000111222333444555666777888999
-                            000111222333444555666777888999
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        000111222333444555666777888999
+                        000111222333444555666777888999
+                        000111222333444555666777888999
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="13">
@@ -762,17 +870,15 @@
                 </chapter>
             </mutuals>
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            99999888887777766666555554444433333222221111100000
-                            99999888887777766666555554444433333222221111100000
-                            99999888887777766666555554444433333222221111100000
-                            99999888887777766666555554444433333222221111100000
-                            99999888887777766666555554444433333222221111100000
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        99999888887777766666555554444433333222221111100000
+                        99999888887777766666555554444433333222221111100000
+                        99999888887777766666555554444433333222221111100000
+                        99999888887777766666555554444433333222221111100000
+                        99999888887777766666555554444433333222221111100000
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="14">
@@ -783,113 +889,103 @@
                 </chapter>
             </mutuals>
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            999999999888888887777777666666555554444333221
-                            999999999888888887777777666666555554444333221
-                            999999999888888887777777666666555554444333221
-                            999999999888888887777777666666555554444333221
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        999999999888888887777777666666555554444333221
+                        999999999888888887777777666666555554444333221
+                        999999999888888887777777666666555554444333221
+                        999999999888888887777777666666555554444333221
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="15">
             <program name="printDesign">
-                <method>
-                    <test>
-                        <prints>
-                            -----1-----
-                            ----333----
-                            ---55555---
-                            --7777777--
-                            -999999999-
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        -----1-----
+                        ----333----
+                        ---55555---
+                        --7777777--
+                        -999999999-
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="16">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            !!!!!!!!!!!!!!!!!!!!!!
-                            \\!!!!!!!!!!!!!!!!!!//
-                            \\\\!!!!!!!!!!!!!!////
-                            \\\\\\!!!!!!!!!!//////
-                            \\\\\\\\!!!!!!////////
-                            \\\\\\\\\\!!//////////
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        !!!!!!!!!!!!!!!!!!!!!!
+                        \\!!!!!!!!!!!!!!!!!!//
+                        \\\\!!!!!!!!!!!!!!////
+                        \\\\\\!!!!!!!!!!//////
+                        \\\\\\\\!!!!!!////////
+                        \\\\\\\\\\!!//////////
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="17">
             <program name="SlashFigure2">
-                <method>
-                    <test>
-                        <this>
-                            <pre>
-                                <class>
-                                    <field static="true" name="(slash)?(figure)?height">
-                                        <pre>
-                                            <int>4</int>
-                                        </pre>
-                                    </field>
-                                </class>
-                            </pre>
-                        </this>
-                        <prints>
-                            !!!!!!!!!!!!!!
-                            \\!!!!!!!!!!//
-                            \\\\!!!!!!////
-                            \\\\\\!!//////
-                        </prints>
-                    </test>
-                    <test>
-                        <this>
-                            <pre>
-                                <class>
-                                    <field static="true" name="(slash)?(figure)?height">
-                                        <pre>
-                                            <int>4</int>
-                                        </pre>
-                                    </field>
-                                </class>
-                            </pre>
-                        </this>
-                        <prints>
-                            !!!!!!!!!!!!!!!!!!!!!!
-                            \\!!!!!!!!!!!!!!!!!!//
-                            \\\\!!!!!!!!!!!!!!////
-                            \\\\\\!!!!!!!!!!//////
-                            \\\\\\\\!!!!!!////////
-                            \\\\\\\\\\!!//////////
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <this>
+                        <pre>
+                            <class>
+                                <field static="true" name="(slash)?(figure)?height">
+                                    <pre>
+                                        <int>4</int>
+                                    </pre>
+                                </field>
+                            </class>
+                        </pre>
+                    </this>
+                    <prints>
+                        !!!!!!!!!!!!!!
+                        \\!!!!!!!!!!//
+                        \\\\!!!!!!////
+                        \\\\\\!!//////
+                    </prints>
+                </test>
+                <test>
+                    <this>
+                        <pre>
+                            <class>
+                                <field static="true" name="(slash)?(figure)?height">
+                                    <pre>
+                                        <int>4</int>
+                                    </pre>
+                                </field>
+                            </class>
+                        </pre>
+                    </this>
+                    <prints>
+                        !!!!!!!!!!!!!!!!!!!!!!
+                        \\!!!!!!!!!!!!!!!!!!//
+                        \\\\!!!!!!!!!!!!!!////
+                        \\\\\\!!!!!!!!!!//////
+                        \\\\\\\\!!!!!!////////
+                        \\\\\\\\\\!!//////////
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="19">
             <program>
-                <method>
-                    <test>
-                        <!-- The exercise doesn't describe the class constant well enough for me to test it -->
-                        <prints>
-                            +===+===+
-                            |   |   |
-                            |   |   |
-                            |   |   |
-                            +===+===+
-                            |   |   |
-                            |   |   |
-                            |   |   |
-                            +===+===+
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <!-- The exercise doesn't describe the class constant well enough for me to test it -->
+                    <prints>
+                        +===+===+
+                        |   |   |
+                        |   |   |
+                        |   |   |
+                        +===+===+
+                        |   |   |
+                        |   |   |
+                        |   |   |
+                        +===+===+
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="20">
@@ -899,17 +995,15 @@
                 </chapter>
             </mutuals>
             <program name="StarFigure">
-                <method>
-                    <test>
-                        <prints>
-                            ////////////////\\\\\\\\\\\\\\\\
-                            ////////////********\\\\\\\\\\\\
-                            ////////****************\\\\\\\\
-                            ////************************\\\\
-                            ********************************
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        ////////////////\\\\\\\\\\\\\\\\
+                        ////////////********\\\\\\\\\\\\
+                        ////////****************\\\\\\\\
+                        ////************************\\\\
+                        ********************************
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="21">
@@ -919,47 +1013,45 @@
                 </chapter>
             </mutuals>
             <program name="StarFigure2">
-                <method>
-                    <test>
-                        <this>
-                            <pre>
-                                <class>
-                                    <field static="true" name="(star)?(figure)?height">
-                                        <pre>
-                                            <int>3</int>
-                                        </pre>
-                                    </field>
-                                </class>
-                            </pre>
-                        </this>
-                        <prints>
-                            ////////\\\\\\\\
-                            ////********\\\\
-                            ****************
-                        </prints>
-                    </test>
-                    <test>
-                        <this>
-                            <pre>
-                                <class>
-                                    <field static="true" name="(star)?(figure)?height">
-                                        <pre>
-                                            <int>6</int>
-                                        </pre>
-                                    </field>
-                                </class>
-                            </pre>
-                        </this>
-                        <prints>
-                            ////////////////////\\\\\\\\\\\\\\\\\\\\
-                            ////////////////********\\\\\\\\\\\\\\\\
-                            ////////////****************\\\\\\\\\\\\
-                            ////////************************\\\\\\\\
-                            ////********************************\\\\
-                            ****************************************
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <this>
+                        <pre>
+                            <class>
+                                <field static="true" name="(star)?(figure)?height">
+                                    <pre>
+                                        <int>3</int>
+                                    </pre>
+                                </field>
+                            </class>
+                        </pre>
+                    </this>
+                    <prints>
+                        ////////\\\\\\\\
+                        ////********\\\\
+                        ****************
+                    </prints>
+                </test>
+                <test>
+                    <this>
+                        <pre>
+                            <class>
+                                <field static="true" name="(star)?(figure)?height">
+                                    <pre>
+                                        <int>6</int>
+                                    </pre>
+                                </field>
+                            </class>
+                        </pre>
+                    </this>
+                    <prints>
+                        ////////////////////\\\\\\\\\\\\\\\\\\\\
+                        ////////////////********\\\\\\\\\\\\\\\\
+                        ////////////****************\\\\\\\\\\\\
+                        ////////************************\\\\\\\\
+                        ////********************************\\\\
+                        ****************************************
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="22">
@@ -969,19 +1061,17 @@
                 </chapter>
             </mutuals>
             <program name="DollarFigure">
-                <method>
-                    <test>
-                        <prints>
-                            $$$$$$$**************$$$$$$$
-                            **$$$$$$************$$$$$$**
-                            ****$$$$$**********$$$$$****
-                            ******$$$$********$$$$******
-                            ********$$$******$$$********
-                            **********$$****$$**********
-                            ************$**$************
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        $$$$$$$**************$$$$$$$
+                        **$$$$$$************$$$$$$**
+                        ****$$$$$**********$$$$$****
+                        ******$$$$********$$$$******
+                        ********$$$******$$$********
+                        **********$$****$$**********
+                        ************$**$************
+                    </prints>
+                </test>
             </program>
         </exercise>
         <exercise num="23">
@@ -991,278 +1081,260 @@
                 </chapter>
             </mutuals>
             <program name="DollarFigure2">
-                <method>
-                    <test>
-                        <this>
-                            <pre>
-                                <class>
-                                    <field static="true" name="(dollar)?(figure)?height">
-                                        <pre>
-                                            <int>3</int>
-                                        </pre>
-                                    </field>
-                                </class>
-                            </pre>
-                        </this>
-                        <prints>
-                            $$$******$$$
-                            **$$****$$**
-                            ****$**$****
-                        </prints>
-                    </test>
-                    <test>
-                        <this>
-                            <pre>
-                                <class>
-                                    <field static="true" name="(star)?(figure)?height">
-                                        <pre>
-                                            <int>7</int>
-                                        </pre>
-                                    </field>
-                                </class>
-                            </pre>
-                        </this>
-                        <prints>
-                            $$$$$$$**************$$$$$$$
-                            **$$$$$$************$$$$$$**
-                            ****$$$$$**********$$$$$****
-                            ******$$$$********$$$$******
-                            ********$$$******$$$********
-                            **********$$****$$**********
-                            ************$**$************
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <this>
+                        <pre>
+                            <class>
+                                <field static="true" name="(dollar)?(figure)?height">
+                                    <pre>
+                                        <int>3</int>
+                                    </pre>
+                                </field>
+                            </class>
+                        </pre>
+                    </this>
+                    <prints>
+                        $$$******$$$
+                        **$$****$$**
+                        ****$**$****
+                    </prints>
+                </test>
+                <test>
+                    <this>
+                        <pre>
+                            <class>
+                                <field static="true" name="(star)?(figure)?height">
+                                    <pre>
+                                        <int>7</int>
+                                    </pre>
+                                </field>
+                            </class>
+                        </pre>
+                    </this>
+                    <prints>
+                        $$$$$$$**************$$$$$$$
+                        **$$$$$$************$$$$$$**
+                        ****$$$$$**********$$$$$****
+                        ******$$$$********$$$$******
+                        ********$$$******$$$********
+                        **********$$****$$**********
+                        ************$**$************
+                    </prints>
+                </test>
             </program>
         </exercise>
         <programmingProject num="1">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            ****** //////////// ******
-                            *****  //////////\\ *****
-                            ****   ////////\\\\ ****
-                            ***    //////\\\\\\ ***
-                            **     ////\\\\\\\\ **
-                            *      //\\\\\\\\\\ *
-                                   \\\\\\\\\\\\
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        ****** //////////// ******
+                        *****  //////////\\  *****
+                        ****   ////////\\\\   ****
+                        ***    //////\\\\\\    ***
+                        **     ////\\\\\\\\     **
+                        *      //\\\\\\\\\\      *
+                               \\\\\\\\\\\\
+                    </prints>
+                </test>
             </program>
         </programmingProject>
         <programmingProject num="2">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            +------+
-                            |  ∧∧  |
-                            | ∧  ∧ |
-                            |∧    ∧|
-                            |  ∧∧  |
-                            | ∧  ∧ |
-                            |∧    ∧|
-                            +------+
-                            |v    v|
-                            | v  v |
-                            |  vv  |
-                            |v    v|
-                            | v  v |
-                            |  vv  |
-                            +------+
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        +------+
+                        |  ∧∧  |
+                        | ∧  ∧ |
+                        |∧    ∧|
+                        |  ∧∧  |
+                        | ∧  ∧ |
+                        |∧    ∧|
+                        +------+
+                        |v    v|
+                        | v  v |
+                        |  vv  |
+                        |v    v|
+                        | v  v |
+                        |  vv  |
+                        +------+
+                    </prints>
+                </test>
             </program>
         </programmingProject>
         <programmingProject num="3">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            +---------+
-                            |    *    |
-                            |   /*\   |
-                            |  //*\\  |
-                            | ///*\\\ |
-                            | \\\*/// |
-                            |  \\*//  |
-                            |   \*/   |
-                            |    *    |
-                            +---------+
-                            | \\\*/// |
-                            |  \\*//  |
-                            |   \*/   |
-                            |    *    |
-                            |    *    |
-                            |   /*\   |
-                            |  //*\\  |
-                            | ///*\\\ |
-                            +---------+
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        +---------+
+                        |    *    |
+                        |   /*\   |
+                        |  //*\\  |
+                        | ///*\\\ |
+                        | \\\*/// |
+                        |  \\*//  |
+                        |   \*/   |
+                        |    *    |
+                        +---------+
+                        | \\\*/// |
+                        |  \\*//  |
+                        |   \*/   |
+                        |    *    |
+                        |    *    |
+                        |   /*\   |
+                        |  //*\\  |
+                        | ///*\\\ |
+                        +---------+
+                    </prints>
+                </test>
             </program>
         </programmingProject>
         <programmingProject num="4">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                            |""""""""""|
-                             \::::::::/
-                              \::::::/
-                               \::::/
-                                \::/
-                                 ||
-                                /::\
-                               /::::\
-                              /::::::\
-                             /::::::::\
-                            |""""""""""|
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                        |""""""""""|
+                         \::::::::/
+                          \::::::/
+                           \::::/
+                            \::/
+                             ||
+                            /::\
+                           /::::\
+                          /::::::\
+                         /::::::::\
+                        |""""""""""|
+                    </prints>
+                </test>
             </program>
         </programmingProject>
         <!-- TODO: Class constants ch2 pp 5-8 -->
         <programmingProject num="5">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                                                  o  *******
-                                                 /|\ *     *
-                                                 / \ *     *
-                                             o  ******     *
-                                            /|\ *          *
-                                            / \ *          *
-                                        o  ******          *
-                                       /|\ *               *
-                                       / \ *               *
-                                   o  ******               *
-                                  /|\ *                    *
-                                  / \ *                    *
-                              o  ******                    *
-                             /|\ *                         *
-                             / \ *                         *
-                            ********************************
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                                              o  *******
+                                             /|\ *     *
+                                             / \ *     *
+                                         o  ******     *
+                                        /|\ *          *
+                                        / \ *          *
+                                    o  ******          *
+                                   /|\ *               *
+                                   / \ *               *
+                               o  ******               *
+                              /|\ *                    *
+                              / \ *                    *
+                          o  ******                    *
+                         /|\ *                         *
+                         / \ *                         *
+                        ********************************
+                    </prints>
+                </test>
             </program>
         </programmingProject>
         <programmingProject num="6">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                                 /**\
-                                //**\\
-                               ///**\\\
-                              ////**\\\\
-                             /////**\\\\\
-                            +=*=*=*=*=*=*+
-                            |../\..../\..|
-                            |./\/\../\/\.|
-                            |/\/\/\/\/\/\|
-                            |\/\/\/\/\/\/|
-                            |.\/\/..\/\/.|
-                            |..\/....\/..|
-                            +=*=*=*=*=*=*+
-                            |\/\/\/\/\/\/|
-                            |.\/\/..\/\/.|
-                            |..\/....\/..|
-                            |../\..../\..|
-                            |./\/\../\/\.|
-                            |/\/\/\/\/\/\|
-                            +=*=*=*=*=*=*+
-                                 /**\
-                                //**\\
-                               ///**\\\
-                              ////**\\\\
-                             /////**\\\\\
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                             /**\
+                            //**\\
+                           ///**\\\
+                          ////**\\\\
+                         /////**\\\\\
+                        +=*=*=*=*=*=*+
+                        |../\..../\..|
+                        |./\/\../\/\.|
+                        |/\/\/\/\/\/\|
+                        |\/\/\/\/\/\/|
+                        |.\/\/..\/\/.|
+                        |..\/....\/..|
+                        +=*=*=*=*=*=*+
+                        |\/\/\/\/\/\/|
+                        |.\/\/..\/\/.|
+                        |..\/....\/..|
+                        |../\..../\..|
+                        |./\/\../\/\.|
+                        |/\/\/\/\/\/\|
+                        +=*=*=*=*=*=*+
+                             /**\
+                            //**\\
+                           ///**\\\
+                          ////**\\\\
+                         /////**\\\\\
+                    </prints>
+                </test>
             </program>
         </programmingProject>
         <programmingProject num="7">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                                        ||
-                                        ||
-                                        ||
-                                        ||
-                                     __/||\__
-                                  __/:::||:::\__
-                               __/::::::||::::::\__
-                            __/:::::::::||:::::::::\__
-                            |""""""""""""""""""""""""|
-                            \_/\/\/\/\/\/\/\/\/\/\/\_/
-                              \_/\/\/\/\/\/\/\/\/\_/
-                                \_/\/\/\/\/\/\/\_/
-                                  \_/\/\/\/\/\_/
-                                        ||
-                                        ||
-                                        ||
-                                        ||
-                                     |%%||%%|
-                                     |%%||%%|
-                                     |%%||%%|
-                                     |%%||%%|
-                                     |%%||%%|
-                                     |%%||%%|
-                                     |%%||%%|
-                                     |%%||%%|
-                                     |%%||%%|
-                                     |%%||%%|
-                                     |%%||%%|
-                                     |%%||%%|
-                                     |%%||%%|
-                                     |%%||%%|
-                                     |%%||%%|
-                                     |%%||%%|
-                                     __/||\__
-                                  __/:::||:::\__
-                               __/::::::||::::::\__
-                            __/:::::::::||:::::::::\__
-                            |""""""""""""""""""""""""|
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                                    ||
+                                    ||
+                                    ||
+                                    ||
+                                 __/||\__
+                              __/:::||:::\__
+                           __/::::::||::::::\__
+                        __/:::::::::||:::::::::\__
+                        |""""""""""""""""""""""""|
+                        \_/\/\/\/\/\/\/\/\/\/\/\_/
+                          \_/\/\/\/\/\/\/\/\/\_/
+                            \_/\/\/\/\/\/\/\_/
+                              \_/\/\/\/\/\_/
+                                    ||
+                                    ||
+                                    ||
+                                    ||
+                                 |%%||%%|
+                                 |%%||%%|
+                                 |%%||%%|
+                                 |%%||%%|
+                                 |%%||%%|
+                                 |%%||%%|
+                                 |%%||%%|
+                                 |%%||%%|
+                                 |%%||%%|
+                                 |%%||%%|
+                                 |%%||%%|
+                                 |%%||%%|
+                                 |%%||%%|
+                                 |%%||%%|
+                                 |%%||%%|
+                                 |%%||%%|
+                                 __/||\__
+                              __/:::||:::\__
+                           __/::::::||::::::\__
+                        __/:::::::::||:::::::::\__
+                        |""""""""""""""""""""""""|
+                    </prints>
+                </test>
             </program>
         </programmingProject>
         <programmingProject num="8">
             <program>
-                <method>
-                    <test>
-                        <prints>
-                                      +------------------------------+
-                                      /                           ___/
-                                     /                        ___/__//
-                                    /                     ___/__/__///
-                                   /                  ___/__/__/__////
-                                  /               ___/__/__/__/__/////
-                                 /            ___/__/__/__/__/__//////
-                                /         ___/__/__/__/__/__/__///////
-                               /      ___/__/__/__/__/__/__/__////////
-                              /   ___/__/__/__/__/__/__/__/__/////////
-                             /___/__/__/__/__/__/__/__/__/__//////////
-                            +------------------------------+//////////
-                            |    Building Java Programs    |//////////
-                            |    Building Java Programs    |////////
-                            |    Building Java Programs    |//////
-                            |    Building Java Programs    |////
-                            |    Building Java Programs    |//
-                            +------------------------------+
-                        </prints>
-                    </test>
-                </method>
+                <test>
+                    <prints>
+                                  +------------------------------+
+                                  /                           ___/
+                                 /                        ___/__//
+                                /                     ___/__/__///
+                               /                  ___/__/__/__////
+                              /               ___/__/__/__/__/////
+                             /            ___/__/__/__/__/__//////
+                            /         ___/__/__/__/__/__/__///////
+                           /      ___/__/__/__/__/__/__/__////////
+                          /   ___/__/__/__/__/__/__/__/__/////////
+                         /___/__/__/__/__/__/__/__/__/__//////////
+                        +------------------------------+//////////
+                        |    Building Java Programs    |//////////
+                        |    Building Java Programs    |////////
+                        |    Building Java Programs    |//////
+                        |    Building Java Programs    |////
+                        |    Building Java Programs    |//
+                        +------------------------------+
+                    </prints>
+                </test>
             </program>
         </programmingProject>
     </chapter>

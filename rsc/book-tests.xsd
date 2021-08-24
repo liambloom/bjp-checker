@@ -86,24 +86,24 @@
                 </xs:element>
 
                 <!-- an match a no-arg method OR main class -->
-                <xs:element name="program" type="programType" />
+                <xs:element name="program" type="methodType" />
             </xs:choice>
         </xs:sequence>
         <xs:attribute name="num" type="xs:int" use="required" />
         <!-- <xs:attribute name="name" type="xs:string" use="required" /> -->
     </xs:complexType>
 
-    <xs:complexType name="programType">
+    <!--<xs:complexType name="programType">
         <xs:choice maxOccurs="unbounded">
             <xs:element name="method" type="methodType">
-                <!-- Methods (and tests) are different in a class -->
+                <!- Methods (and tests) are different in a class ->
                 <xs:unique name="programMethodUnique">
                     <xs:selector xpath="method" />
                     <xs:field xpath="@name" />
                     <xs:field xpath="parameters" />
                 </xs:unique>
             </xs:element>
-            <!--<xs:element name="field">
+            <!-<xs:element name="field">
                 <xs:complexType>
                     <xs:group ref="prePost" />
                     <xs:attribute name="name" type="javaIdent" use="required" />
@@ -113,10 +113,10 @@
                     <xs:selector xpath="field" />
                     <xs:field xpath="@name" />
                 </xs:unique>
-            </xs:element>-->
+            </xs:element>->
         </xs:choice>
         <xs:attribute name="name" type="javaIdent" />
-    </xs:complexType>
+    </xs:complexType>-->
 
     <xs:complexType name="classType">
         <xs:choice maxOccurs="unbounded">
