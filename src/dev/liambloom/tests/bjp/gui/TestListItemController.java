@@ -193,7 +193,7 @@ public class TestListItemController {
 //            System.out.println(foo.getText());
 //            System.out.println(foo.textProperty());
 //        });
-        toggle.disableProperty().bind(this.book.get().existsProperty().not());
+        toggle.disableProperty().bind(this.book.get().existsProperty().not()); // TODO: I can't run tests that don't pass
         toggle.disableProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue && toggle.isSelected()) {
                 toggle.setSelected(false);

@@ -7,6 +7,8 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
@@ -15,12 +17,9 @@ import javax.xml.validation.Validator;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Consumer;
 import java.util.prefs.Preferences;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import static java.nio.file.StandardWatchEventKinds.*;
 
 public abstract class Book {
     protected String name;
@@ -31,24 +30,15 @@ public abstract class Book {
 
     public Result validate() throws IOException {
         if (exists()) {
-            Validator v = validatorPool.poll();
-            ValidationErrorHandler handler;
-            if (v == null) {
-                v = getTestSchema().newValidator();
-                handler = new ValidationErrorHandler();
-            }
-            else {
-                handler = (ValidationErrorHandler) v.getErrorHandler();
-                handler.reset();
-                v.reset();
-            }
+            Validator v = validatorPool.get();
+            ValidationErrorHandler handler = new ValidationErrorHandler();
             v.setErrorHandler(handler);
 
             try {
                 v.validate(getSource());
             } catch (SAXException ignored) {
             }
-            validatorPool.add(v);
+            validatorPool.offer(v);
 
             if (handler.getMaxErrorKind() == null)
                 return new Result(getName(), TestValidationStatus.VALID);
@@ -66,41 +56,55 @@ public abstract class Book {
     public boolean exists() throws IOException {
         return loadedTests.containsKey(getName());
     }
-    // This should probably also be not abstract
+    public Document getDocument() throws IOException, SAXException {
+        DocumentBuilder db = documentBuilderPool.get();
+        Document r = getDocument(db);
+        documentBuilderPool.offer(db);
+        return r;
+    }
     public abstract Document getDocument(DocumentBuilder db) throws SAXException, IOException;
     protected abstract Source getSource() throws IOException;
 
     private static final Map<String, Book> loadedTests = Collections.synchronizedMap(new HashMap<>());
+    private static final Lazy<Schema> schema = new Lazy<>(() -> {
+        try {
+            SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1");
+            factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
+            // TODO: factory.setErrorHandler(ErrorHandler)
+            return factory.newSchema(
+                    new StreamSource(App.class.getResourceAsStream("/book-tests.xsd")));
+        }
+        catch (SAXException e) {
+            throw new RuntimeException(e);
+        }
+    });
+    private static final Lazy<DocumentBuilderFactory> documentBuilderFactory = new Lazy<>(() -> {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setSchema(getSchema());
+        return dbf;
+    });
+    private static final ResourcePool<Validator> validatorPool = new ResourcePool<>(schema.map(Schema::newValidator));
+    private static final ResourcePool<DocumentBuilder> documentBuilderPool = new ResourcePool<>(() -> {
+        try {
+            return documentBuilderFactory.get().newDocumentBuilder();
+        } catch (ParserConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+    });
     private static final Map<String, String> LOCAL_TEST_NAMES;
-    private static final Queue<Validator> validatorPool = new ConcurrentLinkedQueue<>();
-    private static Schema testSchema = null;
-    private static Preferences customTests;
+    private static final Lazy<Preferences> customTests = new Lazy<>(() -> App.prefs().node("tests"));
 
     static {
         LOCAL_TEST_NAMES = new HashMap<>();
         LOCAL_TEST_NAMES.put("BJP 3", "bjp3");
     }
 
-    public static Schema getTestSchema() {
-        if (testSchema == null) {
-            try {
-                SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1");
-                factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
-                // TODO: factory.setErrorHandler(ErrorHandler)
-                testSchema = factory.newSchema(
-                        new StreamSource(App.class.getResourceAsStream("/book-tests.xsd")));
-            }
-            catch (SAXException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return testSchema;
+    public static Schema getSchema() {
+        return schema.get();
     }
 
     public static Preferences getCustomTests() {
-        if (customTests == null)
-            customTests = App.prefs().node("tests");
-        return customTests;
+        return customTests.get();
     }
 
     public static Book getTest(String name) {

@@ -33,7 +33,7 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
      * @param args The string arguments
      * @param start The position of the first argument
      */
-    public static CheckArgs fromCLIArgs(String[] args, int start) throws IOException, SAXException, ParserConfigurationException {
+    public static CheckArgs fromCLIArgs(String[] args, int start) throws IOException, SAXException {
         List<String> globArgs = new LinkedList<>();
         String testName = null;
         OptionalInt chapter = OptionalInt.empty();
@@ -87,9 +87,7 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
         if (testName == null)
             testName = App.prefs().get("selectedTests", DEFAULT_TEST_NAME);
 
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        dbf.setSchema(Book.getTestSchema());
-        Document tests = Book.getTest(testName).getDocument(dbf.newDocumentBuilder());
+        Document tests = Book.getTest(testName).getDocument();
 
         Stream<Path> paths = new Glob(globArgs).files();
 

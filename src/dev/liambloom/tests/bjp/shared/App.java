@@ -132,7 +132,8 @@ public class App {
                         XPath xpath = Optional.ofNullable(xpaths.poll()).orElseGet(xpf::newXPath);
                         try {
                             return d.newTest(ch, xpath);
-                        } finally {
+                        }
+                        finally {
                             xpaths.add(xpath);
                         }
                     })

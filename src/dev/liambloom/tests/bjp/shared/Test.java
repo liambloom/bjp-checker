@@ -1,14 +1,18 @@
 package dev.liambloom.tests.bjp.shared;
 
 import org.w3c.dom.Node;
+import org.w3c.dom.Element;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public interface Test {
     Result run();
@@ -18,12 +22,13 @@ public interface Test {
             String testName = Case.convert(annotationType().getSimpleName(), Case.SPACE) + ' ' + num;
 
             if (targets().isEmpty())
-                return Test.withFixedResult(new Result(testName, TestStatus.MISSING));
+                return Test.withFixedResult(new Result(testName, TestStatus.INCOMPLETE));
 
 
             try {
-                return Test.multiTest(targets,
-                        (Node) Optional.ofNullable(xpath.evaluate(Case.convert(annotationType.getSimpleName(), Case.CAMEL) + "[@num='" + num + "']", tests, XPathConstants.NODE))
+                return Test.multiTest(Case.convert(annotationType.getSimpleName(), Case.CAMEL) + " " + num,targets,
+                        Optional.ofNullable(xpath.evaluate(Case.convert(annotationType.getSimpleName(), Case.CAMEL) + "[@num='" + num + "']", tests, XPathConstants.NODE))
+                                .map(Element.class::cast)
                                 .orElseThrow(() -> new UserErrorException("Unable to find tests for " + testName)));
             } catch (XPathExpressionException e) {
                 throw new RuntimeException(e);
@@ -35,10 +40,23 @@ public interface Test {
         return () -> result;
     }
 
-    static Test multiTest(List<AnnotatedElement> targets, Node tests) {
-        // TODO
+    static Test multiTest(String name, List<AnnotatedElement> targets, Element tests) {
+//        Stream.Builder<Test>
+//        return () -> {
+//            new ArrayList<Result>().stream()
+//                    .map(Result::status)
+//                    .map(TestStatus.class::cast)
+//                    .max(Comparator.naturalOrder());
+//            return new Result(name, )
+//        };
         return null;
     }
+
+    static Test methodTest(List<AnnotatedElement> targets, Node tests) {
+        return null;
+    }
+
+//    static Test
 
     /*protected InputStream sysIn = new InputStream() { // Or from xml
         @Override
