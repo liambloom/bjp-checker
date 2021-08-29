@@ -22,6 +22,13 @@ public enum TestStatus implements Result.Status {
      */
     OK(Color.GREEN),
 
+
+
+    /**
+     * The ex/pp/test could not be found or did not pass all tests
+     */
+    FAILED(Color.RED),
+
     /*
      * The ex/pp has not been completed
      */
@@ -44,12 +51,7 @@ public enum TestStatus implements Result.Status {
      * either because it is not public or because its package is not
      * exported from its respective module.
      */
-    INCACCESABLE(Color.RED),
-
-    /**
-     * The ex/pp/test could not be found or did not pass all tests
-     */
-    FAILED(Color.RED);
+    INCACCESABLE(Color.RED);
 
     public final Color color;
 

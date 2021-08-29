@@ -32,7 +32,7 @@ public class Main {
                 }
                 case "check" -> {
                     try {
-                        App.check(CheckArgs.fromCLIArgs(args, 1));
+                        Checker.check(CheckArgs.fromCLIArgs(args, 1));
                     } catch (SAXException e) {
                         // TODO: There is probably a better way to do this (should I add a ErrorHandler to Book or CheckArgs?)
                         throw new UserErrorException(e);

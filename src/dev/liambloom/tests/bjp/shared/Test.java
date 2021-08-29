@@ -2,36 +2,47 @@ package dev.liambloom.tests.bjp.shared;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
-import java.util.ArrayList;
+import java.lang.reflect.Executable;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public interface Test {
     Result run();
 
-    record Target(List<AnnotatedElement> targets, Class<? extends Annotation> annotationType, int num) {
-        public Test newTest(Node tests, XPath xpath) {
+    record ReflectionData(Targets targets, Class<? extends Annotation> annotationType, int num) {
+        public Test newTest(Node tests) {
             String testName = Case.convert(annotationType().getSimpleName(), Case.SPACE) + ' ' + num;
 
             if (targets().isEmpty())
                 return Test.withFixedResult(new Result(testName, TestStatus.INCOMPLETE));
 
 
+            XPath xpath = null;
             try {
                 return Test.multiTest(Case.convert(annotationType.getSimpleName(), Case.CAMEL) + " " + num,targets,
-                        Optional.ofNullable(xpath.evaluate(Case.convert(annotationType.getSimpleName(), Case.CAMEL) + "[@num='" + num + "']", tests, XPathConstants.NODE))
+                        Optional.ofNullable((xpath = Checker.getXPathPool().get()).evaluate(Case.convert(annotationType.getSimpleName(), Case.CAMEL) + "[@num='" + num + "']", tests, XPathConstants.NODE))
                                 .map(Element.class::cast)
                                 .orElseThrow(() -> new UserErrorException("Unable to find tests for " + testName)));
-            } catch (XPathExpressionException e) {
+            }
+            catch (XPathExpressionException e) {
                 throw new RuntimeException(e);
+            }
+            finally {
+                if (xpath != null)
+                    Checker.getXPathPool().offer(xpath);
             }
         }
     }
@@ -40,19 +51,68 @@ public interface Test {
         return () -> result;
     }
 
-    static Test multiTest(String name, List<AnnotatedElement> targets, Element tests) {
-//        Stream.Builder<Test>
-//        return () -> {
-//            new ArrayList<Result>().stream()
-//                    .map(Result::status)
-//                    .map(TestStatus.class::cast)
-//                    .max(Comparator.naturalOrder());
-//            return new Result(name, )
-//        };
-        return null;
+    static Test multiTest(String name, Targets targets, Node tests) {
+        NodeList children = tests.getChildNodes();
+        Stream<Test> subTests = IntStream.range(0, children.getLength())
+                .parallel()
+                .mapToObj(children::item)
+                .map(Element.class::cast)
+                .flatMap(node -> {
+                    switch (node.getTagName()) {
+                        case "method" -> {
+                            if (targets.methods().isEmpty())
+                                return Stream.of(Test.withFixedResult(new Result(name, TestStatus.INCOMPLETE)));
+                            else if (targets.methods().size() == 1) {
+                                Method method = targets.methods().iterator().next();
+                                if (!Modifier.isStatic(method.getModifiers())) {
+                                    // TODO: Either return or throw something here
+                                    throw new UserErrorException("This isn't done yet!!!");
+                                }
+                                if (!method.canAccess(null))
+                                    return Stream.of(Test.withFixedResult(new Result(name, TestStatus.INCACCESABLE)));
+                                XPath xpath = Checker.getXPathPool().get();
+                                try {
+                                    Element expectedParams = (Element) xpath.evaluate("parameters", node, XPathConstants.NODE);
+                                    if (!(method.isVarArgs() && expectedParams.getChildNodes().getLength() >= method.getParameterCount()
+                                            || expectedParams.getChildNodes().getLength() == method.getParameterCount()))
+                                        return Stream.of(Test.withFixedResult(new Result(name, TestStatus.INCOMPLETE)));
+                                    // TODO
+                                }
+                                catch (XPathExpressionException e) {
+                                    throw new RuntimeException(e);
+                                }
+                                finally {
+                                    Checker.getXPathPool().offer(xpath);
+                                }
+                            }
+                            else {
+                                // TODO
+                            }
+                        }
+                        case "constructor" -> {
+                            // TODO
+                        }
+                        case "project" -> {
+                            // TODO
+                        }
+                        default -> throw new IllegalStateException("This should not have passed the schema");
+                    }
+                });
+        return () -> {
+            List<Result> subResults = subTests.map(Test::run).collect(Collectors.toList());
+            return new Result(
+                    name,
+                    subResults.stream()
+                            .map(Result::status)
+                            .map(TestStatus.class::cast)
+                            .max(Comparator.naturalOrder())
+                            .get(),
+                    Optional.empty(),
+                    subResults);
+        };
     }
 
-    static Test methodTest(List<AnnotatedElement> targets, Node tests) {
+    static Test executableTest(Executable executable, List<AnnotatedElement> targets, Node test) {
         return null;
     }
 

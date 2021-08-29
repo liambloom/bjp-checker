@@ -1452,5 +1452,166 @@
                 </test>
             </method>
         </exercise>
+        <!-- TODO -->
+    </chapter>
+    <chapter num="8">
+        <exercise num="1">
+            <constructor in="Point">
+                <parameters>
+                    <parameter>int</parameter>
+                    <parameter>int</parameter>
+                </parameters>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>1</int>
+                            </pre>
+                        </argument>
+                        <argument>
+                            <pre>
+                                <int>1</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <returns>
+                        <class>
+                            <method name="quadrant">
+                                <test>
+                                    <returns>
+                                        <int>1</int>
+                                    </returns>
+                                </test>
+                            </method>
+                        </class>
+                    </returns>
+                </test>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>-1</int>
+                            </pre>
+                        </argument>
+                        <argument>
+                            <pre>
+                                <int>1</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <returns>
+                        <class>
+                            <method name="quadrant">
+                                <test>
+                                    <returns>
+                                        <int>2</int>
+                                    </returns>
+                                </test>
+                            </method>
+                        </class>
+                    </returns>
+                </test>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>-1</int>
+                            </pre>
+                        </argument>
+                        <argument>
+                            <pre>
+                                <int>-1</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <returns>
+                        <class>
+                            <method name="quadrant">
+                                <test>
+                                    <returns>
+                                        <int>3</int>
+                                    </returns>
+                                </test>
+                            </method>
+                        </class>
+                    </returns>
+                </test>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>1</int>
+                            </pre>
+                        </argument>
+                        <argument>
+                            <pre>
+                                <int>-1</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <returns>
+                        <class>
+                            <method name="quadrant">
+                                <test>
+                                    <returns>
+                                        <int>4</int>
+                                    </returns>
+                                </test>
+                            </method>
+                        </class>
+                    </returns>
+                </test>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>0</int>
+                            </pre>
+                        </argument>
+                        <argument>
+                            <pre>
+                                <int>1</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <returns>
+                        <class>
+                            <method name="quadrant">
+                                <test>
+                                    <returns>
+                                        <int>0</int>
+                                    </returns>
+                                </test>
+                            </method>
+                        </class>
+                    </returns>
+                </test>
+                <test>
+                    <arguments>
+                        <argument>
+                            <pre>
+                                <int>1</int>
+                            </pre>
+                        </argument>
+                        <argument>
+                            <pre>
+                                <int>0</int>
+                            </pre>
+                        </argument>
+                    </arguments>
+                    <returns>
+                        <class>
+                            <method name="quadrant">
+                                <test>
+                                    <returns>
+                                        <int>0</int>
+                                    </returns>
+                                </test>
+                            </method>
+                        </class>
+                    </returns>
+                </test>
+            </constructor>
+        </exercise>
     </chapter>
 </book>
