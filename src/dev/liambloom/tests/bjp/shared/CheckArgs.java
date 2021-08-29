@@ -4,8 +4,6 @@ import dev.liambloom.tests.bjp.cli.Glob;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
@@ -87,7 +85,7 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
         if (testName == null)
             testName = App.prefs().get("selectedTests", DEFAULT_TEST_NAME);
 
-        Document tests = Book.getTest(testName).getDocument();
+        Document tests = Books.getBook(testName).getDocument();
 
         Stream<Path> paths = new Glob(globArgs).files();
 

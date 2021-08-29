@@ -18,7 +18,7 @@ import java.util.function.Consumer;
 import static java.nio.file.StandardWatchEventKinds.*;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
-public class PathBook extends ModifiableBook {
+public class PathBook extends AbstractModifiableBook {
     private static final Map<Path, List<Consumer<WatchEvent<Path>>>> watcherCallbacks = new HashMap<>();
     private static final Map<FileSystem, WatchService> watchers = new HashMap<>();
     private static final Map<Path, Set<Path>> watcherSymlinkTargets = new HashMap<>();
@@ -65,7 +65,7 @@ public class PathBook extends ModifiableBook {
 
                                 @SuppressWarnings("unchecked")
                                 WatchEvent<Path> event = (WatchEvent<Path>) eventUnfiltered;
-                                Path target = ((Path) key.watchable()).resolve(event.context());//.toAbsolutePath().normalize();
+                                Path target = ((Path) key.watchable()).resolve(event.context());
                                 Queue<Path> targets = new LinkedList<>();
                                 targets.add(target);
 
@@ -187,11 +187,6 @@ public class PathBook extends ModifiableBook {
         }
     }
 
-    @Override
-    public String getName() {
-        return name;
-    }
-
     public Path getPath() {
         return path;
     }
@@ -215,7 +210,7 @@ public class PathBook extends ModifiableBook {
     protected static void setPath(String name, Path path) throws IOException {
         if (!Files.exists(path) || !path.toRealPath().toString().endsWith(".xml"))
             throw new UserErrorException("Path `" + path + "' is not xml");
-        Book.getCustomTests().put(name, path.toString());
+        Books.getCustomTests().put(name, path.toString());
     }
 
     @Override

@@ -47,26 +47,26 @@ public class Main {
                         // TODO: handle errors
                         case "add" -> {
                             assertArgsPresent(args, 2, "name", "path");
-                            Book.addTest(args[2], new Glob(args[3]).single());
+                            Books.addBook(args[2], new Glob(args[3]).single());
                         }
-                        case "remove" -> Book.removeTest(args[2]);
+                        case "remove" -> Books.removeBook(args[2]);
                         case "rename" -> {
                             assertArgsPresent(args, 2, "old name", "new name");
-                            if (Book.getTest(args[2]) instanceof ModifiableBook book)
-                                book.setName(args[3]);
+                            if (Books.getBook(args[2]) instanceof ModifiableBook book)
+                                book.rename(args[3]);
                             else
                                 throw new UserErrorException("Book `" + args[2] + "' can't be renamed");
                         }
                         case "change" -> {
                             assertArgsPresent(args, 2, "name", "new path");
-                            if (Book.getTest(args[2]) instanceof PathBook book)
+                            if (Books.getBook(args[2]) instanceof PathBook book)
                                 book.setPath(new Glob(args[3]).single());
                             else
                                 throw new UserErrorException("Book `" + args[2] + "' has no path associated with it");
                         }
                         case "list" -> {
                             assertArgsPresent(args, 2);
-                            List<Book> books = Book.getAllTests().collect(Collectors.toList());
+                            List<Book> books = Books.getAllBooks().collect(Collectors.toList());
                             String[][] names = new String[books.size()][2];
                             int maxBookNameLength = 0;
                             for (int i = 0; i < names.length; i++) {
@@ -85,8 +85,8 @@ public class Main {
                                 throw new UserErrorException("Missing argument after validate");
                             try {
                                 printResults((args[2].equals("-a") || args[2].equals("--all")
-                                        ? Book.getAllTests()
-                                        : Arrays.stream(args).skip(2).map(Book::getTest))
+                                        ? Books.getAllBooks()
+                                        : Arrays.stream(args).skip(2).map(Books::getBook))
                                         .map((FunctionThrowsIOException<Book, Result>) Book::validate));
                             } catch (UncheckedIOException e) {
                                 throw e.getCause();
@@ -95,7 +95,7 @@ public class Main {
                         case "get-default" -> System.out.println(App.prefs().get("selectedTests", CheckArgs.DEFAULT_TEST_NAME));
                         case "set-default" -> {
                             assertArgsPresent(args, 2, "name");
-                            if (!Book.testExists(args[2]))
+                            if (!Books.bookNameExists(args[2]))
                                 throw new UserErrorException("Tests \"" + args[2] + "\" not found");
                             App.prefs().put("selectedTests", args[2]);
                         }

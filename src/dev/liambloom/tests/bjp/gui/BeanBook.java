@@ -25,7 +25,7 @@ public class BeanBook {
         name = new SimpleStringProperty(inner.getName());
         name.addListener((observable, oldValue, newValue) -> {
             if (inner instanceof ModifiableBook mb)
-                mb.setName(newValue);
+                mb.rename(newValue);
             else
                 throw new UnsupportedOperationException("Attempt to rename BeanBook that wraps an unmodifiable book");
         });

@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Supplier;
 
-public class ResourcePool<T> {
+public class ResourcePool<T> implements Supplier<T> {
     public static final long DEFAULT_MAX_IDLE = 60000;
 
     private final Timer timer = new Timer(true);
@@ -25,14 +25,10 @@ public class ResourcePool<T> {
         return maxIdleTime;
     }
 
+    @Override
     public T get() {
-        // FIXME: A new one is generated MUCH too often, I'm definitely doing something wrong
         return Optional.ofNullable(pool.pollLast())
                 .map(PoolElement::take)
-                .map(v -> {
-                    System.out.println("new item " + v + " generated");
-                    return v;
-                })
                 .orElseGet(supplier);
     }
 
@@ -50,6 +46,7 @@ public class ResourcePool<T> {
                 @Override
                 public void run() {
                     pool.remove(PoolElement.this);
+                    System.out.println("Timed out");
                 }
             };
             timer.schedule(task, maxIdleTime);

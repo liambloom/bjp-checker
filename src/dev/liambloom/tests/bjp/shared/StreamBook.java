@@ -9,7 +9,7 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class StreamBook extends Book {
+public class StreamBook extends AbstractBook {
     private final InputStream stream;
     private final Source source;
 
@@ -24,10 +24,10 @@ public class StreamBook extends Book {
         return db.parse(stream);
     }
 
-    @Override
+    /*@Override
     public String getName() {
         return name;
-    }
+    }*/
 
     @Override
     protected Source getSource() {

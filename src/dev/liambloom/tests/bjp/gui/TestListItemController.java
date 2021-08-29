@@ -177,7 +177,7 @@ public class TestListItemController {
                 confirm.showAndWait()
                         .ifPresent(b -> {
                             if (b == ButtonType.OK)
-                                Book.removeTest(this.book.get().getName());
+                                Books.removeBook(this.book.get().getName());
                         });
             });
         }

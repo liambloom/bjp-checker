@@ -2,7 +2,7 @@ package dev.liambloom.tests.bjp.shared;
 
 import java.util.regex.Pattern;
 
-public class TestUtils {
+public final class TestUtils {
     private TestUtils() {}
 
     private static final Pattern LINE_SEPARATOR = Pattern.compile("\\r|\\r?\\n");

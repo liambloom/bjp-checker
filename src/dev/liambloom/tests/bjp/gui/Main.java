@@ -54,7 +54,7 @@ public class Main extends Application {
         content.maxHeightProperty().bind(stage.heightProperty());
         content.minHeightProperty().bind(stage.heightProperty());
 
-        stage.setTitle("BJP Checker");
+        stage.setTitle("Checker for BJP");
         stage.setScene(scene);
         stage.show();
     }

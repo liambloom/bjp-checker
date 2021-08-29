@@ -1,7 +1,7 @@
 package dev.liambloom.tests.bjp.gui;
 
-import dev.liambloom.tests.bjp.shared.App;
 import dev.liambloom.tests.bjp.shared.Book;
+import dev.liambloom.tests.bjp.shared.Books;
 import dev.liambloom.tests.bjp.shared.ConsumerThrowsIOException;
 import javafx.beans.property.*;
 import javafx.event.ActionEvent;
@@ -106,8 +106,8 @@ public class MainController {
 
         dialog.showAndWait()
                 .ifPresent((ConsumerThrowsIOException<Pair<String, File>>) (pair -> {
-                    Book.addTest(pair.getKey(), pair.getValue().toPath());
-                    addTests(Book.getTest(pair.getKey()));
+                    Books.addBook(pair.getKey(), pair.getValue().toPath());
+                    addTests(Books.getBook(pair.getKey()));
                 }));
     }
 
@@ -131,7 +131,7 @@ public class MainController {
 
     public void initialize() throws IOException {
         try {
-            Book.getAllTests()
+            Books.getAllBooks()
                     .forEachOrdered((ConsumerThrowsIOException<Book>) this::addTests);
             if (testToggleGroup.getSelectedToggle() == null)
                 ((Toggle) ((Parent) testList.getChildren().get(1)).getChildrenUnmodifiable().get(0)).setSelected(true);
