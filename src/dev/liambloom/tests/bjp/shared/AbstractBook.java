@@ -1,6 +1,10 @@
 package dev.liambloom.tests.bjp.shared;
 
 import dev.liambloom.tests.bjp.cli.CLILogger;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
@@ -11,6 +15,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public abstract class AbstractBook implements Book {
     private String name;
@@ -37,9 +44,41 @@ public abstract class AbstractBook implements Book {
 
             try {
                 v.validate(getSource());
+                Document document = getDocument();
+                Stream.of(
+                        Stream.of("parameter", "throws")
+                                .map(document::getElementsByTagName)
+                                .flatMap(l -> IntStream.range(0, l.getLength()).mapToObj(l::item))
+                                .map(Node::getTextContent),
+                        Stream.of("Array", "ArrayList", "LinkedList", "TargetArrayList", "Stack", "HashSet", "TreeSet", "TargetTree")
+                                .map(document::getElementsByTagName)
+                                .flatMap(l -> IntStream.range(0, l.getLength()).mapToObj(l::item))
+                                .map(Element.class::cast)
+                                .map(e -> e.getAttribute("elementType")),
+                        Stream.of("HashMap", "TreeMap")
+                                .map(document::getElementsByTagName)
+                                .flatMap(l -> IntStream.range(0, l.getLength()).mapToObj(l::item))
+                                .map(Element.class::cast)
+                                .flatMap(e -> Stream.of("keyType", "valueType").map(e::getAttribute))
+                )
+                        .flatMap(Function.identity())
+                        .map(String::trim)
+                        .forEach(type -> {
+                            try {
+                                getClass().getClassLoader().loadClass(type);
+                            }
+                            catch (ClassNotFoundException e) {
+                                synchronized (handler) {
+                                    handler.error(e);
+                                }
+                            }
+                        });
+
             } catch (SAXException ignored) {
             }
-            Books.getValidatorPool().offer(v);
+            finally {
+                Books.getValidatorPool().offer(v);
+            }
 
             if (handler.getMaxErrorKind() == null)
                 return new Result(getName(), TestValidationStatus.VALID);
@@ -74,6 +113,12 @@ public abstract class AbstractBook implements Book {
             if (maxErrorKind != LogKind.ERROR)
                 maxErrorKind = LogKind.ERROR;
             logger.log(LogKind.ERROR, getMessage(exception));
+        }
+
+        public void error(Throwable e) {
+            if (maxErrorKind != LogKind.ERROR)
+                maxErrorKind = LogKind.ERROR;
+            logger.log(LogKind.ERROR, e.getMessage());
         }
 
         @Override

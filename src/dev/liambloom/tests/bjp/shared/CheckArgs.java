@@ -85,6 +85,7 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
         if (testName == null)
             testName = App.prefs().get("selectedTests", DEFAULT_TEST_NAME);
 
+        // TODO: Do something to catch other error (like references to non-existant types)
         Document tests = Books.getBook(testName).getDocument();
 
         Stream<Path> paths = new Glob(globArgs).files();

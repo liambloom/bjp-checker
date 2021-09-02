@@ -51,7 +51,7 @@ public enum TestStatus implements Result.Status {
      * either because it is not public or because its package is not
      * exported from its respective module.
      */
-    INCACCESABLE(Color.RED);
+    BAD_HEADER(Color.RED);
 
     public final Color color;
 

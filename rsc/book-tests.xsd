@@ -390,7 +390,7 @@
             <xs:element name="TreeSet" type="javaList" />
             <xs:element name="HashMap" type="javaMap" />
             <xs:element name="TreeMap" type="javaMap" />
-            <xs:element name="TargetTree" type="javaList" />
+            <xs:element name="TargetTree" type="javaTree" />
             <!-- TODO: Add TargetArrayList (ch 15) and TargetTree (ch 17) (and maybe target LinkedList fo ch 16) -->
             <!-- ^ maybe those can be expressed with a <class> element containing <field> elements -->
         </xs:choice>
@@ -433,5 +433,17 @@
         </xs:sequence>
         <xs:attribute name="keyType" type="type" />
         <xs:attribute name="valueType" type="type" />
+    </xs:complexType>
+
+    <xs:complexType name="javaTree">
+        <xs:sequence>
+            <xs:element name="value">
+                <xs:complexType>
+                    <xs:group ref="javaValue" />
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="left" type="javaTree" minOccurs="0" />
+            <xs:element name="right" type="javaTree" minOccurs="0" />
+        </xs:sequence>
     </xs:complexType>
 </xs:schema>

@@ -7,6 +7,8 @@ import org.w3c.dom.NodeList;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Executable;
@@ -65,24 +67,67 @@ public interface Test {
                             else if (targets.methods().size() == 1) {
                                 Method method = targets.methods().iterator().next();
                                 if (!Modifier.isStatic(method.getModifiers())) {
-                                    // TODO: Either return or throw something here
-                                    throw new UserErrorException("This isn't done yet!!!");
+                                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                                    new BadHeaderException("Instance method " + TestUtils.executableToString(method) + " should be static").printStackTrace(new PrintStream(outputStream));
+                                    return Stream.of(Test.withFixedResult(new Result(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
                                 }
-                                if (!method.canAccess(null))
-                                    return Stream.of(Test.withFixedResult(new Result(name, TestStatus.INCACCESABLE)));
+                                if (!method.canAccess(null) && !method.trySetAccessible()){
+                                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                                    new BadHeaderException(Case.convert(TestUtils.getAccessabilityModifierName(method), Case.SENTENCE)
+                                            + " method "
+                                            + TestUtils.executableToString(method)
+                                            + " is not accessible")
+                                            .printStackTrace(new PrintStream(outputStream));
+                                    return Stream.of(Test.withFixedResult(new Result(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
+                                }
                                 XPath xpath = Checker.getXPathPool().get();
+                                NodeList expectedParams;
                                 try {
-                                    Element expectedParams = (Element) xpath.evaluate("parameters", node, XPathConstants.NODE);
-                                    if (!(method.isVarArgs() && expectedParams.getChildNodes().getLength() >= method.getParameterCount()
-                                            || expectedParams.getChildNodes().getLength() == method.getParameterCount()))
-                                        return Stream.of(Test.withFixedResult(new Result(name, TestStatus.INCOMPLETE)));
-                                    // TODO
+                                    expectedParams = (NodeList) xpath.evaluate("parameters/parameter", node, XPathConstants.NODESET);
                                 }
                                 catch (XPathExpressionException e) {
                                     throw new RuntimeException(e);
                                 }
                                 finally {
                                     Checker.getXPathPool().offer(xpath);
+                                }
+                                Class<?>[] params = method.getParameterTypes();
+                                boolean isCorrectParams = true;
+                                if (params.length != expectedParams.getLength() && !(method.isVarArgs() && expectedParams.getLength() >= params.length - 1))
+                                    isCorrectParams = false;
+                                else {
+                                    for (int i = 0; i < expectedParams.getLength(); i++) {
+                                        if (i >= params.length - 1 && method.isVarArgs()) {
+                                            // TODO
+                                        }
+                                        else {
+                                            try {
+                                                if (!params[i].isAssignableFrom(Test.class.getClassLoader().loadClass(expectedParams.item(i).getTextContent().trim()))) {
+                                                    isCorrectParams = false;
+                                                    break;
+                                                }
+                                            } catch (ClassNotFoundException e) {
+                                                throw new RuntimeException("This should have been caught earlier", e);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (isCorrectParams) {
+                                    NodeList methodTests;
+                                    try {
+                                        methodTests = (NodeList) xpath.evaluate("test", node, XPathConstants.NODESET);
+                                    } catch (XPathExpressionException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                    return IntStream.range(0, methodTests.getLength())
+                                            .mapToObj(methodTests::item)
+                                            .map(testNode -> Test.executableTest(method, targets, testNode));
+                                }
+                                else
+                                    // TODO: Maybe add a outputstream that indicates to the user that there is a method
+                                    //        of the correct name, but the parameters didn't match up.
+                                    return Stream.of(Test.withFixedResult(new Result(name, TestStatus.INCOMPLETE)));
                                 }
                             }
                             else {
@@ -112,7 +157,7 @@ public interface Test {
         };
     }
 
-    static Test executableTest(Executable executable, List<AnnotatedElement> targets, Node test) {
+    static Test executableTest(Executable executable, Targets targets, Node test) {
         return null;
     }
 
