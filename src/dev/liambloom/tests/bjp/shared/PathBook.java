@@ -8,6 +8,7 @@ import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.util.*;
@@ -29,14 +30,6 @@ public class PathBook extends AbstractModifiableBook {
     PathBook(String name, Path path) {
         super(name);
         this.path = path;
-    }
-
-    @Override
-    public Document getDocument(DocumentBuilder db) throws SAXException, IOException {
-        if (exists())
-            return db.parse(Files.newInputStream(path));
-        else
-            throw new NoSuchFileException(path.toString());
     }
 
     @Override
@@ -180,11 +173,15 @@ public class PathBook extends AbstractModifiableBook {
     @Override
     public boolean exists() throws IOException {
         try {
-            return path.toRealPath().toString().endsWith(".xml") && super.exists();
+            return tryExists();
         }
         catch (NoSuchFileException e) {
             return false;
         }
+    }
+
+    private boolean tryExists() throws IOException {
+        return path.toRealPath().toString().endsWith(".xml") && super.exists();
     }
 
     public Path getPath() {
@@ -207,14 +204,14 @@ public class PathBook extends AbstractModifiableBook {
         watcherLock.writeLock().unlock();
     }
 
+    @Override
+    protected InputStream getInputStream() throws IOException {
+        return Files.newInputStream(path);
+    }
+
     protected static void setPath(String name, Path path) throws IOException {
         if (!Files.exists(path) || !path.toRealPath().toString().endsWith(".xml"))
             throw new UserErrorException("Path `" + path + "' is not xml");
         Books.getCustomTests().put(name, path.toString());
-    }
-
-    @Override
-    protected Source getSource() throws IOException {
-        return new StreamSource(new BufferedInputStream(Files.newInputStream(path)));
     }
 }

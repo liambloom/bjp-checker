@@ -33,7 +33,7 @@ public class Main {
                 case "check" -> {
                     try {
                         Checker.check(CheckArgs.fromCLIArgs(args, 1));
-                    } catch (SAXException e) {
+                    } catch (SAXException | ClassNotFoundException e) {
                         // TODO: There is probably a better way to do this (should I add a ErrorHandler to Book or CheckArgs?)
                         throw new UserErrorException(e);
                     }

@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 
 /**
  * This represents the arguments for the checking functionality of
- * this program, which can be found at {@link App#check(CheckArgs)}
+ * this program, which can be found at {@link Checker#check(CheckArgs)}
  *
  * @param chapter The chapter to check, or {@code OptionalInt.empty()} to auto-detect.
  * @param exercises If (and only if) {@code exercises[i]} is true, then exercise {@code i + 1} will be run.
@@ -31,7 +31,7 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
      * @param args The string arguments
      * @param start The position of the first argument
      */
-    public static CheckArgs fromCLIArgs(String[] args, int start) throws IOException, SAXException {
+    public static CheckArgs fromCLIArgs(String[] args, int start) throws IOException, SAXException, ClassNotFoundException {
         List<String> globArgs = new LinkedList<>();
         String testName = null;
         OptionalInt chapter = OptionalInt.empty();

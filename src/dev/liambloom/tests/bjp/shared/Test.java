@@ -1,5 +1,6 @@
 package dev.liambloom.tests.bjp.shared;
 
+import dev.liambloom.tests.bjp.cli.CLILogger;
 import org.w3c.dom.Node;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -10,7 +11,6 @@ import javax.xml.xpath.XPathExpressionException;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -18,7 +18,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public interface Test {
@@ -54,10 +53,7 @@ public interface Test {
     }
 
     static Test multiTest(String name, Targets targets, Node tests) {
-        NodeList children = tests.getChildNodes();
-        Stream<Test> subTests = IntStream.range(0, children.getLength())
-                .parallel()
-                .mapToObj(children::item)
+        Stream<Test> subTests = Util.streamNodeList(tests.getChildNodes())
                 .map(Element.class::cast)
                 .flatMap(node -> {
                     switch (node.getTagName()) {
@@ -68,14 +64,14 @@ public interface Test {
                                 Method method = targets.methods().iterator().next();
                                 if (!Modifier.isStatic(method.getModifiers())) {
                                     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                                    new BadHeaderException("Instance method " + TestUtils.executableToString(method) + " should be static").printStackTrace(new PrintStream(outputStream));
+                                    new BadHeaderException("Instance method " + Util.executableToString(method) + " should be static").printStackTrace(new PrintStream(outputStream));
                                     return Stream.of(Test.withFixedResult(new Result(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
                                 }
                                 if (!method.canAccess(null) && !method.trySetAccessible()){
                                     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                                    new BadHeaderException(Case.convert(TestUtils.getAccessabilityModifierName(method), Case.SENTENCE)
+                                    new BadHeaderException(Case.convert(Util.getAccessibilityModifierName(method), Case.SENTENCE)
                                             + " method "
-                                            + TestUtils.executableToString(method)
+                                            + Util.executableToString(method)
                                             + " is not accessible")
                                             .printStackTrace(new PrintStream(outputStream));
                                     return Stream.of(Test.withFixedResult(new Result(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
@@ -93,25 +89,21 @@ public interface Test {
                                 }
                                 Class<?>[] params = method.getParameterTypes();
                                 boolean isCorrectParams = true;
-                                if (params.length != expectedParams.getLength() && !(method.isVarArgs() && expectedParams.getLength() >= params.length - 1))
-                                    isCorrectParams = false;
-                                else {
+                                if (params.length == expectedParams.getLength() || method.isVarArgs() && expectedParams.getLength() >= params.length - 1) {
                                     for (int i = 0; i < expectedParams.getLength(); i++) {
-                                        if (i >= params.length - 1 && method.isVarArgs()) {
-                                            // TODO
-                                        }
-                                        else {
-                                            try {
-                                                if (!params[i].isAssignableFrom(Test.class.getClassLoader().loadClass(expectedParams.item(i).getTextContent().trim()))) {
-                                                    isCorrectParams = false;
-                                                    break;
-                                                }
-                                            } catch (ClassNotFoundException e) {
-                                                throw new RuntimeException("This should have been caught earlier", e);
+                                        Class<?> clazz = i >= params.length - 1 && method.isVarArgs() ? params[i].componentType() : params[i];
+                                        try {
+                                            if (!clazz.isAssignableFrom(Test.class.getClassLoader().loadClass(expectedParams.item(i).getTextContent().trim()))) {
+                                                isCorrectParams = false;
+                                                break;
                                             }
+                                        } catch (ClassNotFoundException e) {
+                                            throw new RuntimeException("This should have been caught earlier", e);
                                         }
                                     }
                                 }
+                                else
+                                    isCorrectParams = false;
 
                                 if (isCorrectParams) {
                                     NodeList methodTests;
@@ -120,13 +112,19 @@ public interface Test {
                                     } catch (XPathExpressionException e) {
                                         throw new RuntimeException(e);
                                     }
-                                    return IntStream.range(0, methodTests.getLength())
-                                            .mapToObj(methodTests::item)
+                                    return Util.streamNodeList(methodTests)
                                             .map(testNode -> Test.executableTest(method, targets, testNode));
                                 }
-                                else
-                                    // TODO: Maybe add a outputstream that indicates to the user that there is a method
-                                    //        of the correct name, but the parameters didn't match up.
+                                else {
+                                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                                    new CLILogger(new PrintStream(out))
+                                            .log(LogKind.NOTICE, "Method "
+                                                    + Util.executableToString(method)
+                                                    + " was detected, but did not have the expected parameters ("
+                                                    + Util.streamNodeList(expectedParams)
+                                                            .map(Node::getTextContent)
+                                                            .collect(Collectors.joining(", "))
+                                                    + ')');
                                     return Stream.of(Test.withFixedResult(new Result(name, TestStatus.INCOMPLETE)));
                                 }
                             }

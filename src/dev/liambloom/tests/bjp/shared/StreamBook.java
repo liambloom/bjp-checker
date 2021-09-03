@@ -11,26 +11,14 @@ import java.io.InputStream;
 
 public class StreamBook extends AbstractBook {
     private final InputStream stream;
-    private final Source source;
 
     StreamBook(String name, InputStream stream) {
         super(name);
         this.stream = stream;
-        this.source = new StreamSource(stream);
     }
 
     @Override
-    public Document getDocument(DocumentBuilder db) throws SAXException, IOException {
-        return db.parse(stream);
-    }
-
-    /*@Override
-    public String getName() {
-        return name;
-    }*/
-
-    @Override
-    protected Source getSource() {
-        return source;
+    protected InputStream getInputStream() {
+        return stream;
     }
 }

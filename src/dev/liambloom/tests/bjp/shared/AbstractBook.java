@@ -4,19 +4,21 @@ import dev.liambloom.tests.bjp.cli.CLILogger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
-import javax.xml.transform.Source;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Validator;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public abstract class AbstractBook implements Book {
@@ -35,6 +37,36 @@ public abstract class AbstractBook implements Book {
         this.name = name;
     }
 
+    private Stream<Element> elementOfType(Document document, String... types) {
+        return Arrays.stream(types)
+                .map(document::getElementsByTagName)
+                .flatMap(Util::streamNodeList)
+                .map(Element.class::cast);
+    }
+
+    private Stream<ClassNotFoundException> checkDocumentTypes(Document document) {
+        return Stream.of(
+                elementOfType(document, "parameter", "throws")
+                        .map(Node::getTextContent),
+                elementOfType(document, "Array", "ArrayList", "LinkedList", "TargetArrayList", "Stack", "HashSet", "TreeSet", "TargetTree")
+                        .map(e -> e.getAttribute("elementType")),
+                elementOfType(document, "HashMap", "TreeMap")
+                        .flatMap(e -> Stream.of("keyType", "valueType").map(e::getAttribute))
+        )
+                .flatMap(Function.identity())
+                .map(String::trim)
+                .map(type -> {
+                    try {
+                        getClass().getClassLoader().loadClass(type);
+                        return null;
+                    }
+                    catch (ClassNotFoundException e) {
+                        return e;
+                    }
+                })
+                .filter(Objects::nonNull);
+    }
+
     @Override
     public Result validate() throws IOException {
         if (exists()) {
@@ -43,41 +75,25 @@ public abstract class AbstractBook implements Book {
             v.setErrorHandler(handler);
 
             try {
-                v.validate(getSource());
-                Document document = getDocument();
-                Stream.of(
-                        Stream.of("parameter", "throws")
-                                .map(document::getElementsByTagName)
-                                .flatMap(l -> IntStream.range(0, l.getLength()).mapToObj(l::item))
-                                .map(Node::getTextContent),
-                        Stream.of("Array", "ArrayList", "LinkedList", "TargetArrayList", "Stack", "HashSet", "TreeSet", "TargetTree")
-                                .map(document::getElementsByTagName)
-                                .flatMap(l -> IntStream.range(0, l.getLength()).mapToObj(l::item))
-                                .map(Element.class::cast)
-                                .map(e -> e.getAttribute("elementType")),
-                        Stream.of("HashMap", "TreeMap")
-                                .map(document::getElementsByTagName)
-                                .flatMap(l -> IntStream.range(0, l.getLength()).mapToObj(l::item))
-                                .map(Element.class::cast)
-                                .flatMap(e -> Stream.of("keyType", "valueType").map(e::getAttribute))
-                )
-                        .flatMap(Function.identity())
-                        .map(String::trim)
-                        .forEach(type -> {
-                            try {
-                                getClass().getClassLoader().loadClass(type);
-                            }
-                            catch (ClassNotFoundException e) {
-                                synchronized (handler) {
-                                    handler.error(e);
-                                }
-                            }
-                        });
-
-            } catch (SAXException ignored) {
+                v.validate(new StreamSource(getInputStream()));
             }
+            catch (SAXException ignored) { }
             finally {
                 Books.getValidatorPool().offer(v);
+            }
+
+            DocumentBuilder db = Books.getDocumentBuilderPool().get();
+            Document document = null;
+            try {
+                document = db.parse(getInputStream());
+            }
+            catch (SAXException ignored) { }
+            finally {
+                Books.getDocumentBuilderPool().offer(db);
+            }
+            if (document != null) {
+                checkDocumentTypes(document)
+                        .forEachOrdered(handler::error);
             }
 
             if (handler.getMaxErrorKind() == null)
@@ -90,7 +106,27 @@ public abstract class AbstractBook implements Book {
         else
             return new Result(getName(), TestValidationStatus.NOT_FOUND);
     }
-    protected abstract Source getSource() throws IOException;
+
+    @Override
+    public Document getDocument() throws IOException, SAXException, ClassNotFoundException {
+        if (!exists())
+            throw new IllegalStateException("Book " + getName() + " does not exist");
+        DocumentBuilder db = Books.getDocumentBuilderPool().get();
+        Document r;
+        try {
+            r = db.parse(getInputStream());
+        }
+        finally {
+            Books.getDocumentBuilderPool().offer(db);
+        }
+        Optional<ClassNotFoundException> e = checkDocumentTypes(r)
+                .findAny();
+        if (e.isPresent())
+            throw e.get();
+        return r;
+    }
+
+    protected abstract InputStream getInputStream() throws IOException;
 
     private class ValidationErrorHandler implements ErrorHandler {
         private ByteArrayOutputStream log;
