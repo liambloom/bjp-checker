@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public interface Test {
@@ -63,6 +64,7 @@ public interface Test {
                         }
                         default -> throw new IllegalStateException("This should not have passed the schema");
                     }
+                    return null; // TODO
                 });
         return () -> {
             List<Result> subResults = subTests.map(Test::run).collect(Collectors.toList());
@@ -126,8 +128,8 @@ public interface Test {
             } catch (XPathExpressionException e) {
                 throw new RuntimeException(e);
             }
-            return Util.streamNodeList(tests)
-                    .map(testNode -> Test.executableTest(executable, targets, testNode));
+            return IntStream.range(0, tests.getLength())
+                    .mapToObj(i -> Test.executableTest("Test " + i, executable, targets, tests.item(i)));
         }
         else {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -144,7 +146,7 @@ public interface Test {
         }
     }
 
-    static Test executableTest(Executable executable, Targets targets, Node test) {
+    static Test executableTest(String name, Executable executable, Targets targets, Node test) {
         return null;
     }
 

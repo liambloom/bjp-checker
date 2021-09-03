@@ -1,16 +1,12 @@
 package dev.liambloom.tests.bjp.shared;
 
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.transform.Source;
-import javax.xml.transform.stream.StreamSource;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 public class StreamBook extends AbstractBook {
-    private final InputStream stream;
+    private InputStream stream;
+    private byte[] buf = null;
 
     StreamBook(String name, InputStream stream) {
         super(name);
@@ -18,7 +14,12 @@ public class StreamBook extends AbstractBook {
     }
 
     @Override
-    protected InputStream getInputStream() {
-        return stream;
+    protected InputStream getInputStream() throws IOException {
+        if (buf == null) {
+            // Is this terrible?
+            buf = stream.readAllBytes();
+            stream = null;
+        }
+        return new ByteArrayInputStream(buf);
     }
 }

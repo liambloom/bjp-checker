@@ -26,8 +26,7 @@ final class Util {
         Type[] args = e.getGenericParameterTypes();
         for (int i = 0; i < args.length; i++) {
             if (i + 1 == args.length && e.isVarArgs()) {
-                String type = args[i].getTypeName();
-                builder.append(type)
+                builder.append(args[i].getTypeName())
                         .replace(builder.length() - 2, builder.length(), "...");
             }
             else

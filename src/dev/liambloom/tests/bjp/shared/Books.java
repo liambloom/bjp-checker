@@ -38,6 +38,7 @@ public final class Books {
     private static final Lazy<DocumentBuilderFactory> documentBuilderFactory = new Lazy<>(() -> {
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setSchema(getSchema());
+        dbf.setNamespaceAware(true);
         return dbf;
     });
     private static final ResourcePool<DocumentBuilder> documentBuilderPool = new ResourcePool<>(() -> {
@@ -81,9 +82,8 @@ public final class Books {
         Book r;
 
         InputStream stream = Book.class.getClassLoader().getResourceAsStream("tests/" + LOCAL_TEST_NAMES.get(name) + ".xml");
-        if (stream != null) { // Get test from jar
+        if (stream != null) // Get test from jar
             r = new StreamBook(name, stream);
-        }
         else { // Get tests from preferences
             String pathString = App.prefs().node("tests").get(name, null);
 

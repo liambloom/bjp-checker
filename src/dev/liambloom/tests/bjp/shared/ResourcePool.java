@@ -46,7 +46,6 @@ public class ResourcePool<T> implements Supplier<T> {
                 @Override
                 public void run() {
                     pool.remove(PoolElement.this);
-                    System.out.println("Timed out");
                 }
             };
             timer.schedule(task, maxIdleTime);

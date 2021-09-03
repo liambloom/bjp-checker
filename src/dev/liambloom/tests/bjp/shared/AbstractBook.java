@@ -55,13 +55,15 @@ public abstract class AbstractBook implements Book {
         )
                 .flatMap(Function.identity())
                 .map(String::trim)
-                .map(type -> {
-                    try {
-                        getClass().getClassLoader().loadClass(type);
-                        return null;
-                    }
-                    catch (ClassNotFoundException e) {
-                        return e;
+                .map(type -> switch (type) {
+                    case "byte", "short", "int", "long", "float", "double", "boolean", "char" -> null;
+                    default -> {
+                        try {
+                            getClass().getClassLoader().loadClass(type);
+                            yield null;
+                        } catch (ClassNotFoundException e) {
+                            yield e;
+                        }
                     }
                 })
                 .filter(Objects::nonNull);
@@ -154,7 +156,7 @@ public abstract class AbstractBook implements Book {
         public void error(Throwable e) {
             if (maxErrorKind != LogKind.ERROR)
                 maxErrorKind = LogKind.ERROR;
-            logger.log(LogKind.ERROR, e.getMessage());
+            logger.log(LogKind.ERROR, e.getClass().getName() + ": " + e.getMessage());
         }
 
         @Override
