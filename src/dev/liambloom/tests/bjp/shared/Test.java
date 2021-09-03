@@ -16,6 +16,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,37 +24,12 @@ import java.util.stream.Stream;
 public interface Test {
     Result run();
 
-    record ReflectionData(Targets targets, Class<? extends Annotation> annotationType, int num) {
-        public Test newTest(Node tests) {
-            String testName = Case.convert(annotationType().getSimpleName(), Case.SPACE) + ' ' + num;
-
-            if (targets().isEmpty())
-                return Test.withFixedResult(new Result(testName, TestStatus.INCOMPLETE));
-
-
-            XPath xpath = null;
-            try {
-                return Test.multiTest(Case.convert(annotationType.getSimpleName(), Case.CAMEL) + " " + num,targets,
-                        Optional.ofNullable((xpath = Checker.getXPathPool().get()).evaluate(Case.convert(annotationType.getSimpleName(), Case.CAMEL) + "[@num='" + num + "']", tests, XPathConstants.NODE))
-                                .map(Element.class::cast)
-                                .orElseThrow(() -> new UserErrorException("Unable to find tests for " + testName)));
-            }
-            catch (XPathExpressionException e) {
-                throw new RuntimeException(e);
-            }
-            finally {
-                if (xpath != null)
-                    Checker.getXPathPool().offer(xpath);
-            }
-        }
-    }
-
     static Test withFixedResult(Result result) {
         return () -> result;
     }
 
-    static Test multiTest(String name, Targets targets, Node tests) {
-        Stream<Test> subTests = Util.streamNodeList(tests.getChildNodes())
+    static Test multiTest(String name, Targets targets, Node testGroup) {
+        Stream<Test> subTests = Util.streamNodeList(testGroup.getChildNodes())
                 .map(Element.class::cast)
                 .flatMap(node -> {
                     switch (node.getTagName()) {
@@ -67,73 +43,20 @@ public interface Test {
                                     new BadHeaderException("Instance method " + Util.executableToString(method) + " should be static").printStackTrace(new PrintStream(outputStream));
                                     return Stream.of(Test.withFixedResult(new Result(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
                                 }
-                                if (!method.canAccess(null) && !method.trySetAccessible()){
-                                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                                    new BadHeaderException(Case.convert(Util.getAccessibilityModifierName(method), Case.SENTENCE)
-                                            + " method "
-                                            + Util.executableToString(method)
-                                            + " is not accessible")
-                                            .printStackTrace(new PrintStream(outputStream));
-                                    return Stream.of(Test.withFixedResult(new Result(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
-                                }
-                                XPath xpath = Checker.getXPathPool().get();
-                                NodeList expectedParams;
-                                try {
-                                    expectedParams = (NodeList) xpath.evaluate("parameters/parameter", node, XPathConstants.NODESET);
-                                }
-                                catch (XPathExpressionException e) {
-                                    throw new RuntimeException(e);
-                                }
-                                finally {
-                                    Checker.getXPathPool().offer(xpath);
-                                }
-                                Class<?>[] params = method.getParameterTypes();
-                                boolean isCorrectParams = true;
-                                if (params.length == expectedParams.getLength() || method.isVarArgs() && expectedParams.getLength() >= params.length - 1) {
-                                    for (int i = 0; i < expectedParams.getLength(); i++) {
-                                        Class<?> clazz = i >= params.length - 1 && method.isVarArgs() ? params[i].componentType() : params[i];
-                                        try {
-                                            if (!clazz.isAssignableFrom(Test.class.getClassLoader().loadClass(expectedParams.item(i).getTextContent().trim()))) {
-                                                isCorrectParams = false;
-                                                break;
-                                            }
-                                        } catch (ClassNotFoundException e) {
-                                            throw new RuntimeException("This should have been caught earlier", e);
-                                        }
-                                    }
-                                }
-                                else
-                                    isCorrectParams = false;
-
-                                if (isCorrectParams) {
-                                    NodeList methodTests;
-                                    try {
-                                        methodTests = (NodeList) xpath.evaluate("test", node, XPathConstants.NODESET);
-                                    } catch (XPathExpressionException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                    return Util.streamNodeList(methodTests)
-                                            .map(testNode -> Test.executableTest(method, targets, testNode));
-                                }
-                                else {
-                                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                                    new CLILogger(new PrintStream(out))
-                                            .log(LogKind.NOTICE, "Method "
-                                                    + Util.executableToString(method)
-                                                    + " was detected, but did not have the expected parameters ("
-                                                    + Util.streamNodeList(expectedParams)
-                                                            .map(Node::getTextContent)
-                                                            .collect(Collectors.joining(", "))
-                                                    + ')');
-                                    return Stream.of(Test.withFixedResult(new Result(name, TestStatus.INCOMPLETE)));
-                                }
+                                return Test.streamFromStaticExecutable(name, method, targets, testGroup);
                             }
                             else {
                                 // TODO
                             }
                         }
                         case "constructor" -> {
-                            // TODO
+                            if (targets.constructors().isEmpty())
+                                return Stream.of(Test.withFixedResult(new Result(name, TestStatus.INCOMPLETE)));
+                            else if (targets.constructors().size() == 1)
+                                return Test.streamFromStaticExecutable(name, targets.constructors().iterator().next(), targets, testGroup);
+                            else {
+                                // TODO
+                            }
                         }
                         case "project" -> {
                             // TODO
@@ -153,6 +76,72 @@ public interface Test {
                     Optional.empty(),
                     subResults);
         };
+    }
+
+    static Stream<Test> streamFromStaticExecutable(String name, Executable executable, Targets targets, Node node) {
+        if (!executable.canAccess(null) && !executable.trySetAccessible()){
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            new BadHeaderException(Case.convert(Util.getAccessibilityModifierName(executable), Case.SENTENCE)
+                    + ' '
+                    + executable.getClass().getSimpleName().toLowerCase(Locale.ENGLISH)
+                    + ' '
+                    + Util.executableToString(executable)
+                    + " is not accessible")
+                    .printStackTrace(new PrintStream(outputStream));
+            return Stream.of(Test.withFixedResult(new Result(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
+        }
+        XPath xpath = Checker.getXPathPool().get();
+        NodeList expectedParams;
+        try {
+            expectedParams = (NodeList) xpath.evaluate("parameters/parameter", node, XPathConstants.NODESET);
+        }
+        catch (XPathExpressionException e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            Checker.getXPathPool().offer(xpath);
+        }
+        Class<?>[] params = executable.getParameterTypes();
+        boolean isCorrectParams = true;
+        if (params.length == expectedParams.getLength() || executable.isVarArgs() && expectedParams.getLength() >= params.length - 1) {
+            for (int i = 0; i < expectedParams.getLength(); i++) {
+                Class<?> clazz = i >= params.length - 1 && executable.isVarArgs() ? params[i].componentType() : params[i];
+                try {
+                    if (!clazz.isAssignableFrom(Test.class.getClassLoader().loadClass(expectedParams.item(i).getTextContent().trim()))) {
+                        isCorrectParams = false;
+                        break;
+                    }
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException("This should have been caught earlier", e);
+                }
+            }
+        }
+        else
+            isCorrectParams = false;
+
+        if (isCorrectParams) {
+            NodeList tests;
+            try {
+                tests = (NodeList) xpath.evaluate("test", node, XPathConstants.NODESET);
+            } catch (XPathExpressionException e) {
+                throw new RuntimeException(e);
+            }
+            return Util.streamNodeList(tests)
+                    .map(testNode -> Test.executableTest(executable, targets, testNode));
+        }
+        else {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            new CLILogger(new PrintStream(out))
+                    .log(LogKind.NOTICE, executable.getClass().getSimpleName()
+                            + ' '
+                            + Util.executableToString(executable)
+                            + " was detected, but did not have the expected parameters ("
+                            + Util.streamNodeList(expectedParams)
+                            .map(Node::getTextContent)
+                            .collect(Collectors.joining(", "))
+                            + ')');
+            return Stream.of(Test.withFixedResult(new Result(name, TestStatus.INCOMPLETE)));
+        }
     }
 
     static Test executableTest(Executable executable, Targets targets, Node test) {
