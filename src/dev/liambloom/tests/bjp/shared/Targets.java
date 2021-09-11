@@ -4,16 +4,16 @@ import java.lang.reflect.*;
 import java.util.*;
 
 public record Targets(Set<Class<?>> classes,
-        Set<Constructor<?>> constructors,
-        Set<Method> methods,
-        Set<Field> fields)
-        implements Set<AnnotatedElement> {
+                      Set<Constructor<?>> constructors,
+                      Set<Method> methods,
+                      Set<Field> fields)
+    implements Set<AnnotatedElement> {
     public Targets() {
         this(
-                Collections.synchronizedSet(new HashSet<>()),
-                Collections.synchronizedSet(new HashSet<>()),
-                Collections.synchronizedSet(new HashSet<>()),
-                Collections.synchronizedSet(new HashSet<>())
+            Collections.synchronizedSet(new HashSet<>()),
+            Collections.synchronizedSet(new HashSet<>()),
+            Collections.synchronizedSet(new HashSet<>()),
+            Collections.synchronizedSet(new HashSet<>())
         );
     }
 
@@ -90,10 +90,10 @@ public record Targets(Set<Class<?>> classes,
         return new Iterator<>() {
             @SuppressWarnings("unchecked")
             final Iterator<? extends AnnotatedElement>[] inner = (Iterator<? extends AnnotatedElement>[]) new Iterator[]{
-                    classes.iterator(),
-                    constructors.iterator(),
-                    methods.iterator(),
-                    fields.iterator()
+                classes.iterator(),
+                constructors.iterator(),
+                methods.iterator(),
+                fields.iterator()
             };
             int i = 0;
 
@@ -128,12 +128,12 @@ public record Targets(Set<Class<?>> classes,
     }
 
     @Override
-    @SuppressWarnings({"unchecked"/*, "SuspiciousSystemArraycopy"*/})
+    @SuppressWarnings({ "unchecked"/*, "SuspiciousSystemArraycopy"*/ })
     public synchronized <T> T[] toArray(T[] a) {
         if (a.length <= size())
             a = (T[]) Array.newInstance(a.getClass().getComponentType(), size());
         int i = 0;
-        for (Set<? extends AnnotatedElement> set : new Set[]{classes, constructors, methods, fields}) {
+        for (Set<? extends AnnotatedElement> set : new Set[]{ classes, constructors, methods, fields }) {
             for (AnnotatedElement e : set)
                 a[i++] = (T) e;
         }

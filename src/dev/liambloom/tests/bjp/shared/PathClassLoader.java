@@ -24,21 +24,21 @@ public final class PathClassLoader extends ClassLoader {
         super(parent);
         try {
             classes = glob
-                    .map((FunctionThrowsIOException<Path, Path>) Path::toRealPath)
-                    .flatMap((FunctionThrowsIOException<Path, Stream<? extends ClassSource>>) (p -> {
-                        if (p.toString().endsWith(".jar"))
-                            return CompressedClassSource.allSources(new JarFile(p.toFile())).stream();
-                        else if (p.toString().endsWith(".class"))
-                            return Stream.of(new PathClassSource(p));
-                        else
-                            throw new UserErrorException("Unable to load classes from `" + p + "' because it is not a .class or .jar file");
-                    }))
-                    .collect(Collectors.toMap(
-                            s -> new StringBuilder(s.path()).reverse().toString(),
-                            (FunctionThrowsIOException<ClassSource, LazyClass>) (s -> new LazyClass(s.bytes())),
-                            (v1, v2) -> v1.markAsDuplicate(),
-                            TreeMap<String, LazyClass>::new
-                    ));
+                .map((FunctionThrowsIOException<Path, Path>) Path::toRealPath)
+                .flatMap((FunctionThrowsIOException<Path, Stream<? extends ClassSource>>) (p -> {
+                    if (p.toString().endsWith(".jar"))
+                        return CompressedClassSource.allSources(new JarFile(p.toFile())).stream();
+                    else if (p.toString().endsWith(".class"))
+                        return Stream.of(new PathClassSource(p));
+                    else
+                        throw new UserErrorException("Unable to load classes from `" + p + "' because it is not a .class or .jar file");
+                }))
+                .collect(Collectors.toMap(
+                    s -> new StringBuilder(s.path()).reverse().toString(),
+                    (FunctionThrowsIOException<ClassSource, LazyClass>) (s -> new LazyClass(s.bytes())),
+                    (v1, v2) -> v1.markAsDuplicate(),
+                    TreeMap<String, LazyClass>::new
+                ));
         }
         catch (UncheckedIOException e) {
             throw e.getCause();
@@ -47,9 +47,9 @@ public final class PathClassLoader extends ClassLoader {
 
     public Stream<Class<?>> loadAllOwnClasses() {
         return classes.values()
-                .stream()
-                .map(c -> c.get(null));
-                //.toArray(Class<?>[]::new);
+            .stream()
+            .map(c -> c.get(null));
+        //.toArray(Class<?>[]::new);
     }
 
     @Override
@@ -64,7 +64,8 @@ public final class PathClassLoader extends ClassLoader {
                 // Go through all of them just in case there's a duplicate class name
                 r = clazz.get(name);
             }
-            catch (NoClassDefFoundError ignored) {}
+            catch (NoClassDefFoundError ignored) {
+            }
         }
         if (r == null)
             throw new ClassNotFoundException(name);
@@ -101,6 +102,7 @@ public final class PathClassLoader extends ClassLoader {
 
 interface ClassSource {
     String path();
+
     byte[] bytes() throws IOException;
 }
 
@@ -171,8 +173,8 @@ class CompressedClassSource implements ClassSource {
             if (entry.isDirectory() || !name.toLowerCase(Locale.ENGLISH).endsWith(".class"))
                 continue;
             CompressedClassSource.construct(jar, entry, isMrJar)
-                    .ifPresent(src -> entryMap.compute(src.path(), (BiFunctionThrowsIOException<String, CompressedClassSource, CompressedClassSource>)
-                            (k, val) -> val == null || val.version() < src.version() ? src : val));
+                .ifPresent(src -> entryMap.compute(src.path(), (BiFunctionThrowsIOException<String, CompressedClassSource, CompressedClassSource>)
+                    (k, val) -> val == null || val.version() < src.version() ? src : val));
         }
         return entryMap.values();
     }
@@ -184,9 +186,9 @@ class CompressedClassSource implements ClassSource {
 
     private static boolean isMrJar(JarFile jar) throws IOException {
         return JAVA_VERSION > 8 && Optional.ofNullable(jar.getManifest().getMainAttributes().getValue(Attributes.Name.MULTI_RELEASE))
-                .map(s -> s.toLowerCase(Locale.ENGLISH))
-                .map("true"::equals)
-                .orElse(false);
+            .map(s -> s.toLowerCase(Locale.ENGLISH))
+            .map("true"::equals)
+            .orElse(false);
     }
 }
 

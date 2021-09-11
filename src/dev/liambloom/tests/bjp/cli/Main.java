@@ -4,7 +4,10 @@ import dev.liambloom.tests.bjp.shared.*;
 import javafx.application.Application;
 import org.xml.sax.SAXException;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,13 +36,14 @@ public class Main {
                 case "check" -> {
                     try {
                         Checker.check(CheckArgs.fromCLIArgs(args, 1));
-                    } catch (SAXException | ClassNotFoundException e) {
+                    }
+                    catch (SAXException | ClassNotFoundException e) {
                         // TODO: There is probably a better way to do this (should I add a ErrorHandler to Book or CheckArgs?)
                         throw new UserErrorException(e);
                     }
                 }
                 case "submit" -> throw new UserErrorException("Command `submit' not supported in current checker version");
-                    // break;
+                // break;
                 case "tests" -> {
                     if (args.length == 1)
                         throw new UserErrorException("Missing argument, expected one of: add, remove, rename, list, validate, get-default, set-default"); // TODO
@@ -85,10 +89,11 @@ public class Main {
                                 throw new UserErrorException("Missing argument after validate");
                             try {
                                 printResults((args[2].equals("-a") || args[2].equals("--all")
-                                        ? Books.getAllBooks()
-                                        : Arrays.stream(args).skip(2).map(Books::getBook))
-                                        .map((FunctionThrowsIOException<Book, Result>) Book::validate));
-                            } catch (UncheckedIOException e) {
+                                    ? Books.getAllBooks()
+                                    : Arrays.stream(args).skip(2).map(Books::getBook))
+                                    .map((FunctionThrowsIOException<Book, Result>) Book::validate));
+                            }
+                            catch (UncheckedIOException e) {
                                 throw e.getCause();
                             }
                         }

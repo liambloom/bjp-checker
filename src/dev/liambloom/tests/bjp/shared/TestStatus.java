@@ -1,10 +1,5 @@
 package dev.liambloom.tests.bjp.shared;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
-
 public enum TestStatus implements Result.Status {
     /*
      * The ex/pp has been submitted
@@ -21,7 +16,6 @@ public enum TestStatus implements Result.Status {
      * The ex/pp/test passed all tests
      */
     OK(Color.GREEN),
-
 
 
     /**

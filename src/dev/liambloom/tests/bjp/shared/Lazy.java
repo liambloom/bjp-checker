@@ -1,6 +1,5 @@
 package dev.liambloom.tests.bjp.shared;
 
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 

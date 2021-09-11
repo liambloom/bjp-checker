@@ -3,7 +3,6 @@ package dev.liambloom.tests.bjp.shared;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 @FunctionalInterface
 public interface ConsumerThrowsIOException<T> extends Consumer<T> {

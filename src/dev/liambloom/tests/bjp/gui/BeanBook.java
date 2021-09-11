@@ -13,8 +13,8 @@ public class BeanBook {
     private final Book inner;
     public final StringProperty name;
     public final ObjectProperty<Optional<Path>> path;
-//    private final ReadOnlyBooleanWrapper isValidWrapper;
-//    public final ReadOnlyBooleanProperty isValid;
+    // private final ReadOnlyBooleanWrapper isValidWrapper;
+    // public final ReadOnlyBooleanProperty isValid;
     private final ReadOnlyObjectWrapper<Result> validationResultWrapper = new ReadOnlyObjectWrapper<>();
     public final ReadOnlyObjectProperty<Result> validationResult = validationResultWrapper.getReadOnlyProperty();
     private final ReadOnlyBooleanWrapper existsWrapper = new ReadOnlyBooleanWrapper();

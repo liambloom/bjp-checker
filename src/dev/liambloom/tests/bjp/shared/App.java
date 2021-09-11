@@ -1,35 +1,17 @@
 package dev.liambloom.tests.bjp.shared;
 
-import dev.liambloom.tests.bjp.Chapter;
-import dev.liambloom.tests.bjp.Exercise;
-import dev.liambloom.tests.bjp.ProgrammingProject;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-import java.io.*;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.prefs.Preferences;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public final class App {
-    private App() {}
+    private App() {
+    }
 
     public static final String VERSION = "v1.0.0-alpha-2";
 

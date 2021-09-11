@@ -15,14 +15,18 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class Checker {
-    private Checker() {}
+    private Checker() {
+    }
 
     private static final ResourcePool<XPath> xPathPool = new ResourcePool<>(XPathFactory.newInstance()::newXPath);
 
@@ -36,19 +40,19 @@ public final class Checker {
         try {
             AtomicInteger detectedChapter = new AtomicInteger(-1);
             classes = new PathClassLoader(args.paths()).loadAllOwnClasses()
-                    .filter(clazz -> {
-                        Chapter ch = clazz.getAnnotation(Chapter.class);
-                        if (ch == null)
-                            return false;
-                        else if (args.chapter().isPresent()) {
-                            return ch.value() == args.chapter().getAsInt();
-                        }
-                        else if (detectedChapter.updateAndGet(c -> c == -1 ? ch.value() : c) != ch.value())
-                            // FIXME: This doesn't seem to be being thrown
-                            throw new UserErrorException("Cannot auto detect chapter, as classes belonging to chapters " + ch.value() + " and " + detectedChapter + " were found");
-                        return true;
-                    })
-                    .collect(Collectors.toList());
+                .filter(clazz -> {
+                    Chapter ch = clazz.getAnnotation(Chapter.class);
+                    if (ch == null)
+                        return false;
+                    else if (args.chapter().isPresent()) {
+                        return ch.value() == args.chapter().getAsInt();
+                    }
+                    else if (detectedChapter.updateAndGet(c -> c == -1 ? ch.value() : c) != ch.value())
+                        // FIXME: This doesn't seem to be being thrown
+                        throw new UserErrorException("Cannot auto detect chapter, as classes belonging to chapters " + ch.value() + " and " + detectedChapter + " were found");
+                    return true;
+                })
+                .collect(Collectors.toList());
             System.out.println();
             chapter = args.chapter().orElseGet(detectedChapter::get);
         }
@@ -57,14 +61,14 @@ public final class Checker {
         }
 
         XPath xpath1 = xPathPool.get();
-        Node ch = (Node) xpath1.evaluate("/book/chapter[@num='" + chapter  + "']", args.tests(), XPathConstants.NODE);
+        Node ch = (Node) xpath1.evaluate("/book/chapter[@num='" + chapter + "']", args.tests(), XPathConstants.NODE);
         xPathPool.offer(xpath1);
 
 
         return Stream.of(new TargetGroup(Exercise.class, args.exercises()), new TargetGroup(ProgrammingProject.class, args.programmingProjects()))
-                .map(e -> e.addPotentialTargets(classes.iterator()))
-                .flatMap(e -> e.apply(ch))
-                .map(Test::run);
+            .map(e -> e.addPotentialTargets(classes.iterator()))
+            .flatMap(e -> e.apply(ch))
+            .map(Test::run);
     }
 
     private static class TargetGroup {
@@ -90,7 +94,9 @@ public final class Checker {
                 try {
                     return (Integer) m.invoke(a);
                 }
-                catch (IllegalAccessException | InvocationTargetException e) { throw new IllegalArgumentException(e); }
+                catch (IllegalAccessException | InvocationTargetException e) {
+                    throw new IllegalArgumentException(e);
+                }
             };
 
             this.annotationType = annotationType;
@@ -98,7 +104,7 @@ public final class Checker {
 
         public void addPotentialTarget(AnnotatedElement e) {
             Optional.ofNullable(targets[valueOf.apply(e.getAnnotation(annotationType))])
-                    .ifPresent(t -> t.add(e));
+                .ifPresent(t -> t.add(e));
         }
 
         public TargetGroup addPotentialTargets(Iterator<? extends AnnotatedElement> iter) {
@@ -119,11 +125,11 @@ public final class Checker {
                         XPath xpath = null;
                         try {
                             builder.add(Test.multiTest(testName, targets[i],
-                                    Optional.ofNullable(
-                                            (xpath = Checker.getXPathPool().get())
-                                                    .evaluate(Case.convert(annotationType.getSimpleName(), Case.CAMEL) + "[@num='" + i + "']", tests, XPathConstants.NODE))
-                                            .map(Element.class::cast)
-                                            .orElseThrow(() -> new UserErrorException("Unable to find tests for " + testName))));
+                                Optional.ofNullable(
+                                    (xpath = Checker.getXPathPool().get())
+                                        .evaluate(Case.convert(annotationType.getSimpleName(), Case.CAMEL) + "[@num='" + i + "']", tests, XPathConstants.NODE))
+                                    .map(Element.class::cast)
+                                    .orElseThrow(() -> new UserErrorException("Unable to find tests for " + testName))));
                         }
                         catch (XPathExpressionException e) {
                             throw new RuntimeException(e);

@@ -1,6 +1,9 @@
 package dev.liambloom.tests.bjp.shared;
 
-import java.util.*;
+import java.util.Deque;
+import java.util.Optional;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Supplier;
 
@@ -28,8 +31,8 @@ public class ResourcePool<T> implements Supplier<T> {
     @Override
     public T get() {
         return Optional.ofNullable(pool.pollLast())
-                .map(PoolElement::take)
-                .orElseGet(supplier);
+            .map(PoolElement::take)
+            .orElseGet(supplier);
     }
 
     public void offer(T e) {

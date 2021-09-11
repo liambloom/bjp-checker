@@ -1,7 +1,9 @@
 package dev.liambloom.tests.bjp.gui;
 
 import dev.liambloom.tests.bjp.shared.*;
-import javafx.beans.binding.*;
+import javafx.beans.binding.DoubleBinding;
+import javafx.beans.binding.ObjectBinding;
+import javafx.beans.binding.StringBinding;
 import javafx.beans.property.*;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Bounds;
@@ -50,9 +52,9 @@ public class TestListItemController {
         @Override
         protected String computeValue() {
             return switch ((TestValidationStatus) Optional.ofNullable(book.get())
-                    .map(BeanBook::getValidationResult)
-                    .map(Result::status)
-                    .orElse(TestValidationStatus.NOT_FOUND)) {
+                .map(BeanBook::getValidationResult)
+                .map(Result::status)
+                .orElse(TestValidationStatus.NOT_FOUND)) {
                 case VALID -> "";
                 case NOT_FOUND -> "M 0 8 A 8 8 0 0 1 16 8 A 8 8 0 0 1 0 8 M 5.171572875 6 A 2.828427125 2.828427125 0 1 1 10 8 A 3.414213562 3.414213562 0 0 0 9 10.41421356 h -2 A 5.414213562 5.414213562 0 0 1 8.585786438 6.585786438 A 0.8284271247 0.8284271247 0 1 0 7.171572875 6 M 7 11.8 v 2 h 2 v -2 h -2";
                 case INVALID, VALID_WITH_WARNINGS -> "M 0 14.92820323 L 8 1.07179677 L 16 14.92820323 M 7 4.8 V 8 L 7.5 10 h 1 L 9 8 V 4.8 H 7 M 7 11 v 2 h 2 v -2 h -2";
@@ -73,11 +75,11 @@ public class TestListItemController {
         @Override
         protected Color computeValue() {
             return Optional.ofNullable(book.get())
-                    .map(BeanBook::getValidationResult)
-                    .map(Result::status)
-                    .orElse(TestValidationStatus.NOT_FOUND)
-                    .color()
-                    .jfx();
+                .map(BeanBook::getValidationResult)
+                .map(Result::status)
+                .orElse(TestValidationStatus.NOT_FOUND)
+                .color()
+                .jfx();
         }
     };
     /*public final ObjectBinding<Color> iconColor = new ObjectBinding<>() {
@@ -132,7 +134,9 @@ public class TestListItemController {
     public void setBook(Book book) throws IOException {
         this.book.set(new BeanBook(book));
         nameWidthWrapper.bind(new DoubleBinding() {
-            { bind(sidebarWidth, TestListItemController.this.book.get().validationResultProperty()); }
+            {
+                bind(sidebarWidth, TestListItemController.this.book.get().validationResultProperty());
+            }
 
             @Override
             protected double computeValue() {
@@ -154,8 +158,8 @@ public class TestListItemController {
                     chooser.setInitialDirectory(initialDir.toFile());
                 chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
                 Optional.ofNullable(chooser.showOpenDialog(node.getScene().getWindow()))
-                        .map(File::toPath)
-                        .ifPresent((ConsumerThrowsIOException<Path>) this.book.get()::setPath);
+                    .map(File::toPath)
+                    .ifPresent((ConsumerThrowsIOException<Path>) this.book.get()::setPath);
                 // bookPath.setText(p.getParent().toString() + File.separator);
                 // bookFileName.setText(p.getFileName().toString());
             });
@@ -169,16 +173,16 @@ public class TestListItemController {
                 dialog.setHeaderText(null);
                 dialog.setTitle("Rename Test");
                 dialog.showAndWait()
-                        .ifPresent(this.book.get()::setName);
+                    .ifPresent(this.book.get()::setName);
             });
             delete.setOnAction(e -> {
                 Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to remove test \"" + this.book.get().getName() + '"');
                 confirm.setHeaderText(null);
                 confirm.showAndWait()
-                        .ifPresent(b -> {
-                            if (b == ButtonType.OK)
-                                Books.removeBook(this.book.get().getName());
-                        });
+                    .ifPresent(b -> {
+                        if (b == ButtonType.OK)
+                            Books.removeBook(this.book.get().getName());
+                    });
             });
         }
         else {

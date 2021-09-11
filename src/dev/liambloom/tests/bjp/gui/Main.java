@@ -1,10 +1,10 @@
 package dev.liambloom.tests.bjp.gui;
 
-import dev.liambloom.tests.bjp.shared.*;
+import dev.liambloom.tests.bjp.shared.App;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.scene.layout.*;
+import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -35,17 +35,18 @@ public class Main extends Application {
         // FIXME: When the monitor size changes, the gui scaling doesn't change
         GridPane content;
         try {
-             content = FXMLLoader.load(Main.class.getClassLoader().getResource("views/Main.fxml"));
-        } catch (IOException e) {
+            content = FXMLLoader.load(Main.class.getClassLoader().getResource("views/Main.fxml"));
+        }
+        catch (IOException e) {
             e.printStackTrace();
             return;
         }
         Scene scene = new Scene(content);
         scene.getStylesheets().addAll(Stream.of("Main")
-                .map(s -> "css/" + s + ".css")
-                .map(Main.class.getClassLoader()::getResource)
-                .map(URL::toExternalForm)
-                .collect(Collectors.toList()));
+            .map(s -> "css/" + s + ".css")
+            .map(Main.class.getClassLoader()::getResource)
+            .map(URL::toExternalForm)
+            .collect(Collectors.toList()));
         scenes.add(scene);
         addColorSchemeStyles(scene);
 

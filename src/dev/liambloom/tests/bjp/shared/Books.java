@@ -19,7 +19,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public final class Books {
-    private Books() {}
+    private Books() {
+    }
 
     private static final Map<String, Book> loadedTests = Collections.synchronizedMap(new HashMap<>());
     private static final Lazy<Schema> schema = new Lazy<>(() -> {
@@ -28,7 +29,7 @@ public final class Books {
             factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
             // TODO: factory.setErrorHandler(ErrorHandler)
             return factory.newSchema(
-                    new StreamSource(App.class.getResourceAsStream("/book-tests.xsd")));
+                new StreamSource(App.class.getResourceAsStream("/book-tests.xsd")));
         }
         catch (SAXException e) {
             throw new RuntimeException(e);
@@ -44,7 +45,8 @@ public final class Books {
     private static final ResourcePool<DocumentBuilder> documentBuilderPool = new ResourcePool<>(() -> {
         try {
             return documentBuilderFactory.get().newDocumentBuilder();
-        } catch (ParserConfigurationException e) {
+        }
+        catch (ParserConfigurationException e) {
             throw new RuntimeException(e);
         }
     });
@@ -102,8 +104,8 @@ public final class Books {
 
     public static boolean bookNameExists(String name) {
         return loadedTests.containsKey(name)
-                || Optional.ofNullable(LOCAL_TEST_NAMES.get(name)).map(s -> "tests/" + s + ".xml").map(Book.class.getClassLoader()::getResource).isPresent()
-                || App.prefs().node("tests").get(name, null) != null;
+            || Optional.ofNullable(LOCAL_TEST_NAMES.get(name)).map(s -> "tests/" + s + ".xml").map(Book.class.getClassLoader()::getResource).isPresent()
+            || App.prefs().node("tests").get(name, null) != null;
     }
 
     public static void addBook(String name, Path p) throws IOException {
@@ -136,7 +138,7 @@ public final class Books {
         int size = index.getInt("size", 0);
         int i;
         for (i = 0; i < size; i++) {
-            if (index.get(Integer.toString(i), null).equals(name)){
+            if (index.get(Integer.toString(i), null).equals(name)) {
                 index.remove(Integer.toString(i));
                 break;
             }
@@ -166,13 +168,13 @@ public final class Books {
         Preferences index = getCustomTests().node("index");
 
         return Stream.concat(
-                LOCAL_TEST_NAMES.keySet().stream(),
-                IntStream.range(0, index.getInt("size", 0))
-                    .mapToObj(i -> index.get(Integer.toString(i), null))
-                    .filter(Objects::nonNull)
+            LOCAL_TEST_NAMES.keySet().stream(),
+            IntStream.range(0, index.getInt("size", 0))
+                .mapToObj(i -> index.get(Integer.toString(i), null))
+                .filter(Objects::nonNull)
                     /*.map(name -> getCustomTests().get(name, null))
                     .filter(Objects::nonNull)*/
         )
-                .map(Books::getBook);
+            .map(Books::getBook);
     }
 }

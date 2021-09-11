@@ -16,6 +16,6 @@ public interface BiConsumerThrowsIOException<T, U> extends BiConsumer<T, U> {
         }
     }
 
-     void acceptThrows(T t, U u) throws IOException;
+    void acceptThrows(T t, U u) throws IOException;
 }
 

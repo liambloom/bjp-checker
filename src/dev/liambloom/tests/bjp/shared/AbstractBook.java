@@ -39,42 +39,43 @@ public abstract class AbstractBook implements Book {
 
     private Stream<Element> elementOfType(Document document, String... types) {
         return Arrays.stream(types)
-                .map(document::getElementsByTagName)
-                .flatMap(Util::streamNodeList)
-                .map(Element.class::cast);
+            .map(document::getElementsByTagName)
+            .flatMap(Util::streamNodeList)
+            .map(Element.class::cast);
     }
 
     private Stream<ClassNotFoundException> checkDocumentTypes(Document document) {
         return Stream.of(
-                elementOfType(document, "parameter", "throws")
-                        .map(Node::getTextContent),
-                elementOfType(document, "Array", "ArrayList", "LinkedList", "TargetArrayList", "Stack", "HashSet", "TreeSet", "TargetTree")
-                        .map(e -> e.getAttribute("elementType")),
-                elementOfType(document, "HashMap", "TreeMap")
-                        .flatMap(e -> Stream.of("keyType", "valueType").map(e::getAttribute))
+            elementOfType(document, "parameter", "throws")
+                .map(Node::getTextContent),
+            elementOfType(document, "Array", "ArrayList", "LinkedList", "TargetArrayList", "Stack", "HashSet", "TreeSet", "TargetTree")
+                .map(e -> e.getAttribute("elementType")),
+            elementOfType(document, "HashMap", "TreeMap")
+                .flatMap(e -> Stream.of("keyType", "valueType").map(e::getAttribute))
         )
-                .flatMap(Function.identity())
-                .map(String::trim)
-                .map(type -> switch (type) {
-                    case "byte", "short", "int", "long", "float", "double", "boolean", "char", "this" -> null;
-                    default -> {
-                        try {
-                            Util.loadClass(new ClassLoader() {
-                                @Override
-                                protected Class<?> findClass(String name) throws ClassNotFoundException {
-                                    if (name.equals("this"))
-                                        return null;
-                                    else
-                                        throw new ClassNotFoundException(name);
-                                }
-                            }, type);
-                            yield null;
-                        } catch (ClassNotFoundException e) {
-                            yield e;
-                        }
+            .flatMap(Function.identity())
+            .map(String::trim)
+            .map(type -> switch (type) {
+                case "byte", "short", "int", "long", "float", "double", "boolean", "char", "this" -> null;
+                default -> {
+                    try {
+                        Util.loadClass(new ClassLoader() {
+                            @Override
+                            protected Class<?> findClass(String name) throws ClassNotFoundException {
+                                if (name.equals("this"))
+                                    return null;
+                                else
+                                    throw new ClassNotFoundException(name);
+                            }
+                        }, type);
+                        yield null;
                     }
-                })
-                .filter(Objects::nonNull);
+                    catch (ClassNotFoundException e) {
+                        yield e;
+                    }
+                }
+            })
+            .filter(Objects::nonNull);
     }
 
     @Override
@@ -87,7 +88,8 @@ public abstract class AbstractBook implements Book {
             try {
                 v.validate(new StreamSource(getInputStream()));
             }
-            catch (SAXException ignored) { }
+            catch (SAXException ignored) {
+            }
             finally {
                 Books.getValidatorPool().offer(v);
             }
@@ -97,13 +99,14 @@ public abstract class AbstractBook implements Book {
             try {
                 document = db.parse(getInputStream());
             }
-            catch (SAXException ignored) { }
+            catch (SAXException ignored) {
+            }
             finally {
                 Books.getDocumentBuilderPool().offer(db);
             }
             if (document != null) {
                 checkDocumentTypes(document)
-                        .forEachOrdered(handler::error);
+                    .forEachOrdered(handler::error);
             }
 
             if (handler.getMaxErrorKind() == null)
@@ -130,7 +133,7 @@ public abstract class AbstractBook implements Book {
             Books.getDocumentBuilderPool().offer(db);
         }
         Optional<ClassNotFoundException> e = checkDocumentTypes(r)
-                .findAny();
+            .findAny();
         if (e.isPresent())
             throw e.get();
         return r;
@@ -181,12 +184,12 @@ public abstract class AbstractBook implements Book {
                 message.deleteCharAt(message.length() - 1);
 
             return message.append(" at ")
-                    .append(AbstractBook.this instanceof PathBook pathBook ? pathBook.getPath() : getName())
-                    .append(':')
-                    .append(e.getLineNumber())
-                    .append(':')
-                    .append(e.getColumnNumber())
-                    .toString();
+                .append(AbstractBook.this instanceof PathBook pathBook ? pathBook.getPath() : getName())
+                .append(':')
+                .append(e.getLineNumber())
+                .append(':')
+                .append(e.getColumnNumber())
+                .toString();
         }
 
         public ByteArrayOutputStream getLogs() {

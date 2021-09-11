@@ -14,13 +14,14 @@ import java.util.stream.Stream;
  * This represents the arguments for the checking functionality of
  * this program, which can be found at {@link Checker#check(CheckArgs)}
  *
- * @param chapter The chapter to check, or {@code OptionalInt.empty()} to auto-detect.
- * @param exercises If (and only if) {@code exercises[i]} is true, then exercise {@code i + 1} will be run.
+ * @param chapter             The chapter to check, or {@code OptionalInt.empty()} to auto-detect.
+ * @param exercises           If (and only if) {@code exercises[i]} is true, then exercise {@code i + 1} will be run.
  * @param programmingProjects If (and only if) {@code programmingProjects[i]} is true, then programming project {@code i + 1} will be run.
- * @param tests The document containing the tests, which must follow the schema TODO: add link to schema
- * @param paths A stream of the paths for all .class and .jar files to check
+ * @param tests               The document containing the tests, which must follow the schema TODO: add link to schema
+ * @param paths               A stream of the paths for all .class and .jar files to check
  */
-public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] programmingProjects, Document tests, Stream<Path> paths) {
+public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] programmingProjects, Document tests,
+                        Stream<Path> paths) {
     private static final Pattern RANGED_NUM = Pattern.compile("(?:\\d+(?:-\\d+)?(?:,|$))+");
     public static final String DEFAULT_TEST_NAME = "bjp3";
 
@@ -28,7 +29,7 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
      * Constructs CheckArgs from string arguments, beginning
      * at argument {@code i}.
      *
-     * @param args The string arguments
+     * @param args  The string arguments
      * @param start The position of the first argument
      */
     public static CheckArgs fromCLIArgs(String[] args, int start) throws IOException, SAXException, ClassNotFoundException {
@@ -51,9 +52,10 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
                         throw new UserErrorException("Repeat argument: " + arg);
                     try {
                         chapter = OptionalInt.of(Integer.parseInt(Optional.ofNullable(argQ.poll()).orElseThrow(
-                                () -> new UserErrorException("Missing argument: expected a value after " + arg)
+                            () -> new UserErrorException("Missing argument: expected a value after " + arg)
                         )));
-                    } catch (NumberFormatException e) {
+                    }
+                    catch (NumberFormatException e) {
                         throw new UserErrorException(e);
                     }
                 }
@@ -116,7 +118,7 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
                 if (min > max || min <= 0)
                     throw new UserErrorException("Range " + s + " is invalid");
 
-                ranges.add(new int[]{min, max});
+                ranges.add(new int[]{ min, max });
             }
         }
 

@@ -1,6 +1,9 @@
 package dev.liambloom.tests.bjp.cli;
 
-import dev.liambloom.tests.bjp.shared.*;
+import dev.liambloom.tests.bjp.shared.App;
+import dev.liambloom.tests.bjp.shared.FunctionThrowsIOException;
+import dev.liambloom.tests.bjp.shared.LogKind;
+import dev.liambloom.tests.bjp.shared.UserErrorException;
 
 import java.io.File;
 import java.io.IOException;
@@ -79,9 +82,9 @@ public class Glob {
 
         public List<Path> files() throws IOException {
             List<Path> r = files(base, 0)
-                    .collect(Collectors.toList());
+                .collect(Collectors.toList());
             if (r.size() == 0) {
-                if (raw.contains(File.separator) && !raw.contains("/")){
+                if (raw.contains(File.separator) && !raw.contains("/")) {
                     r = new Piece(raw.replace(File.separatorChar, '/'), src).files();
                     //App.logger.log(LogKind.WARN, "Using \"\\\" instead of \"/\" is slower and does not support escaping");
                 }
@@ -106,7 +109,7 @@ public class Glob {
             if (segments.length == i)
                 // TODO: Check this. IDK if it properly handles links
                 return Files.walk(base, FileVisitOption.FOLLOW_LINKS)
-                        .filter(Files::isRegularFile);
+                    .filter(Files::isRegularFile);
             final String segment = segments[i];
             switch (segment) {
                 case ".":
@@ -149,8 +152,8 @@ public class Glob {
                                 if (builderPart.length() != 0) {
                                     literalParts.add(builderPart.toString());
                                     patternBuilder.append("\\Q")
-                                            .append(builderPart)
-                                            .append("\\E");
+                                        .append(builderPart)
+                                        .append("\\E");
                                     builderPart = new StringBuilder();
                                 }
                                 patternBuilder.append("([^/]");
@@ -166,9 +169,9 @@ public class Glob {
                             // FIXME: I can't alternate literalParts and captures because of this.
                             literalParts.add(builderPart + "E");
                             patternBuilder.append("\\Q")
-                                    .append(builderPart)
-                                    .append("\\E")
-                                    .append('E');
+                                .append(builderPart)
+                                .append("\\E")
+                                .append('E');
                             builderPart = new StringBuilder();
                         }
                         else
@@ -179,29 +182,28 @@ public class Glob {
                     if (builderPart.length() != 0) {
                         literalParts.add(builderPart.toString());
                         patternBuilder.append("\\Q")
-                                .append(builderPart)
-                                .append("\\E");
+                            .append(builderPart)
+                            .append("\\E");
                     }
                     // TODO: Test this
                     final Pattern patternCaseSensitive = Pattern.compile(patternBuilder.toString());
                     final Pattern patternCaseInsensitive = Pattern.compile(patternBuilder.toString(), Pattern.CASE_INSENSITIVE);
                     //@SuppressWarnings("ConstantConditions")
                     Stream<Path> r = Files.list(base)
-                            .filter(p -> {
-                                String name = p.getFileName().toString();
-                                Matcher matcher;
-                                if ((matcher = patternCaseSensitive.matcher(name)).matches()
-                                        || (matcher = patternCaseInsensitive.matcher(name)).matches())
-                                {
-                                    StringBuilder builder = new StringBuilder(name.length());
-                                    Iterator<String> groups = IntStream.range(1, matcher.groupCount() + 1).mapToObj(matcher::group).iterator();
-                                    for (String literalPart : literalParts)
-                                        builder.append(Optional.ofNullable(literalPart).orElseGet(groups::next));
-                                    return Files.exists(base.resolve(builder.toString()));
-                                }
-                                else
-                                    return false;
-                            });
+                        .filter(p -> {
+                            String name = p.getFileName().toString();
+                            Matcher matcher;
+                            if ((matcher = patternCaseSensitive.matcher(name)).matches()
+                                || (matcher = patternCaseInsensitive.matcher(name)).matches()) {
+                                StringBuilder builder = new StringBuilder(name.length());
+                                Iterator<String> groups = IntStream.range(1, matcher.groupCount() + 1).mapToObj(matcher::group).iterator();
+                                for (String literalPart : literalParts)
+                                    builder.append(Optional.ofNullable(literalPart).orElseGet(groups::next));
+                                return Files.exists(base.resolve(builder.toString()));
+                            }
+                            else
+                                return false;
+                        });
 
                     try {
                         if (i + 1 == segments.length) {
@@ -214,9 +216,9 @@ public class Glob {
                         }
                         else
                             r = r
-                                    .filter(Files::isDirectory)
-                                    .flatMap((FunctionThrowsIOException<Path, Stream<Path>>) (dir -> files(dir, i + 1)));
-                        }
+                                .filter(Files::isDirectory)
+                                .flatMap((FunctionThrowsIOException<Path, Stream<Path>>) (dir -> files(dir, i + 1)));
+                    }
                     catch (UncheckedIOException e) {
                         throw e.getCause();
                     }
@@ -250,12 +252,12 @@ public class Glob {
     public Stream<Path> files() throws IOException {
         try {
             return Arrays.stream(pieces)
-                    .unordered()
-                    .parallel()
-                    .map((FunctionThrowsIOException<Piece, List<Path>>) Piece::files)
-                    .flatMap(List::stream)
-                    .distinct()
-                    .sorted();
+                .unordered()
+                .parallel()
+                .map((FunctionThrowsIOException<Piece, List<Path>>) Piece::files)
+                .flatMap(List::stream)
+                .distinct()
+                .sorted();
         }
         catch (UncheckedIOException e) {
             throw e.getCause();

@@ -16,6 +16,4 @@ public class UserErrorException extends RuntimeException {
     public UserErrorException(Throwable cause) {
         super(cause);
     }
-
-
 }

@@ -1,12 +1,10 @@
 package dev.liambloom.tests.bjp.shared;
 
-import org.fusesource.jansi.Ansi;
-
 public enum Color {
     RED("31", javafx.scene.paint.Color.RED),
     GREEN("32", javafx.scene.paint.Color.GREEN),
     YELLOW("33", javafx.scene.paint.Color.YELLOW),
-//    BLUE("34", javafx.scene.paint.Color.BLUE),
+    //    BLUE("34", javafx.scene.paint.Color.BLUE),
     MAGENTA("35", javafx.scene.paint.Color.MEDIUMPURPLE),
     CYAN("36", javafx.scene.paint.Color.CYAN),
     GRAY("38;5;8", javafx.scene.paint.Color.GRAY),

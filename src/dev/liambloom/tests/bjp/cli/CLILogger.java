@@ -23,13 +23,13 @@ public class CLILogger implements Logger, Closeable {
     @Override
     public void log(LogKind logKind, String msg, Object... args) {
         out.printf("\u001b[%sm[%s]\u001b[0m ",
-                (switch (logKind) {
-                    case ERROR -> Color.RED;
-                    case WARN -> Color.YELLOW;
-                    case NOTICE ->  Color.CYAN;
-                    case OTHER -> Color.GRAY;
-                }).ansi(),
-                logKind.toString().toLowerCase());
+            (switch (logKind) {
+                case ERROR -> Color.RED;
+                case WARN -> Color.YELLOW;
+                case NOTICE -> Color.CYAN;
+                case OTHER -> Color.GRAY;
+            }).ansi(),
+            logKind.toString().toLowerCase());
         out.printf(msg, args);
         out.println();
     }

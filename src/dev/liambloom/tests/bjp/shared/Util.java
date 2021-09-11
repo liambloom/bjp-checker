@@ -3,18 +3,17 @@ package dev.liambloom.tests.bjp.shared;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import java.lang.reflect.*;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.lang.reflect.Executable;
+import java.lang.reflect.Member;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 final class Util {
-    private Util() {}
+    private Util() {
+    }
 
     private static final Pattern LINE_SEPARATOR = Pattern.compile("\\r|\\r?\\n");
 
@@ -25,15 +24,15 @@ final class Util {
 
     public static String executableToString(Executable e) {
         StringBuilder builder = new StringBuilder()
-                .append(e.getDeclaringClass().getName())
-                .append('.')
-                .append(e.getName())
-                .append('(');
+            .append(e.getDeclaringClass().getName())
+            .append('.')
+            .append(e.getName())
+            .append('(');
         Type[] args = e.getGenericParameterTypes();
         for (int i = 0; i < args.length; i++) {
             if (i + 1 == args.length && e.isVarArgs()) {
                 builder.append(args[i].getTypeName())
-                        .replace(builder.length() - 2, builder.length(), "...");
+                    .replace(builder.length() - 2, builder.length(), "...");
             }
             else
                 builder.append(args[i].getTypeName());
@@ -44,8 +43,8 @@ final class Util {
 
     public static Stream<Node> streamNodeList(NodeList nodeList) {
         return IntStream.range(0, nodeList.getLength())
-                .parallel()
-                .mapToObj(nodeList::item);
+            .parallel()
+            .mapToObj(nodeList::item);
     }
 
     public static String getAccessibilityModifierName(int modifier) {

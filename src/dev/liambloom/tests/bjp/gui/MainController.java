@@ -3,7 +3,10 @@ package dev.liambloom.tests.bjp.gui;
 import dev.liambloom.tests.bjp.shared.Book;
 import dev.liambloom.tests.bjp.shared.Books;
 import dev.liambloom.tests.bjp.shared.ConsumerThrowsIOException;
-import javafx.beans.property.*;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -29,8 +32,8 @@ public class MainController {
     public GridPane root;
     public VBox testList;
     public ToggleGroup testToggleGroup = new ToggleGroup();
-//    public static final double TEST_LIST_MARGIN = 5.0;
-//    public static final double LIST_BUTTON_SIZE = 16;
+    // public static final double TEST_LIST_MARGIN = 5.0;
+    // public static final double LIST_BUTTON_SIZE = 16;
 
     //public double getTestListMargin()
 
@@ -88,8 +91,8 @@ public class MainController {
             chooser.setTitle("Select Test File");
             chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML File", "*.xml"));
             Optional.ofNullable(fileInputValue.get())
-                    .map(File::getParentFile)
-                    .ifPresent(chooser::setInitialDirectory);
+                .map(File::getParentFile)
+                .ifPresent(chooser::setInitialDirectory);
             File f = chooser.showOpenDialog(dialog.getOwner());
             if (f != null)
                 fileInputValue.set(f);
@@ -105,10 +108,10 @@ public class MainController {
         });
 
         dialog.showAndWait()
-                .ifPresent((ConsumerThrowsIOException<Pair<String, File>>) (pair -> {
-                    Books.addBook(pair.getKey(), pair.getValue().toPath());
-                    addTests(Books.getBook(pair.getKey()));
-                }));
+            .ifPresent((ConsumerThrowsIOException<Pair<String, File>>) (pair -> {
+                Books.addBook(pair.getKey(), pair.getValue().toPath());
+                addTests(Books.getBook(pair.getKey()));
+            }));
     }
 
     private void addTests(Book book) throws IOException {
@@ -132,7 +135,7 @@ public class MainController {
     public void initialize() throws IOException {
         try {
             Books.getAllBooks()
-                    .forEachOrdered((ConsumerThrowsIOException<Book>) this::addTests);
+                .forEachOrdered((ConsumerThrowsIOException<Book>) this::addTests);
             if (testToggleGroup.getSelectedToggle() == null)
                 ((Toggle) ((Parent) testList.getChildren().get(1)).getChildrenUnmodifiable().get(0)).setSelected(true);
         }

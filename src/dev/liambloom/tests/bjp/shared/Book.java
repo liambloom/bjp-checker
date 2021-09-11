@@ -29,10 +29,10 @@ public interface Book {
      * the document is not valid.
      *
      * @return The document represented by this book
-     * @throws IOException If an i/o error occurs
-     * @throws SAXException If the document is not valid XML or does not follow the schema
+     * @throws IOException            If an i/o error occurs
+     * @throws SAXException           If the document is not valid XML or does not follow the schema
      * @throws ClassNotFoundException If the document references a class that does not exist
-     * @throws IllegalStateException If the book does not exist
+     * @throws IllegalStateException  If the book does not exist
      * @see Books#getSchema()
      * @see #validate()
      * @see #exists()
