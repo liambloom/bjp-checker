@@ -45,7 +45,7 @@ public final class PathClassLoader extends ClassLoader {
         }
     }
 
-    public Stream<Class<?>> loadAllClasses() {
+    public Stream<Class<?>> loadAllOwnClasses() {
         return classes.values()
                 .stream()
                 .map(c -> c.get(null));
@@ -66,7 +66,9 @@ public final class PathClassLoader extends ClassLoader {
             }
             catch (NoClassDefFoundError ignored) {}
         }
-        return r == null ? super.findClass(name) : r;
+        if (r == null)
+            throw new ClassNotFoundException(name);
+        return r;
     }
 
     private class LazyClass {

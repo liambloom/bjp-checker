@@ -56,10 +56,18 @@ public abstract class AbstractBook implements Book {
                 .flatMap(Function.identity())
                 .map(String::trim)
                 .map(type -> switch (type) {
-                    case "byte", "short", "int", "long", "float", "double", "boolean", "char" -> null;
+                    case "byte", "short", "int", "long", "float", "double", "boolean", "char", "this" -> null;
                     default -> {
                         try {
-                            getClass().getClassLoader().loadClass(type);
+                            Util.loadClass(new ClassLoader() {
+                                @Override
+                                protected Class<?> findClass(String name) throws ClassNotFoundException {
+                                    if (name.equals("this"))
+                                        return null;
+                                    else
+                                        throw new ClassNotFoundException(name);
+                                }
+                            }, type);
                             yield null;
                         } catch (ClassNotFoundException e) {
                             yield e;

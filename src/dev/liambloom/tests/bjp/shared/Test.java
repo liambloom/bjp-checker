@@ -8,16 +8,15 @@ import org.w3c.dom.NodeList;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
-import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -47,7 +46,7 @@ public interface Test {
                                 return Test.streamFromStaticExecutable(name, method, targets, testGroup);
                             }
                             else {
-                                // TODO
+
                             }
                         }
                         case "constructor" -> {
@@ -93,9 +92,9 @@ public interface Test {
             return Stream.of(Test.withFixedResult(new Result(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
         }
         XPath xpath = Checker.getXPathPool().get();
-        NodeList expectedParams;
+        NodeList expectedParamNodes;
         try {
-            expectedParams = (NodeList) xpath.evaluate("parameters/parameter", node, XPathConstants.NODESET);
+            expectedParamNodes = (NodeList) xpath.evaluate("parameters/parameter", node, XPathConstants.NODESET);
         }
         catch (XPathExpressionException e) {
             throw new RuntimeException(e);
@@ -103,23 +102,39 @@ public interface Test {
         finally {
             Checker.getXPathPool().offer(xpath);
         }
-        Class<?>[] params = executable.getParameterTypes();
-        boolean isCorrectParams = true;
-        if (params.length == expectedParams.getLength() || executable.isVarArgs() && expectedParams.getLength() >= params.length - 1) {
-            for (int i = 0; i < expectedParams.getLength(); i++) {
-                Class<?> clazz = i >= params.length - 1 && executable.isVarArgs() ? params[i].componentType() : params[i];
-                try {
-                    if (!clazz.isAssignableFrom(Test.class.getClassLoader().loadClass(expectedParams.item(i).getTextContent().trim()))) {
-                        isCorrectParams = false;
-                        break;
+        Class<?>[] params = MethodType.methodType(void.class, executable.getParameterTypes()).wrap().parameterArray();
+        Class<?>[] expectedParams = MethodType.methodType(void.class, Util.streamNodeList(expectedParamNodes)
+                .map(Node::getTextContent)
+                .map(String::trim)
+                .map(n -> {
+                    try {
+                        return Util.loadClass(new ClassLoader() {
+                            @Override
+                            protected Class<?> findClass(String name) throws ClassNotFoundException {
+                                if (name.equals("this"))
+                                    return executable.getDeclaringClass();
+                                else
+                                    throw new ClassNotFoundException(name);
+                            }
+                        }, n);
                     }
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException("This should have been caught earlier", e);
-                }
+                    catch (ClassNotFoundException e) {
+                        throw new IllegalArgumentException("Invalid document passed into Test.streamFromStaticExecutable", e);
+                    }
+                })
+                .collect(Collectors.toList())
+        )
+                .wrap()
+                .parameterArray();
+        boolean isCorrectParams = false;
+        if (params.length == expectedParams.length || executable.isVarArgs() && expectedParams.length >= params.length - 1) {
+            for (int i = 0; i < expectedParams.length; i++) {
+                if (!(isCorrectParams = i < params.length && params[i].isAssignableFrom(expectedParams[i])
+                        && (i != params.length - 1 || executable.isVarArgs() && params.length == expectedParams.length)
+                        || executable.isVarArgs() && i >= params.length - 1 && params[params.length - 1].getComponentType().isAssignableFrom(expectedParams[i])))
+                    break;
             }
         }
-        else
-            isCorrectParams = false;
 
         if (isCorrectParams) {
             NodeList tests;
@@ -129,7 +144,7 @@ public interface Test {
                 throw new RuntimeException(e);
             }
             return IntStream.range(0, tests.getLength())
-                    .mapToObj(i -> Test.executableTest("Test " + i, executable, targets, tests.item(i)));
+                    .mapToObj(i -> Test.staticExecutableTest("Test " + i, executable, targets, tests.item(i)));
         }
         else {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -138,7 +153,7 @@ public interface Test {
                             + ' '
                             + Util.executableToString(executable)
                             + " was detected, but did not have the expected parameters ("
-                            + Util.streamNodeList(expectedParams)
+                            + Util.streamNodeList(expectedParamNodes)
                             .map(Node::getTextContent)
                             .collect(Collectors.joining(", "))
                             + ')');
@@ -146,8 +161,17 @@ public interface Test {
         }
     }
 
-    static Test executableTest(String name, Executable executable, Targets targets, Node test) {
-        return null;
+    static Test staticExecutableTest(String name, Executable executable, Targets targets, Node test) {
+        InputStream in;
+        Object[] args;
+        int i = 0;
+        NodeList children = test.getChildNodes();
+        in = ((Element) children.item(i)).getTagName().equals("System.in")
+                ? new ByteArrayInputStream(children.item(i++).getTextContent().getBytes())
+                : InputStream.nullInputStream();
+        if (((Element) children.item(i)).getTagName().equals("this")) // TODO: Update Schema
+            throw new IllegalArgumentException("Element <this> invalid in top level method");
+        if ()
     }
 
 //    static Test

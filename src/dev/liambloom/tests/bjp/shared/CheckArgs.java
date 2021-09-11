@@ -123,7 +123,7 @@ public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] prog
         if (ranges.isEmpty())
             throw new UserErrorException("Missing argument: expected value(s) after " + name);
 
-        boolean[] nums = new boolean[absMax];
+        boolean[] nums = new boolean[absMax + 1];
 
         for (int[] range : ranges) {
             for (int j = range[0]; j <= range[1]; j++) {

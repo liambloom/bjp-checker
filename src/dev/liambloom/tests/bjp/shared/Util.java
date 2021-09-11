@@ -4,7 +4,12 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.lang.reflect.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -12,6 +17,7 @@ final class Util {
     private Util() {}
 
     private static final Pattern LINE_SEPARATOR = Pattern.compile("\\r|\\r?\\n");
+
 
     public static String normalizeLineSeparators(String s) {
         return LINE_SEPARATOR.matcher(s).replaceAll(System.lineSeparator());
@@ -55,5 +61,33 @@ final class Util {
 
     public static String getAccessibilityModifierName(Member m) {
         return getAccessibilityModifierName(m.getModifiers());
+    }
+
+    public static Class<?> loadClass(String name) throws ClassNotFoundException {
+        return loadClass(ClassLoader.getSystemClassLoader(), name);
+    }
+
+    public static Class<?> loadClass(ClassLoader loader, String name) throws ClassNotFoundException {
+        int arrayDepth = 0;
+        StringBuilder componentName = new StringBuilder(name);
+        componentName.trimToSize();
+        while (componentName.length() > 2 && componentName.charAt(componentName.length() - 2) == '[' && componentName.charAt(componentName.length() - 1) == ']') {
+            arrayDepth++;
+            componentName.delete(componentName.length() - 2, componentName.length());
+        }
+        Class<?> clazz = switch (name) {
+            case "byte" -> byte.class;
+            case "short" -> short.class;
+            case "int" -> int.class;
+            case "long" -> long.class;
+            case "float" -> float.class;
+            case "double" -> double.class;
+            case "boolean" -> boolean.class;
+            case "char" -> char.class;
+            default -> loader.loadClass(name);
+        };
+        for (int i = 0; i < arrayDepth; i++)
+            clazz = clazz.arrayType();
+        return clazz;
     }
 }

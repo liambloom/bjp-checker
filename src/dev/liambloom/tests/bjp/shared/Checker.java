@@ -30,13 +30,12 @@ public final class Checker {
         return xPathPool;
     }
 
-    public static Stream<Result> check(CheckArgs args)
-            throws IOException, XPathExpressionException {
+    public static Stream<Result> check(CheckArgs args) throws XPathExpressionException {
         List<Class<?>> classes;
         int chapter;
         try {
             AtomicInteger detectedChapter = new AtomicInteger(-1);
-            classes = new PathClassLoader(args.paths()).loadAllClasses()
+            classes = new PathClassLoader(args.paths()).loadAllOwnClasses()
                     .filter(clazz -> {
                         Chapter ch = clazz.getAnnotation(Chapter.class);
                         if (ch == null)
@@ -45,13 +44,15 @@ public final class Checker {
                             return ch.value() == args.chapter().getAsInt();
                         }
                         else if (detectedChapter.updateAndGet(c -> c == -1 ? ch.value() : c) != ch.value())
+                            // FIXME: This doesn't seem to be being thrown
                             throw new UserErrorException("Cannot auto detect chapter, as classes belonging to chapters " + ch.value() + " and " + detectedChapter + " were found");
                         return true;
                     })
                     .collect(Collectors.toList());
+            System.out.println();
             chapter = args.chapter().orElseGet(detectedChapter::get);
         }
-        catch (LinkageError e) {
+        catch (LinkageError | IOException e) {
             throw new UserErrorException(e);
         }
 
@@ -75,7 +76,7 @@ public final class Checker {
             targets = new Targets[initWhich.length];
             for (int i = 0; i < initWhich.length; i++) {
                 if (initWhich[i])
-                    targets[i] = (Targets) Collections.synchronizedSet(new Targets());
+                    targets[i] = (Targets) Collections.synchronizedSet(new Targets()); // FIXME: This is nonsense
             }
             Method m;
             try {
