@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>dev.liambloom.checker.bjp</groupId>
+    <artifactId>bjp-checker</artifactId>
+    <version>0.1.137</version>
+  </parent>
+
+  <artifactId>bjp-checker-api</artifactId>
+  <packaging>jar</packaging>
+
+  <name>Checker for BJP (API)</name>
+  <url>https://checker.liambloom.dev/bjp</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>16</maven.compiler.release>
+  </properties>
+
+<!--  <repositories>-->
+<!--    <repository>-->
+<!--      <id>kepler</id>-->
+<!--      <layout>p2</layout>-->
+<!--      <url>http://download.eclipse.org/releases/kepler/201306260900</url>-->
+<!--    </repository>-->
+<!--  </repositories>-->
+
+  <dependencies>
+    <!-- TODO: I'm not sure if this will work -->
+    <dependency>
+      <groupId>xerces</groupId>
+      <artifactId>xercesImpl</artifactId>
+      <version>2.12.1</version>
+
+      <exclusions>
+        <exclusion>
+          <groupId>xml-apis</groupId>
+          <artifactId>xml-apis</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>xml-resolver</groupId>
+      <artifactId>xml-resolver</artifactId>
+      <version>1.2</version>
+    </dependency>
+    <!--<dependency>
+      <groupId>osgi.bundle</groupId>
+      <artifactId>org.eclipse.wst.xml.xpath2.processor</artifactId>
+      <version>2.1.100.v201211261519</version>
+    </dependency>-->
+  </dependencies>
+
+  <build>
+<!--    <extensions>-->
+<!--      <extension>-->
+<!--        <groupId>com.github.veithen.cosmos</groupId>-->
+<!--        <artifactId>p2-maven-connector</artifactId>-->
+<!--        <version>0.3</version>-->
+<!--      </extension>-->
+<!--    </extensions>-->
+    <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
+      <plugins>
+        <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
+        <plugin>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>3.1.0</version>
+        </plugin>
+        <!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
+        <plugin>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>3.0.2</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.8.0</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.22.1</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.0.2</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>2.5.2</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.8.2</version>
+        </plugin>
+        <!-- site lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#site_Lifecycle -->
+        <plugin>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.7.1</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-project-info-reports-plugin</artifactId>
+          <version>3.0.0</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

@@ -1,0 +1,12 @@
+usage: checker check <glob> <args>
+
+   -c, --chapter               The chapter number to check; takes one argument
+   -e, --exercise,             The exercise number(s) to check; takes one or
+      --exercises                   more arguments
+   --pp,                       The programming project(s) to check; takes one or
+      --programming-projects       more arguments
+      --programmingProjects
+   -t, --tests                 The tests to use; takes one arguments;
+                                   default 'bjp3'
+
+For help with glob formatting, run `checker glob --help`

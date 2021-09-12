@@ -1,0 +1,51 @@
+.root {
+    -fx-background-color: -fx-theme-background;
+}
+
+.titleShape {
+    -fx-fill: -fx-theme-title;
+}
+
+Button {
+    padding: 0;
+}
+
+#testList {
+    -fx-background-color: -fx-theme-alt-background;
+}
+
+#testListTitle {
+    -fx-text-fill: -fx-theme-title;
+    -fx-font-weight: bold;
+    -fx-font-family: Arial;
+    -fx-font-size: 12;
+}
+
+.testListMenuButton {
+    -fx-background-color: -fx-theme-alt-background;
+    -fx-background-radius: 2;
+    -fx-min-width: 16;
+    -fx-max-width: 16;
+    -fx-min-height: 16;
+    -fx-max-height: 16;
+    -fx-padding: 0;
+    /* -fx-insets: empty; */
+}
+
+.testListItem {
+    -fx-border-color: -fx-theme-title;
+    -fx-border-style: dotted;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-insets: 0 0 -1 0;
+    -fx-padding: 0 0 5 0;
+}
+
+#firstTestListItem {
+    -fx-border-width: 1 0 1 0;
+}
+
+.foo {
+    -fx-border-color: blue;
+    -fx-border-style: solid;
+    -fx-border-width: 1 1 1 1;
+}

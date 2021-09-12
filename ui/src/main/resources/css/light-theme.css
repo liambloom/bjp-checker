@@ -1,0 +1,12 @@
+* {
+    -fx-theme-background: white;
+    -fx-theme-foreground: black;
+    -fx-theme-alt-background: #d9d9d9;
+    -fx-theme-title: #595959;
+    -fx-theme-sub-title: #737373;
+    -fx-theme-grayscale-icon: #b3b3b3;
+}
+
+.hoverable:hover {
+    -fx-theme-alt-background: #bfbfbf;
+}

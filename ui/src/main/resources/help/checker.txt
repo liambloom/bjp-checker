@@ -1,0 +1,9 @@
+usage: checker [-v | --version] [-h | --help] <command> [<args>]
+
+Commands:
+   check             Checks programs
+   submit            Submits programs
+   validate          Validates tests
+   results           Prints existing results
+
+For help with a particular command, run `checker <command> --help'
