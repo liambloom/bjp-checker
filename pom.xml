@@ -7,7 +7,7 @@
     <groupId>dev.liambloom.checker.bjp</groupId>
     <artifactId>bjp-checker</artifactId>
     <packaging>pom</packaging>
-    <version>0.1.137</version>
+    <version>0.1.139</version>
 
     <name>Checker for BJP</name>
     <url>https://checker.liambloom.dev/bjp</url>
@@ -20,15 +20,10 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>16</maven.compiler.release>
+        <main.basedir>${project.basedir}</main.basedir>
     </properties>
 
     <dependencies>
-        <!--<dependency>
-          <groupId>junit</groupId>
-          <artifactId>junit</artifactId>
-          <version>4.11</version>
-          <scope>test</scope>
-        </dependency>-->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-graphics</artifactId>

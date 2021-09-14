@@ -7,7 +7,7 @@
   <parent>
     <groupId>dev.liambloom.checker.bjp</groupId>
     <artifactId>bjp-checker</artifactId>
-    <version>0.1.137</version>
+    <version>0.1.139</version>
   </parent>
 
   <artifactId>bjp-checker-api</artifactId>
@@ -21,48 +21,30 @@
     <maven.compiler.release>16</maven.compiler.release>
   </properties>
 
-<!--  <repositories>-->
-<!--    <repository>-->
-<!--      <id>kepler</id>-->
-<!--      <layout>p2</layout>-->
-<!--      <url>http://download.eclipse.org/releases/kepler/201306260900</url>-->
-<!--    </repository>-->
-<!--  </repositories>-->
+  <repositories>
+    <repository>
+      <id>lib</id>
+      <name>lib</name>
+      <url>file:///${project.basedir}/../lib</url>
+      <releases>
+        <enabled>true</enabled>
+        <checksumPolicy>ignore</checksumPolicy>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
 
   <dependencies>
-    <!-- TODO: I'm not sure if this will work -->
     <dependency>
       <groupId>xerces</groupId>
-      <artifactId>xercesImpl</artifactId>
+      <artifactId>xercesImpl-XSD-1.1</artifactId>
       <version>2.12.1</version>
-
-      <exclusions>
-        <exclusion>
-          <groupId>xml-apis</groupId>
-          <artifactId>xml-apis</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
-    <dependency>
-      <groupId>xml-resolver</groupId>
-      <artifactId>xml-resolver</artifactId>
-      <version>1.2</version>
-    </dependency>
-    <!--<dependency>
-      <groupId>osgi.bundle</groupId>
-      <artifactId>org.eclipse.wst.xml.xpath2.processor</artifactId>
-      <version>2.1.100.v201211261519</version>
-    </dependency>-->
   </dependencies>
 
   <build>
-<!--    <extensions>-->
-<!--      <extension>-->
-<!--        <groupId>com.github.veithen.cosmos</groupId>-->
-<!--        <artifactId>p2-maven-connector</artifactId>-->
-<!--        <version>0.3</version>-->
-<!--      </extension>-->
-<!--    </extensions>-->
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
       <plugins>
         <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->

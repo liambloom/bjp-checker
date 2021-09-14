@@ -7,12 +7,11 @@
   <parent>
     <groupId>dev.liambloom.checker.bjp</groupId>
     <artifactId>bjp-checker</artifactId>
-    <version>0.1.137</version>
+    <version>0.1.139</version>
   </parent>
   <artifactId>bjp-checker-ui</artifactId>
 
   <name>Checker for BJP (UI)</name>
-  <!-- FIXME change it to the project's website -->
   <url>https://checker.liambloom.dev/bjp</url>
 
   <properties>
@@ -24,7 +23,7 @@
     <dependency>
       <groupId>dev.liambloom.checker.bjp</groupId>
       <artifactId>bjp-checker-api</artifactId>
-      <version>0.1.137</version>
+      <version>0.1.139</version>
     </dependency>
     <dependency>
       <groupId>org.openjfx</groupId>
@@ -46,6 +45,27 @@
   <build>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
       <plugins>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>3.0.0</version>
+          <executions>
+            <execution>
+              <id>gui</id>
+              <configuration>
+                <mainClass>dev.liambloom.checker.bjp.gui.Main</mainClass>
+                <cleanupDaemonThreads>false</cleanupDaemonThreads>
+              </configuration>
+            </execution>
+            <execution>
+              <id>cli</id>
+              <configuration>
+                <mainClass>dev.liambloom.checker.bjp.cli.Main</mainClass>
+                <cleanupDaemonThreads>false</cleanupDaemonThreads>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
         <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
