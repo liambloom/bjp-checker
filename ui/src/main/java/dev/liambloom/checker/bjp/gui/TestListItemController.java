@@ -1,6 +1,7 @@
 package dev.liambloom.checker.bjp.gui;
 
 import dev.liambloom.checker.bjp.api.*;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.binding.StringBinding;
@@ -197,7 +198,28 @@ public class TestListItemController {
 //            System.out.println(foo.getText());
 //            System.out.println(foo.textProperty());
 //        });
-        toggle.disableProperty().bind(this.book.get().existsProperty().not()); // TODO: I can't run tests that don't pass
+        toggle.disableProperty().bind(
+            new BooleanBinding() {
+                {
+                    bind(TestListItemController.this.book, TestListItemController.this.getBook().validationResultProperty());
+                    TestListItemController.this.book.addListener((observable, oldValue, newValue) -> {
+                        if (oldValue != null)
+                            unbind(oldValue.validationResultProperty());
+                        bind(newValue.validationResultProperty());
+                    });
+                }
+
+                @Override
+                protected boolean computeValue() {
+                    return Optional.ofNullable(TestListItemController.this.getBook())
+                        .map(BeanBook::getValidationResult)
+                        .map(Result::status)
+                        .map(TestValidationStatus.class::cast)
+                        .orElse(TestValidationStatus.NOT_FOUND)
+                        .compareTo(TestValidationStatus.NOT_FOUND) >= 0;
+                }
+            }
+        );
         toggle.disableProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue && toggle.isSelected()) {
                 toggle.setSelected(false);

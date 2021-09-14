@@ -115,7 +115,6 @@ public class MainController {
     }
 
     private void addTests(Book book) throws IOException {
-        // TODO: Do I need to add the stylesheet?
         FXMLLoader loader = new FXMLLoader(getClass().getClassLoader().getResource("views/TestListItem.fxml"));
 //        loader.getNamespace().put("TEST_LIST_MARGIN", TEST_LIST_MARGIN);
         Parent node = loader.load();
@@ -136,7 +135,7 @@ public class MainController {
         try {
             Books.getAllBooks()
                 .forEachOrdered((ConsumerThrowsIOException<Book>) this::addTests);
-            if (testToggleGroup.getSelectedToggle() == null)
+            if (testToggleGroup.getSelectedToggle() == null || ((Control) testToggleGroup.getSelectedToggle()).isDisabled())
                 ((Toggle) ((Parent) testList.getChildren().get(1)).getChildrenUnmodifiable().get(0)).setSelected(true);
         }
         catch (UncheckedIOException e) {

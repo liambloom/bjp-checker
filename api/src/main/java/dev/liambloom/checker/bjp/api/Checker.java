@@ -47,9 +47,9 @@ public final class Checker {
                     else if (args.chapter().isPresent()) {
                         return ch.value() == args.chapter().getAsInt();
                     }
-                    else if (detectedChapter.updateAndGet(c -> c == -1 ? ch.value() : c) != ch.value())
-                        // FIXME: This doesn't seem to be being thrown
+                    else if (detectedChapter.compareAndExchange(-1, ch.value()) != ch.value())
                         throw new UserErrorException("Cannot auto detect chapter, as classes belonging to chapters " + ch.value() + " and " + detectedChapter + " were found");
+                    System.out.println(ch);
                     return true;
                 })
                 .collect(Collectors.toList());
@@ -80,7 +80,7 @@ public final class Checker {
             targets = new Targets[initWhich.length];
             for (int i = 0; i < initWhich.length; i++) {
                 if (initWhich[i])
-                    targets[i] = (Targets) Collections.synchronizedSet(new Targets()); // FIXME: This is nonsense
+                    targets[i] = new Targets();
             }
             Method m;
             try {

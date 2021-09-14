@@ -11,6 +11,10 @@
 
     <name>Checker for BJP</name>
     <url>https://checker.liambloom.dev/bjp</url>
+    <issueManagement>
+        <system>Github</system>
+        <url>https://github.com/liambloom/bjp-checker/issues</url>
+    </issueManagement>
 
     <modules>
         <module>api</module>

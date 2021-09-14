@@ -24,7 +24,6 @@ public final class App {
         if (logKind == LogKind.ERROR)
             throw new UserErrorException(String.format(msg, args));
     };
-    // TODO: Use logger more & better
     public final static Logger logger = (logKind, msg, args) -> innerLogger.log(logKind, msg, args);
 
     public static Path here() {
@@ -52,15 +51,6 @@ public final class App {
     public static void setLogger(Logger logger) {
         App.innerLogger = logger;
     }
-
-    // TODO: Use this somewhere
-    /*public static void checkTests() throws IOException {
-        for (Path p : Files.exists(App.testBase()) ? Files.newDirectoryStream(App.testBase()) : Collections.<Path>emptyList()) {
-            p = p.toRealPath();
-            if (Files.isDirectory(p) || !p.toString().endsWith(".xml"))
-                logger.log(Logger.LogKind.WARN, "Expected xml file, found `%s' in tests", p.toString());
-        }
-    }*/
 
     public static void createLogFile(Throwable err) throws IOException {
         final Path log = here().resolve("logs").resolve(DateTimeFormatter.ofPattern("uuuu-MM-dd-HH-mm-ss").format(LocalDateTime.now()) + ".log");

@@ -27,7 +27,6 @@ public final class Books {
         try {
             SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1");
             factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
-            // TODO: factory.setErrorHandler(ErrorHandler)
             return factory.newSchema(
                 new StreamSource(App.class.getResourceAsStream("/book-tests.xsd")));
         }

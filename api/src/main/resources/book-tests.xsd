@@ -120,8 +120,6 @@
 
     <xs:complexType name="classType">
         <xs:choice maxOccurs="unbounded">
-            <!-- TODO: Add modifiers -->
-            <!-- ~~There needs to be a way of specifying static or not~~ no there doesn't -->
             <xs:element name="method" type="methodType">
                 <!-- Methods (and tests) are different in a class -->
                 <xs:unique name="methodUnique">
@@ -217,11 +215,17 @@
 
     <xs:complexType name="printType">
         <xs:simpleContent>
-            <xs:extension base="xs:string">
+            <xs:extension base="preString">
                 <xs:attribute name="repeated" type="xs:int" default="1" />
             </xs:extension>
         </xs:simpleContent>
     </xs:complexType>
+
+    <xs:simpleType name="preString">
+        <xs:restriction base="xs:string">
+            <xs:whiteSpace value="preserve" />
+        </xs:restriction>
+    </xs:simpleType>
 
     <xs:complexType name="postType">
         <xs:choice>
@@ -255,7 +259,6 @@
         <xs:sequence>
             <!-- Type can be inferred from parameter type -->
             <!-- Create a method to get the value (using reflection) -->
-            <!-- TODO: Why is argument type string -->
             <!-- This should contain a <pre> and <post> -->
 
             <!-- <xs:element name="argument" type="xs:string" /> -->
@@ -320,7 +323,8 @@
             <!-- Regex for java type: (?!\.)(?:(?:^|\.)[a-zA-Z$_][a-zA-Z0-9$_]*)+(?:\[\])* -->
             <!-- This additionally support the target type (supported with "@target"), a type in the target package ("@target.package"),
                 and distinctly marks primitives using a dollar sign "$primitiveType" -->
-            <xs:pattern value="((byte|short|int|long|float|double|char|boolean)|^(@target(\.package)?)?((^|\.)[a-zA-Z$_][a-zA-Z0-9$_]*)+)(\[\])*" /> <!-- FIXME (?:\$(?:byte|short|int|long|float|double|char|boolean)|(?!\.)(?:@target(?:\.package)?)?(?:(?:^|\.)[a-zA-Z$_][a-zA-Z0-9$_]*)+)(?:\[\])* -->
+            <!-- Can be any system class, primitive class, or "this" -->
+            <xs:pattern value="((^|\.)[a-zA-Z$_][a-zA-Z0-9$_]*)+(\[\])*" /> <!-- (?:\$(?:byte|short|int|long|float|double|char|boolean)|(?!\.)(?:@target(?:\.package)?)?(?:(?:^|\.)[a-zA-Z$_][a-zA-Z0-9$_]*)+)(?:\[\])* -->
         </xs:restriction>
     </xs:simpleType>
 

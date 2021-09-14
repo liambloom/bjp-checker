@@ -3,7 +3,6 @@ package dev.liambloom.checker.bjp.api;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-// TODO: use this
 public class Lazy<T> implements Supplier<T> {
     private final Supplier<T> init;
     private T value = null;

@@ -173,8 +173,7 @@ public abstract class AbstractBook implements Book {
         public void fatalError(SAXParseException exception) {
             if (maxErrorKind != LogKind.ERROR)
                 maxErrorKind = LogKind.ERROR;
-            logger.log(LogKind.ERROR, getMessage(exception));
-            // TODO: Maybe log something that indicates parsing stopped here?
+            logger.log(LogKind.ERROR, "fatal: " + getMessage(exception));
         }
 
         private String getMessage(SAXParseException e) {

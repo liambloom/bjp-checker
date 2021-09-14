@@ -107,7 +107,6 @@ public class Glob {
         private Stream<Path> files(Path base, int i) throws IOException {
             assert Files.isDirectory(base);
             if (segments.length == i)
-                // TODO: Check this. IDK if it properly handles links
                 return Files.walk(base, FileVisitOption.FOLLOW_LINKS)
                     .filter(Files::isRegularFile);
             final String segment = segments[i];
@@ -134,7 +133,6 @@ public class Glob {
                     else
                         return files(base, i + 1);
                 default:
-                    // TODO: This can (and should) use Pattern.quote()
                     List<String> literalParts = new ArrayList<>();
                     StringBuilder patternBuilder = new StringBuilder();
                     StringBuilder builderPart = new StringBuilder();
@@ -185,7 +183,6 @@ public class Glob {
                             .append(builderPart)
                             .append("\\E");
                     }
-                    // TODO: Test this
                     final Pattern patternCaseSensitive = Pattern.compile(patternBuilder.toString());
                     final Pattern patternCaseInsensitive = Pattern.compile(patternBuilder.toString(), Pattern.CASE_INSENSITIVE);
                     //@SuppressWarnings("ConstantConditions")

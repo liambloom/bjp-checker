@@ -126,8 +126,6 @@ public class Main extends Application {
 //        testList.backgroundProperty().bind(new BackgroundBinding(ColorSchemeManager.getAltBackgroundProperty()));
 //        testList.minHeightProperty().bind(pane.heightProperty());
 //
-//        // TODO: add a way to select a test
-//        // TODO: show test validation results
 //        ToggleGroup selectedTest = new ToggleGroup();
 //        List<Label> books = Book.getAllTests()
 //                .map(GUI::testNode)
@@ -228,7 +226,7 @@ public class Main extends Application {
 //        chooserDisplay.scaleXProperty().bind(chooserDisplayScale);
 //        chooserDisplay.scaleYProperty().bind(chooserDisplayScale);
 //        chooserDisplay.maxWidthProperty().bind(pane.widthProperty().subtract(sidebarWidth));
-//        chooserDisplay.minWidthProperty().bind(chooserDisplayScale.multiply(FOLDER_IMG_WIDTH * 2 - 450)); // TODO: This could be a constant
+//        chooserDisplay.minWidthProperty().bind(chooserDisplayScale.multiply(FOLDER_IMG_WIDTH * 2 - 450))
 //        //chooserDisplay.minWidthProperty().bind(chooserDisplayScale.add(selectProjectText.hei)); // .multiply(FOLDER_IMG_HEIGHT)
 //
 //        MenuBar menuBar = new MenuBar();

@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-// FIXME: The Result system is very convoluted not very good, I should improve it
 public record Result(String name, Status status, Optional<ByteArrayOutputStream> console, List<Result> subResults) {
     public Result(String name, Status status, @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<ByteArrayOutputStream> console) {
         this(name, status, console, Collections.emptyList());
