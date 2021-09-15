@@ -1,40 +1,23 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>dev.liambloom.checker.bjp</groupId>
-    <artifactId>bjp-checker</artifactId>
-    <packaging>pom</packaging>
-    <version>0.1.140</version>
+    <parent>
+        <groupId>dev.liambloom.checker.bjp</groupId>
+        <artifactId>bjp-checker</artifactId>
+        <version>0.1.140</version>
+    </parent>
 
-    <name>Checker for BJP</name>
+    <artifactId>bjp-checker-annotations</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Checker for BJP (Annotations)</name>
     <url>https://checker.liambloom.dev/bjp</url>
-    <issueManagement>
-        <system>Github</system>
-        <url>https://github.com/liambloom/bjp-checker/issues</url>
-    </issueManagement>
-
-    <modules>
-        <module>annotations</module>
-        <module>api</module>
-        <module>ui</module>
-    </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>17</maven.compiler.release>
-        <main.basedir>${project.basedir}</main.basedir>
     </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-graphics</artifactId>
-            <version>16</version>
-        </dependency>
-    </dependencies>
 
     <build>
         <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->

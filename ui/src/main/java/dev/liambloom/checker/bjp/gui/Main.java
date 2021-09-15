@@ -16,8 +16,6 @@ import java.util.stream.Stream;
 
 public class Main extends Application {
     public static void main(String[] args) {
-        System.out.println("foo");
-        System.out.println(System.getProperty("java.version"));
         Application.launch(args);
     }
 
@@ -26,7 +24,7 @@ public class Main extends Application {
 //    private final SimpleBooleanProperty isProjectOpen = new SimpleBooleanProperty(false);
 
     private ColorScheme colorScheme;
-    private ArrayList<Scene> scenes = new ArrayList<>(1);
+    private final ArrayList<Scene> scenes = new ArrayList<>(1);
 
     public Main() {
         setColorScheme(ColorScheme.valueOf(App.prefs().get("colorScheme", ColorScheme.LIGHT.name())));
