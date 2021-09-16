@@ -15,10 +15,8 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -165,16 +163,65 @@ public interface Test {
     }
 
     static Test staticExecutableTest(String name, Executable executable, Targets targets, Node test) {
-        InputStream in;
-        Object[] args;
         int i = 0;
         NodeList children = test.getChildNodes();
-        in = ((Element) children.item(i)).getTagName().equals("System.in")
+        InputStream in = ((Element) children.item(i)).getTagName().equals("System.in")
             ? new ByteArrayInputStream(children.item(i++).getTextContent().getBytes())
             : InputStream.nullInputStream();
         if (((Element) children.item(i)).getTagName().equals("this")) // TODO: Update Schema
             throw new IllegalArgumentException("Element <this> invalid in top level method");
-//        if ()
+        PrePost[] args = ((Element) children.item(i)).getTagName().equals("arguments")
+            ? Util.streamNodeList(children.item(i++).getChildNodes())
+                .map(Element.class::cast)
+                .map(PrePost::new)
+                .toArray(PrePost[]::new)
+            : new PrePost[0];
+        Class<? extends Throwable> expectedThrows;
+        Element expectedReturns;
+        byte[] expectedPrints;
+        if (((Element) children.item(i)).getTagName().equals("throws")) {
+            try {
+                expectedThrows = (Class<? extends Throwable>) ClassLoader.getSystemClassLoader().loadClass(children.item(i++).getTextContent());
+            }
+            catch (ClassNotFoundException | ClassCastException e) {
+                throw new IllegalStateException("This should not have passed validation.", e);
+            }
+            expectedReturns = null;
+            expectedPrints = null;
+        }
+        else {
+            expectedThrows = null;
+            expectedReturns = Optional.ofNullable(children.item(i))
+                .map(Element.class::cast)
+                .filter(n -> n.getTagName().equals("returns"))
+                .orElse(null);
+            if (expectedReturns != null)
+                i++;
+            String rawExpectedPrints = Optional.ofNullable(children.item(i))
+                .map(Element.class::cast)
+                .map(Element::getTextContent)
+                .map(String::stripIndent)
+                .orElse(null);
+            if (rawExpectedPrints == null)
+                expectedPrints = null;
+            else {
+                String[] lines = Util.TRAILING_SPACES_AND_NEWLINE.split(rawExpectedPrints);
+                if (lines[0].isEmpty())
+                    lines = Arrays.copyOfRange(lines, 1, lines.length);
+                int length = 0;
+                for (int j = 0; j < lines.length; j++){
+                    lines[j] = lines[j].stripTrailing();
+                    length += lines[j].length();
+                }
+                expectedPrints = new byte[length];
+                int j = 0;
+                for (String line : lines) {
+                    byte[] bytes = line.getBytes();
+                    j += bytes.length;
+                    System.arraycopy(bytes, 0, expectedPrints, j, bytes.length);
+                }
+            }
+        }
         return null; // TODO
     }
 

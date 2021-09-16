@@ -15,12 +15,11 @@ final class Util {
     private Util() {
     }
 
-    private static final Pattern LINE_SEPARATOR = Pattern.compile("\\r|\\r?\\n");
+    public static final Pattern TRAILING_SPACES_AND_NEWLINE = Pattern.compile("\\s*\\R");
 
-
-    public static String normalizeLineSeparators(String s) {
+    /*public static String normalizeLineSeparators(String s) {
         return LINE_SEPARATOR.matcher(s).replaceAll(System.lineSeparator());
-    }
+    }*/
 
     public static String executableToString(Executable e) {
         StringBuilder builder = new StringBuilder()

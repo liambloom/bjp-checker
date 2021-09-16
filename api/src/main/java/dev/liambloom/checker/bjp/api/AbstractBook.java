@@ -43,38 +43,52 @@ public abstract class AbstractBook implements Book {
             .map(Element.class::cast);
     }
 
-    private Stream<ClassNotFoundException> checkDocumentTypes(Document document) {
-        return Stream.of(
-            elementOfType(document, "parameter", "throws")
-                .map(Node::getTextContent),
-            elementOfType(document, "Array", "ArrayList", "LinkedList", "TargetArrayList", "Stack", "HashSet", "TreeSet", "TargetTree")
-                .map(e -> e.getAttribute("elementType")),
-            elementOfType(document, "HashMap", "TreeMap")
-                .flatMap(e -> Stream.of("keyType", "valueType").map(e::getAttribute))
-        )
-            .flatMap(Function.identity())
-            .map(String::trim)
-            .map(type -> switch (type) {
-                case "byte", "short", "int", "long", "float", "double", "boolean", "char", "this" -> null;
-                default -> {
+    private Stream<Exception> checkDocumentTypes(Document document) {
+        return Stream.concat(
+            Stream.of(
+                elementOfType(document, "parameter")
+                    .map(Node::getTextContent),
+                elementOfType(document, "Array", "ArrayList", "LinkedList", "TargetArrayList", "Stack", "HashSet", "TreeSet", "TargetTree")
+                    .map(e -> e.getAttribute("elementType")),
+                elementOfType(document, "HashMap", "TreeMap")
+                    .flatMap(e -> Stream.of("keyType", "valueType").map(e::getAttribute))
+            )
+                .flatMap(Function.identity())
+                .map(String::trim)
+                .map(type -> switch (type) {
+                    case "byte", "short", "int", "long", "float", "double", "boolean", "char", "this" -> null;
+                    default -> {
+                        try {
+                            Util.loadClass(new ClassLoader() {
+                                @Override
+                                protected Class<?> findClass(String name) throws ClassNotFoundException {
+                                    if (name.equals("this"))
+                                        return null;
+                                    else
+                                        throw new ClassNotFoundException(name);
+                                }
+                            }, type);
+                            yield null;
+                        }
+                        catch (ClassNotFoundException e) {
+                            yield e;
+                        }
+                    }
+                })
+                .filter(Objects::nonNull),
+            elementOfType(document, "throws")
+                .map(Node::getTextContent)
+                .map(String::trim)
+                .map(type -> {
                     try {
-                        Util.loadClass(new ClassLoader() {
-                            @Override
-                            protected Class<?> findClass(String name) throws ClassNotFoundException {
-                                if (name.equals("this"))
-                                    return null;
-                                else
-                                    throw new ClassNotFoundException(name);
-                            }
-                        }, type);
-                        yield null;
+                        Throwable.class.cast(ClassLoader.getSystemClassLoader().loadClass(type));
+                        return null;
                     }
-                    catch (ClassNotFoundException e) {
-                        yield e;
+                    catch (ClassNotFoundException | ClassCastException e) {
+                        return e;
                     }
-                }
-            })
-            .filter(Objects::nonNull);
+                })
+        );
     }
 
     @Override
@@ -131,10 +145,16 @@ public abstract class AbstractBook implements Book {
         finally {
             Books.getDocumentBuilderPool().offer(db);
         }
-        Optional<ClassNotFoundException> e = checkDocumentTypes(r)
+        Optional<Exception> e = checkDocumentTypes(r)
             .findAny();
-        if (e.isPresent())
-            throw e.get();
+        if (e.isPresent()) {
+            if (e.get() instanceof ClassCastException cce)
+                throw cce;
+            else if (e.get() instanceof ClassNotFoundException cnfe)
+                throw cnfe;
+            else
+                throw new IllegalStateException("This exception type should not be thrown in validation", e.get());
+        }
         return r;
     }
 
