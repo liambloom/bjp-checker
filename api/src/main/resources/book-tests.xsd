@@ -324,7 +324,7 @@
             <!-- This additionally support the target type (supported with "@target"), a type in the target package ("@target.package"),
                 and distinctly marks primitives using a dollar sign "$primitiveType" -->
             <!-- Can be any system class, primitive class, or "this" -->
-            <xs:pattern value="((^|\.)[a-zA-Z$_][a-zA-Z0-9$_]*)+(\[\])*" /> <!-- (?:\$(?:byte|short|int|long|float|double|char|boolean)|(?!\.)(?:@target(?:\.package)?)?(?:(?:^|\.)[a-zA-Z$_][a-zA-Z0-9$_]*)+)(?:\[\])* -->
+            <xs:pattern value="[a-zA-Z$_][a-zA-Z0-9$_]*(\.[a-zA-Z$_][a-zA-Z0-9$_]*)*(\[\])*" /> <!-- (?:\$(?:byte|short|int|long|float|double|char|boolean)|(?!\.)(?:@target(?:\.package)?)?(?:(?:^|\.)[a-zA-Z$_][a-zA-Z0-9$_]*)+)(?:\[\])* -->
         </xs:restriction>
     </xs:simpleType>
 
