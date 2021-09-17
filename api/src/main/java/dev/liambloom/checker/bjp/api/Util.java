@@ -7,7 +7,9 @@ import java.lang.reflect.Executable;
 import java.lang.reflect.Member;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -20,6 +22,17 @@ final class Util {
     /*public static String normalizeLineSeparators(String s) {
         return LINE_SEPARATOR.matcher(s).replaceAll(System.lineSeparator());
     }*/
+
+    public static String cleansePrint(String raw) {
+        String[] lines = Util.TRAILING_SPACES_AND_NEWLINE.split(raw);
+        Stream<String> linesStream = Arrays.stream(lines);
+        if (lines[lines.length - 1].isBlank())
+            linesStream = linesStream.limit(lines.length - 1);
+        if (lines[0].isEmpty())
+            linesStream = linesStream.skip(1);
+        return linesStream
+            .collect(Collectors.joining(System.lineSeparator()));
+    }
 
     public static String executableToString(Executable e) {
         StringBuilder builder = new StringBuilder()

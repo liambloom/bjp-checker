@@ -178,7 +178,7 @@ public interface Test {
             : new PrePost[0];
         Class<? extends Throwable> expectedThrows;
         Element expectedReturns;
-        byte[] expectedPrints;
+        String expectedPrints;
         if (((Element) children.item(i)).getTagName().equals("throws")) {
             try {
                 expectedThrows = (Class<? extends Throwable>) ClassLoader.getSystemClassLoader().loadClass(children.item(i++).getTextContent());
@@ -205,21 +205,7 @@ public interface Test {
             if (rawExpectedPrints == null)
                 expectedPrints = null;
             else {
-                String[] lines = Util.TRAILING_SPACES_AND_NEWLINE.split(rawExpectedPrints);
-                if (lines[0].isEmpty())
-                    lines = Arrays.copyOfRange(lines, 1, lines.length);
-                int length = 0;
-                for (int j = 0; j < lines.length; j++){
-                    lines[j] = lines[j].stripTrailing();
-                    length += lines[j].length();
-                }
-                expectedPrints = new byte[length];
-                int j = 0;
-                for (String line : lines) {
-                    byte[] bytes = line.getBytes();
-                    j += bytes.length;
-                    System.arraycopy(bytes, 0, expectedPrints, j, bytes.length);
-                }
+                expectedPrints = Util.cleansePrint(rawExpectedPrints);
             }
         }
         return null; // TODO
