@@ -47,6 +47,12 @@
       <artifactId>bjp-checker-annotations</artifactId>
       <version>0.1.140</version>
     </dependency>
+
+    <!--<dependency>
+      <groupId>java_cup.runtime</groupId>
+      <artifactId>cupv10k-runtime</artifactId>
+      <version>1.4.1-p4</version>
+    </dependency>-->
   </dependencies>
 
   <build>
