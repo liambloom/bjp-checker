@@ -1,6 +1,7 @@
 package dev.liambloom.checker.bjp.api;
 
 import org.xml.sax.SAXException;
+import org.xml.sax.ext.DefaultHandler2;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -43,7 +44,9 @@ public final class Books {
     });
     private static final ResourcePool<DocumentBuilder> documentBuilderPool = new ResourcePool<>(() -> {
         try {
-            return documentBuilderFactory.get().newDocumentBuilder();
+            DocumentBuilder db = documentBuilderFactory.get().newDocumentBuilder();
+            db.setErrorHandler(new DefaultHandler2());
+            return db;
         }
         catch (ParserConfigurationException e) {
             throw new RuntimeException(e);
