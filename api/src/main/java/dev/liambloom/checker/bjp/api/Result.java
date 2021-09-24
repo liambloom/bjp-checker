@@ -5,12 +5,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public record Result(String name, Status status, Optional<ByteArrayOutputStream> console, List<Result> subResults) {
-    public Result(String name, Status status, @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<ByteArrayOutputStream> console) {
+public record Result<T extends Result.Status>(String name, T status, Optional<ByteArrayOutputStream> console, List<Result<? extends T>> subResults) {
+    public Result(String name, T status, @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<ByteArrayOutputStream> console) {
         this(name, status, console, Collections.emptyList());
     }
 
-    public Result(String name, Status status) {
+    public Result(String name, T status) {
         this(name, status, Optional.empty());
     }
 
