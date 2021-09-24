@@ -9,7 +9,7 @@
   <licenses>
     <license>
       <name>Custom License</name>
-      <url>file:\Users\liamr\Downloads\Xerces-J-bin.2.12.1-xml-schema-1.1\xerces-2_12_1-xml-schema-1.1\LICENSE.cupv10k-runtime.txt</url>
+      <url>https://versioncontrolseidl.in.tum.de/parsergenerators/cup/-/raw/master/licence.txt</url>
     </license>
   </licenses>
 </project>
