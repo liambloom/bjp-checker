@@ -35,23 +35,6 @@ public final class Books {
             throw new RuntimeException(e);
         }
     });
-    private static final ResourcePool<Validator> validatorPool = new ResourcePool<>(schema.map(Schema::newValidator));
-    private static final Lazy<DocumentBuilderFactory> documentBuilderFactory = new Lazy<>(() -> {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        dbf.setSchema(getSchema());
-        dbf.setNamespaceAware(true);
-        return dbf;
-    });
-    private static final ResourcePool<DocumentBuilder> documentBuilderPool = new ResourcePool<>(() -> {
-        try {
-            DocumentBuilder db = documentBuilderFactory.get().newDocumentBuilder();
-            db.setErrorHandler(new DefaultHandler2());
-            return db;
-        }
-        catch (ParserConfigurationException e) {
-            throw new RuntimeException(e);
-        }
-    });
     private static final Map<String, String> LOCAL_TEST_NAMES;
     private static final Lazy<Preferences> customTests = new Lazy<>(() -> App.prefs().node("tests"));
 
@@ -60,16 +43,12 @@ public final class Books {
         LOCAL_TEST_NAMES.put("BJP 3", "bjp3");
     }
 
-    static ResourcePool<Validator> getValidatorPool() {
-        return validatorPool;
-    }
-
-    static ResourcePool<DocumentBuilder> getDocumentBuilderPool() {
-        return documentBuilderPool;
-    }
-
     public static Schema getSchema() {
         return schema.get();
+    }
+
+    public static Lazy<Schema> getSchemaLazy() {
+        return schema;
     }
 
     public static Preferences getCustomTests() {

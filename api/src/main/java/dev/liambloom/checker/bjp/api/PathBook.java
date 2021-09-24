@@ -214,4 +214,14 @@ public class PathBook extends AbstractModifiableBook {
             throw new UserErrorException("Path `" + path + "' is not xml");
         Books.getCustomTests().put(name, path.toString());
     }
+
+    @Override
+    public Path resolve(Path path) {
+        return this.path.resolveSibling(path);
+    }
+
+    @Override
+    public boolean supportsFileResolution() {
+        return true;
+    }
 }

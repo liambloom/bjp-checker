@@ -6,10 +6,11 @@ import org.w3c.dom.Node;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
+import org.xml.sax.ext.DefaultHandler2;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.transform.stream.StreamSource;
-import javax.xml.validation.Validator;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +22,30 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 public abstract class AbstractBook implements Book {
+    private static final Lazy<DocumentBuilderFactory> documentBuilderFactory = new Lazy<>(() -> {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setSchema(Books.getSchema());
+        dbf.setNamespaceAware(true);
+        return dbf;
+    });
+    private static final ResourcePool<DocumentBuilder> documentBuilderPool = new ResourcePool<>(() -> {
+        try {
+            return documentBuilderFactory.get().newDocumentBuilder();
+        }
+        catch (ParserConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+    });
+    private static final ClassLoader classLoaderAcceptsThis = new ClassLoader() {
+        @Override
+        protected Class<?> findClass(String name) throws ClassNotFoundException {
+            if (name.equals("this"))
+                return null;
+            else
+                throw new ClassNotFoundException(name);
+        }
+    };
+
     private String name;
 
     public AbstractBook(String name) {
@@ -43,8 +68,39 @@ public abstract class AbstractBook implements Book {
             .map(Element.class::cast);
     }
 
-    private Stream<Exception> checkDocumentTypes(Document document) {
-        return Stream.concat(
+    @SuppressWarnings("unchecked")
+    private <T> T validateDocumentAndReturn(Class<T> clazz) throws IOException, SAXException, ClassNotFoundException {
+        if (!clazz.equals(Document.class) && !clazz.equals(Result.class))
+            throw new IllegalArgumentException("validateDocumentAndReturn cannot return " + clazz.getName());
+        boolean returnDocument = clazz.equals(Document.class);
+        if (!exists()) {
+            if (returnDocument)
+                throw new IllegalStateException("Book " + getName() + " does not exist");
+            else
+                return (T) new Result<>(getName(), TestValidationStatus.NOT_FOUND);
+        }
+        DocumentBuilder db = documentBuilderPool.get();
+        ErrorHandler handler = returnDocument ? new DefaultHandler2() : new ValidationErrorHandler();
+        db.setErrorHandler(handler);
+        Document document;
+        try {
+            document = db.parse(getInputStream());
+        }
+        catch (SAXException e) {
+            if (returnDocument)
+                throw e;
+            else
+                return (T) new Result<>(getName(),
+                    TestValidationStatus.INVALID,
+                    Optional.of(((ValidationErrorHandler) handler).getLogs()));
+        }
+        finally {
+            documentBuilderPool.offer(db);
+        }
+        // I'd like to wrap exceptions in SAXParseException, but I have no way to get the line/column number
+        //  without using a SAX parser. Since I want a document to end with, I would need to either:
+        //  a: parse it twice, or b: build my own DocumentBuilder.
+        Stream<Exception> typeErrors = Stream.concat(
             Stream.of(
                 elementOfType(document, "parameter")
                     .map(Node::getTextContent),
@@ -59,15 +115,7 @@ public abstract class AbstractBook implements Book {
                     case "byte", "short", "int", "long", "float", "double", "boolean", "char", "this" -> null;
                     default -> {
                         try {
-                            Util.loadClass(new ClassLoader() {
-                                @Override
-                                protected Class<?> findClass(String name) throws ClassNotFoundException {
-                                    if (name.equals("this"))
-                                        return null;
-                                    else
-                                        throw new ClassNotFoundException(name);
-                                }
-                            }, type);
+                            Util.loadClass(classLoaderAcceptsThis, type);
                             yield null;
                         }
                         catch (ClassNotFoundException e) {
@@ -89,73 +137,57 @@ public abstract class AbstractBook implements Book {
                     }
                 })
         );
+        if (returnDocument) {
+            Optional<Exception> oe = typeErrors.findAny();
+            if (oe.isPresent()) {
+                Exception e = oe.get();
+                if (e instanceof ClassCastException cce)
+                    throw cce;
+                else if (e instanceof ClassNotFoundException cnfe)
+                    throw cnfe;
+                else
+                    throw new IllegalStateException("An exception of an unexpected type was thrown during validation", e);
+            }
+        }
+        else {
+            typeErrors.forEach(((ValidationErrorHandler) handler)::customError);
+        }
+
+        if (!supportsFileResolution() && document.getElementsByTagName("File").getLength() > 0) {
+            UnsupportedOperationException e =  new UnsupportedOperationException("Book document contains <File> element, but Book does not support file resolution");
+            if (returnDocument)
+                throw e;
+            else
+                ((ValidationErrorHandler) handler).customError(e);
+        }
+
+        if (returnDocument)
+            return (T) document;
+        else {
+            ValidationErrorHandler h = (ValidationErrorHandler) handler;
+            if (h.getMaxErrorKind() == null)
+                return (T) new Result<>(getName(), TestValidationStatus.VALID);
+            else if (h.getMaxErrorKind() == LogKind.WARN)
+                return (T) new Result<>(getName(), TestValidationStatus.VALID_WITH_WARNINGS, Optional.of(h.getLogs()));
+            else
+                return (T) new Result<>(getName(), TestValidationStatus.INVALID, Optional.of(h.getLogs()));
+        }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public Result validate() throws IOException {
-        if (exists()) {
-            Validator v = Books.getValidatorPool().get();
-            ValidationErrorHandler handler = new ValidationErrorHandler();
-            v.setErrorHandler(handler);
-
-            try {
-                v.validate(new StreamSource(getInputStream()));
-            }
-            catch (SAXException ignored) {
-            }
-            finally {
-                Books.getValidatorPool().offer(v);
-            }
-
-            DocumentBuilder db = Books.getDocumentBuilderPool().get();
-            Document document = null;
-            try {
-                document = db.parse(getInputStream());
-            }
-            catch (SAXException ignored) {
-            }
-            finally {
-                Books.getDocumentBuilderPool().offer(db);
-            }
-            if (document != null) {
-                checkDocumentTypes(document)
-                    .forEachOrdered(handler::error);
-            }
-
-            if (handler.getMaxErrorKind() == null)
-                return new Result(getName(), TestValidationStatus.VALID);
-            else if (handler.getMaxErrorKind() == LogKind.WARN)
-                return new Result(getName(), TestValidationStatus.VALID_WITH_WARNINGS, Optional.of(handler.getLogs()));
-            else
-                return new Result(getName(), TestValidationStatus.INVALID, Optional.of(handler.getLogs()));
+    public Result<TestValidationStatus> validate() throws IOException {
+        try {
+            return validateDocumentAndReturn(Result.class);
         }
-        else
-            return new Result(getName(), TestValidationStatus.NOT_FOUND);
+        catch (ClassNotFoundException | SAXException e) {
+            throw new IllegalStateException("This exception should not have propagated", e);
+        }
     }
 
     @Override
     public Document getDocument() throws IOException, SAXException, ClassNotFoundException {
-        if (!exists())
-            throw new IllegalStateException("Book " + getName() + " does not exist");
-        DocumentBuilder db = Books.getDocumentBuilderPool().get();
-        Document r;
-        try {
-            r = db.parse(getInputStream());
-        }
-        finally {
-            Books.getDocumentBuilderPool().offer(db);
-        }
-        Optional<Exception> e = checkDocumentTypes(r)
-            .findAny();
-        if (e.isPresent()) {
-            if (e.get() instanceof ClassCastException cce)
-                throw cce;
-            else if (e.get() instanceof ClassNotFoundException cnfe)
-                throw cnfe;
-            else
-                throw new IllegalStateException("This exception type should not be thrown in validation", e.get());
-        }
-        return r;
+        return validateDocumentAndReturn(Document.class);
     }
 
     protected abstract InputStream getInputStream() throws IOException;
@@ -183,7 +215,7 @@ public abstract class AbstractBook implements Book {
             logger.log(LogKind.ERROR, getMessage(exception));
         }
 
-        public void error(Throwable e) {
+        public void customError(Throwable e) {
             if (maxErrorKind != LogKind.ERROR)
                 maxErrorKind = LogKind.ERROR;
             logger.log(LogKind.ERROR, e.getClass().getName() + ": " + e.getMessage());
@@ -202,7 +234,9 @@ public abstract class AbstractBook implements Book {
                 message.deleteCharAt(message.length() - 1);
 
             return message.append(" at ")
+                .append('`')
                 .append(AbstractBook.this instanceof PathBook pathBook ? pathBook.getPath() : getName())
+                .append('\'')
                 .append(':')
                 .append(e.getLineNumber())
                 .append(':')

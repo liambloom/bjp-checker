@@ -13,8 +13,9 @@ import java.util.stream.Stream;
  * @param chapter             The chapter to check, or {@code OptionalInt.empty()} to auto-detect.
  * @param exercises           If (and only if) {@code exercises[i]} is true, then exercise {@code i + 1} will be run.
  * @param programmingProjects If (and only if) {@code programmingProjects[i]} is true, then programming project {@code i + 1} will be run.
- * @param tests               The document containing the tests, which must follow the <a href="https://checker.liambloom.dev/bjp/test-schema.xsd">schema</a>
+ * @param tests               The document containing the tests, which must follow the schema
  * @param paths               A stream of the paths for all .class and .jar files to check
+ * @see Books#getSchema()
  */
 public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] programmingProjects, Document tests,
                         Stream<Path> paths) {
