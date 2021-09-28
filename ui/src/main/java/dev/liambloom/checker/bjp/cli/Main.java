@@ -96,11 +96,10 @@ public class Main {
                             testName = App.prefs().get("selectedTests", CheckArgs.DEFAULT_TEST_NAME);
 
                         // TODO: Do something to catch other error (like references to non-existant types)
-                        Document tests = Books.getBook(testName).getDocument();
 
                         Stream<Path> paths = new Glob(globArgs).files();
 
-                        Checker.check(new CheckArgs(chapter, exercises, programmingProjects, tests, paths));
+                        Checker.check(new CheckArgs(chapter, exercises, programmingProjects, Books.getBook(testName), paths));
                     }
                     catch (SAXException | ClassNotFoundException e) {
                         // TODO: There is probably a better way to do this (should I add a ErrorHandler to Book or CheckArgs?)

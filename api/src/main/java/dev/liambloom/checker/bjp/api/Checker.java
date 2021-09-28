@@ -5,6 +5,7 @@ import dev.liambloom.checker.bjp.Exercise;
 import dev.liambloom.checker.bjp.ProgrammingProject;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -15,12 +16,14 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,7 +37,7 @@ public final class Checker {
         return xPathPool;
     }
 
-    public static Stream<Result<TestStatus>> check(CheckArgs args) throws XPathExpressionException {
+    public static Stream<Result<TestStatus>> check(CheckArgs args) throws XPathExpressionException, IOException, ClassNotFoundException, SAXException {
         List<Class<?>> classes;
         int chapter;
         try {
@@ -61,11 +64,12 @@ public final class Checker {
         }
 
         XPath xpath1 = xPathPool.get();
-        Node ch = (Node) xpath1.evaluate("/book/chapter[@num='" + chapter + "']", args.tests(), XPathConstants.NODE);
+        Node ch = (Node) xpath1.evaluate("/book/chapter[@num='" + chapter + "']", args.tests().getDocument(), XPathConstants.NODE);
         xPathPool.offer(xpath1);
 
+        UnaryOperatorThrowsIOException<Path> resolver = args.tests()::resolve;
 
-        return Stream.of(new TargetGroup(Exercise.class, args.exercises()), new TargetGroup(ProgrammingProject.class, args.programmingProjects()))
+        return Stream.of(new TargetGroup(Exercise.class, args.exercises(), resolver), new TargetGroup(ProgrammingProject.class, args.programmingProjects(), resolver))
             .map(e -> e.addPotentialTargets(classes.iterator()))
             .flatMap(e -> e.apply(ch))
             .map(Test::run);
@@ -75,8 +79,9 @@ public final class Checker {
         private final Targets[] targets;
         private final Class<? extends Annotation> annotationType;
         private final Function<Annotation, Integer> valueOf;
+        private final UnaryOperatorThrowsIOException<Path> resolver;
 
-        public TargetGroup(Class<? extends Annotation> annotationType, boolean[] initWhich) {
+        public TargetGroup(Class<? extends Annotation> annotationType, boolean[] initWhich, UnaryOperatorThrowsIOException<Path> resolver) {
             targets = new Targets[initWhich.length];
             for (int i = 0; i < initWhich.length; i++) {
                 if (initWhich[i])
@@ -100,6 +105,7 @@ public final class Checker {
             };
 
             this.annotationType = annotationType;
+            this.resolver = resolver;
         }
 
         public void addPotentialTarget(AnnotatedElement e) {
@@ -129,7 +135,7 @@ public final class Checker {
                                     (xpath = Checker.getXPathPool().get())
                                         .evaluate(Case.convert(annotationType.getSimpleName(), Case.CAMEL) + "[@num='" + i + "']", tests, XPathConstants.NODE))
                                     .map(Element.class::cast)
-                                    .orElseThrow(() -> new UserErrorException("Unable to find tests for " + testName))));
+                                    .orElseThrow(() -> new UserErrorException("Unable to find tests for " + testName)), resolver));
                         }
                         catch (XPathExpressionException e) {
                             throw new RuntimeException(e);

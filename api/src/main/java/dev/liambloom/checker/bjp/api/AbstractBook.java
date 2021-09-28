@@ -153,8 +153,9 @@ public abstract class AbstractBook implements Book {
             typeErrors.forEach(((ValidationErrorHandler) handler)::customError);
         }
 
-        if (!supportsFileResolution() && document.getElementsByTagName("File").getLength() > 0) {
-            UnsupportedOperationException e =  new UnsupportedOperationException("Book document contains <File> element, but Book does not support file resolution");
+        if (!supportsFileResolution()
+                && (document.getElementsByTagName("File").getLength() > 0 || document.getElementsByTagName("Path").getLength() > 0)) {
+            UnsupportedOperationException e =  new UnsupportedOperationException("Book document contains <File> or <Path> element, but Book does not support file resolution");
             if (returnDocument)
                 throw e;
             else

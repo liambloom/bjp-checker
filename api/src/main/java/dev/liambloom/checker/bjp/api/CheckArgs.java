@@ -17,7 +17,7 @@ import java.util.stream.Stream;
  * @param paths               A stream of the paths for all .class and .jar files to check
  * @see Books#getSchema()
  */
-public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] programmingProjects, Document tests,
+public record CheckArgs(OptionalInt chapter, boolean[] exercises, boolean[] programmingProjects, Book tests,
                         Stream<Path> paths) {
     public static final String DEFAULT_TEST_NAME = "bjp3";
 }

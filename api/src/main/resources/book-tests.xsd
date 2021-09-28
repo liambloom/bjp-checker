@@ -382,6 +382,7 @@
             <!-- Other types -->
             <xs:element name="String" type="xs:string" />
             <xs:element name="File" type="xs:string" />
+            <xs:element name="Path" type="xs:string" />
             <xs:element name="Scanner" type="xs:string" />
 
             <!-- Collection types -->
