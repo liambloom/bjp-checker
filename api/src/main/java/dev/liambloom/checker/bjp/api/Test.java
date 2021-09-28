@@ -22,9 +22,9 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public interface Test {
-    Result run();
+    Result<TestStatus> run();
 
-    static Test withFixedResult(Result result) {
+    static Test withFixedResult(Result<TestStatus> result) {
         return () -> result;
     }
 
@@ -35,13 +35,13 @@ public interface Test {
                 switch (node.getTagName()) {
                     case "method" -> {
                         if (targets.methods().isEmpty())
-                            return Stream.of(Test.withFixedResult(new Result(name, TestStatus.INCOMPLETE)));
+                            return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.INCOMPLETE)));
                         else if (targets.methods().size() == 1) {
                             Method method = targets.methods().iterator().next();
                             if (!Modifier.isStatic(method.getModifiers())) {
                                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                                 new BadHeaderException("Instance method " + Util.executableToString(method) + " should be static").printStackTrace(new PrintStream(outputStream));
-                                return Stream.of(Test.withFixedResult(new Result(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
+                                return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
                             }
                             return Test.streamFromStaticExecutable(name, method, targets, testGroup);
                         }
@@ -51,7 +51,7 @@ public interface Test {
                     }
                     case "constructor" -> {
                         if (targets.constructors().isEmpty())
-                            return Stream.of(Test.withFixedResult(new Result(name, TestStatus.INCOMPLETE)));
+                            return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.INCOMPLETE)));
                         else if (targets.constructors().size() == 1)
                             return Test.streamFromStaticExecutable(name, targets.constructors().iterator().next(), targets, testGroup);
                         else {
@@ -66,12 +66,11 @@ public interface Test {
                 return null; // TODO
             });
         return () -> {
-            List<Result> subResults = subTests.map(Test::run).collect(Collectors.toList());
-            return new Result(
+            List<Result<TestStatus>> subResults = subTests.map(Test::run).collect(Collectors.toList());
+            return new Result<>(
                 name,
                 subResults.stream()
                     .map(Result::status)
-                    .map(TestStatus.class::cast)
                     .max(Comparator.naturalOrder())
                     .get(),
                 Optional.empty(),
@@ -89,7 +88,7 @@ public interface Test {
                 + Util.executableToString(executable)
                 + " is not accessible")
                 .printStackTrace(new PrintStream(outputStream));
-            return Stream.of(Test.withFixedResult(new Result(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
+            return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
         }
         XPath xpath = Checker.getXPathPool().get();
         NodeList expectedParamNodes;
@@ -158,7 +157,7 @@ public interface Test {
                     .map(Node::getTextContent)
                     .collect(Collectors.joining(", "))
                     + ')');
-            return Stream.of(Test.withFixedResult(new Result(name, TestStatus.INCOMPLETE)));
+            return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.INCOMPLETE)));
         }
     }
 

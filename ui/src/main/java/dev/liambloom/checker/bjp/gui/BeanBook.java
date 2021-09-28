@@ -15,8 +15,8 @@ public class BeanBook {
     public final ObjectProperty<Optional<Path>> path;
     // private final ReadOnlyBooleanWrapper isValidWrapper;
     // public final ReadOnlyBooleanProperty isValid;
-    private final ReadOnlyObjectWrapper<Result> validationResultWrapper = new ReadOnlyObjectWrapper<>();
-    public final ReadOnlyObjectProperty<Result> validationResult = validationResultWrapper.getReadOnlyProperty();
+    private final ReadOnlyObjectWrapper<Result<TestValidationStatus>> validationResultWrapper = new ReadOnlyObjectWrapper<>();
+    public final ReadOnlyObjectProperty<Result<TestValidationStatus>> validationResult = validationResultWrapper.getReadOnlyProperty();
     private final ReadOnlyBooleanWrapper existsWrapper = new ReadOnlyBooleanWrapper();
     public final ReadOnlyBooleanProperty exists = existsWrapper.getReadOnlyProperty();
 
@@ -86,11 +86,11 @@ public class BeanBook {
         return path;
     }
 
-    public Result getValidationResult() {
+    public Result<TestValidationStatus> getValidationResult() {
         return validationResult.get();
     }
 
-    public ReadOnlyObjectProperty<Result> validationResultProperty() {
+    public ReadOnlyObjectProperty<Result<TestValidationStatus>> validationResultProperty() {
         return validationResult;
     }
 

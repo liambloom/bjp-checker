@@ -34,7 +34,7 @@ public final class Checker {
         return xPathPool;
     }
 
-    public static Stream<Result> check(CheckArgs args) throws XPathExpressionException {
+    public static Stream<Result<TestStatus>> check(CheckArgs args) throws XPathExpressionException {
         List<Class<?>> classes;
         int chapter;
         try {
@@ -119,7 +119,7 @@ public final class Checker {
                     String testName = Case.convert(annotationType.getSimpleName(), Case.TITLE) + ' ' + i;
 
                     if (targets[i].isEmpty()) {
-                        builder.add(Test.withFixedResult(new Result(testName, TestStatus.INCOMPLETE)));
+                        builder.add(Test.withFixedResult(new Result<>(testName, TestStatus.INCOMPLETE)));
                     }
                     else {
                         XPath xpath = null;

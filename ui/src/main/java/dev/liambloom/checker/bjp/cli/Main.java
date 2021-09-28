@@ -156,7 +156,7 @@ public class Main {
                                 printResults((args[2].equals("-a") || args[2].equals("--all")
                                     ? Books.getAllBooks()
                                     : Arrays.stream(args).skip(2).map(Books::getBook))
-                                    .map((FunctionThrowsIOException<Book, Result>) Book::validate));
+                                    .map((FunctionThrowsIOException<Book, Result<TestValidationStatus>>) Book::validate));
                             }
                             catch (UncheckedIOException e) {
                                 throw e.getCause();
@@ -216,7 +216,7 @@ public class Main {
             throw new UserErrorException("Unexpected argument: `" + args[i + names.length] + '\'');
     }
 
-    public static void printResults(Stream<Result> s) throws IOException {
+    public static void printResults(Stream<Result<?>> s) throws IOException {
         try {
             s.forEachOrdered(r -> {
                 System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), Case.convert(r.status().toString(), Case.SPACE));

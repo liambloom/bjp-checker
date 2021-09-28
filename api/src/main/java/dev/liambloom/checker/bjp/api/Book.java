@@ -23,7 +23,7 @@ public interface Book {
      * @throws IOException If an i/o error occurs
      * @see Books#getSchema()
      */
-    Result validate() throws IOException;
+    Result<TestValidationStatus> validate() throws IOException;
 
     /**
      * Returns the document represented by this book. An exception will be thrown if
