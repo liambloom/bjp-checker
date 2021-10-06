@@ -3,11 +3,12 @@ package dev.liambloom.checker.bjp.api;
 import java.lang.reflect.*;
 import java.util.*;
 
-public record Targets(Set<Class<?>> classes,
-                      Set<Constructor<?>> constructors,
-                      Set<Method> methods,
-                      Set<Field> fields)
-    implements Set<AnnotatedElement> {
+public final class Targets implements Set<AnnotatedElement> {
+    private final Set<Class<?>> classes;
+    private final Set<Constructor<?>> constructors;
+    private final Set<Method> methods;
+    private final Set<Field> fields;
+
     public Targets() {
         this(
             Collections.synchronizedSet(new HashSet<>()),
@@ -15,6 +16,32 @@ public record Targets(Set<Class<?>> classes,
             Collections.synchronizedSet(new HashSet<>()),
             Collections.synchronizedSet(new HashSet<>())
         );
+    }
+
+    public Targets(Set<Class<?>> classes,
+                   Set<Constructor<?>> constructors,
+                   Set<Method> methods,
+                   Set<Field> fields) {
+        this.classes = classes;
+        this.constructors = constructors;
+        this.methods = methods;
+        this.fields = fields;
+    }
+
+    public Set<Class<?>> classes() {
+        return classes;
+    }
+
+    public Set<Constructor<?>> constructors() {
+        return constructors;
+    }
+
+    public Set<Method> methods() {
+        return methods;
+    }
+
+    public Set<Field> fields() {
+        return fields;
     }
 
     @Override

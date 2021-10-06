@@ -74,7 +74,7 @@ public interface Test {
                 subResults.stream()
                     .map(Result::status)
                     .max(Comparator.naturalOrder())
-                    .get(),
+                    .orElseThrow(),
                 Optional.empty(),
                 subResults);
         };
@@ -166,6 +166,7 @@ public interface Test {
     static Test staticExecutableTest(String name, Executable executable, Targets targets, Node test, UnaryOperatorThrowsIOException<Path> resolver) {
         int i = 0;
         NodeList children = test.getChildNodes();
+        // If multiple tests need access to System.in, this could be a problem.
         InputStream in = ((Element) children.item(i)).getTagName().equals("System.in")
             ? new ByteArrayInputStream(children.item(i++).getTextContent().getBytes())
             : InputStream.nullInputStream();
@@ -205,10 +206,18 @@ public interface Test {
                 .orElse(null);
             if (rawExpectedPrints == null)
                 expectedPrints = null;
-            else {
+            else
                 expectedPrints = Util.cleansePrint(rawExpectedPrints);
-            }
         }
+        /* IMPORTANT NOTE: Tests that require System.in need to be run one at a time,
+             at a separate time from other tests (because other tests could, if they
+             are failing, access System.in and cause problems. Figuring out how to
+             implement this is difficult, because blocking in Stream.forEach could
+             cause serious performance issues. */
+        /* Idea: Test could return a Future.
+             No, a text does pretty much the same thing as Future, that's stupid. In
+             fact, it might be good for Test to extend Future. */
+        /* Idea: Don't use the common pool, use a custom thing that runs tests */
         return null; // TODO
     }
 
