@@ -1,44 +1,23 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>dev.liambloom.checker</groupId>
-    <artifactId>checker</artifactId>
-    <packaging>pom</packaging>
-    <version>0.1.140</version>
+    <parent>
+        <groupId>dev.liambloom.checker</groupId>
+        <artifactId>checker</artifactId>
+        <version>0.1.140</version>
+    </parent>
 
-    <name>Checker </name>
-    <url>https://checker.liambloom.dev/</url>
-    <issueManagement>
-        <system>Github</system>
-        <url>https://github.com/liambloom/checker/issues</url>
-    </issueManagement>
+    <artifactId>bjp3-checker-annotations</artifactId>
+    <packaging>jar</packaging>
 
-    <modules>
-        <module>annotations</module>
-        <module>internal</module>
-        <module>ui</module>
-        <module>books</module>
-        <module>shared</module>
-    </modules>
+    <name>Checker for BJP (Annotations)</name>
+    <url>https://checker.liambloom.dev/bjp</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>17</maven.compiler.release>
-        <main.basedir>${project.basedir}</main.basedir>
     </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-graphics</artifactId>
-                <version>17.0.0.1</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <build>
         <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
@@ -64,14 +43,6 @@
                 <plugin>
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>3.0.2</version>
-                    <configuration>
-                        <archive>
-                            <manifest>
-                                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-                            </manifest>
-                        </archive>
-                    </configuration>
                 </plugin>
                 <plugin>
                     <artifactId>maven-install-plugin</artifactId>
