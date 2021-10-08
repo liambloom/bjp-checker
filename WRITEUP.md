@@ -40,6 +40,11 @@ Then, the tests for this section (chapter) will be read from the book in `CheckA
 
 `Test.staticExecutableTest` reads all the pre- and post-conditions and constructs a `Test` to run them.
 
+### Running the tests[^1]
+
+Most test can be run in parallel using [`Stream#forEach`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/stream/Stream.html#forEach(java.util.function.Consumer)). However, some tests may need access to `System.in`, and this is global and mutable, which means that any test that accesses it cannot be run at the same time any other test. They can't even be run at the same time as tests that shouldn't need to access it, because if the code being tested is implemented incorrectly, it may access `System.in` and mess up the code that is supposed to access it. On the other hand, I don't want to run all tests consecutively, because that would slow down the checker unnecessarily.
+
+`Checker.check` will run each test by calling `Test#runAsync`, which returns a future. Internally, any multi-tests will call this method for their sub-tests. Any actual tests will run using one of two executors, and synchronize using a `ReadWriteLock`. If they require access to `System.in`, they will be run on a single threaded executor, and get the write lock from a `ReadWriteLock`. If they don't they will be called in a multi-threaded executor (not the commonPool, because they might block), and they will get the read lock from the aforementioned `ReadWriteLock`.
 
 [^1]: Not yet implemented
 [^2]: Partially implemented

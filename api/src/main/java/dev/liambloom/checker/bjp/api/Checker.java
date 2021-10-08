@@ -17,10 +17,11 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -37,7 +38,7 @@ public final class Checker {
         return xPathPool;
     }
 
-    public static Stream<Result<TestStatus>> check(CheckArgs args) throws XPathExpressionException, IOException, ClassNotFoundException, SAXException {
+    public static List<Result<TestStatus>> check(CheckArgs args) throws XPathExpressionException, IOException, ClassNotFoundException, SAXException {
         List<Class<?>> classes;
         int chapter;
         try {
@@ -69,10 +70,16 @@ public final class Checker {
 
         UnaryOperatorThrowsIOException<Path> resolver = args.tests()::resolve;
 
+        // Tests#runAsync could submit a task to a TestExecutor (which would have one method to
+        //  run a test normally and one to run a test on its own. I still shouldn't call them
+        //  in the common pool though, because it would block then (and possibly even deadlock).
         return Stream.of(new TargetGroup(Exercise.class, args.exercises(), resolver), new TargetGroup(ProgrammingProject.class, args.programmingProjects(), resolver))
+            .parallel()
             .map(e -> e.addPotentialTargets(classes.iterator()))
             .flatMap(e -> e.apply(ch))
-            .map(Test::run);
+            .map(Test::runAsync)
+            .map(Future::get)
+            .collect(Collectors.toList());
     }
 
     private static class TargetGroup {

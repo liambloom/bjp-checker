@@ -18,16 +18,17 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.*;
 
-import java.util.regex.Pattern;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public interface Test {
-    Result<TestStatus> run();
+    Future<Result<TestStatus>> runAsync();
 
     static Test withFixedResult(Result<TestStatus> result) {
-        return () -> result;
+        return () -> CompletableFuture.completedFuture(result);
     }
 
     static Test multiTest(String name, Targets targets, Node testGroup, UnaryOperatorThrowsIOException<Path> resolver) {
@@ -68,7 +69,7 @@ public interface Test {
                 return null; // TODO
             });
         return () -> {
-            List<Result<TestStatus>> subResults = subTests.map(Test::run).collect(Collectors.toList());
+            List<Result<TestStatus>> subResults = subTests.map(Test::runAsync).map(Future::get).collect(Collectors.toList());
             return new Result<>(
                 name,
                 subResults.stream()
@@ -216,8 +217,10 @@ public interface Test {
              cause serious performance issues. */
         /* Idea: Test could return a Future.
              No, a text does pretty much the same thing as Future, that's stupid. In
-             fact, it might be good for Test to extend Future. */
+             fact, it might be good for Test to extend Future.
+             No, they don't */
         /* Idea: Don't use the common pool, use a custom thing that runs tests */
+        /* Idea: Do both of the above things. */
         return null; // TODO
     }
 
