@@ -9,6 +9,11 @@ public abstract class AbstractModifiableBook extends AbstractBook implements Mod
 
     @Override
     public void rename(String name) {
+        super.rename(name);
+    }
+
+    /*@Override
+    public void rename(String name) {
         if (name.length() > Preferences.MAX_KEY_LENGTH)
             throw new IllegalArgumentException("Test names may not be longer than " + Preferences.MAX_KEY_LENGTH + " characters long");
         Preferences index = Books.getCustomTests().node("index");
@@ -25,5 +30,5 @@ public abstract class AbstractModifiableBook extends AbstractBook implements Mod
             }
         }
         throw new IllegalStateException("Book not found in index");
-    }
+    }*/
 }

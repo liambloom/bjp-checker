@@ -1,6 +1,7 @@
 package dev.liambloom.checker.internal;
 
-import dev.liambloom.checker.shared.FunctionThrowsIOException;
+import dev.liambloom.util.function.FunctionThrowsException;
+import dev.liambloom.util.function.FunctionUtils;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -26,8 +27,8 @@ public final class PathClassLoader extends ClassLoader {
         super(parent);
         try {
             classes = glob
-                .map((FunctionThrowsIOException<Path, Path>) Path::toRealPath)
-                .flatMap((FunctionThrowsIOException<Path, Stream<? extends ClassSource>>) (p -> {
+                .map(FunctionUtils.unchecked((FunctionThrowsException<Path, Path>) Path::toRealPath))
+                .flatMap(FunctionUtils.unchecked((FunctionThrowsException<Path, Stream<? extends ClassSource>>)p -> {
                     if (p.toString().endsWith(".jar"))
                         return CompressedClassSource.allSources(new JarFile(p.toFile())).stream();
                     else if (p.toString().endsWith(".class"))
@@ -37,7 +38,7 @@ public final class PathClassLoader extends ClassLoader {
                 }))
                 .collect(Collectors.toMap(
                     s -> new StringBuilder(s.path()).reverse().toString(),
-                    (FunctionThrowsIOException<ClassSource, LazyClass>) (s -> new LazyClass(s.bytes())),
+                    FunctionUtils.unchecked((FunctionThrowsException<ClassSource, LazyClass>)s -> new LazyClass(s.bytes())),
                     (v1, v2) -> v1.markAsDuplicate(),
                     TreeMap<String, LazyClass>::new
                 ));
@@ -175,8 +176,7 @@ class CompressedClassSource implements ClassSource {
             if (entry.isDirectory() || !name.toLowerCase(Locale.ENGLISH).endsWith(".class"))
                 continue;
             CompressedClassSource.construct(jar, entry, isMrJar)
-                .ifPresent(src -> entryMap.compute(src.path(), (BiFunctionThrowsIOException<String, CompressedClassSource, CompressedClassSource>)
-                    (k, val) -> val == null || val.version() < src.version() ? src : val));
+                .ifPresent(src -> entryMap.compute(src.path(), (k, val) -> val == null || val.version() < src.version() ? src : val));
         }
         return entryMap.values();
     }

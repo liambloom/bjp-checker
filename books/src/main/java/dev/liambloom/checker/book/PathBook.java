@@ -1,9 +1,10 @@
 package dev.liambloom.checker.book;
 
-import dev.liambloom.checker.shared.BiConsumerThrowsIOException;
-import dev.liambloom.checker.shared.FunctionThrowsIOException;
 import dev.liambloom.checker.shared.LogKind;
 import dev.liambloom.checker.shared.Logger;
+import dev.liambloom.util.function.BiConsumerThrowsException;
+import dev.liambloom.util.function.FunctionThrowsException;
+import dev.liambloom.util.function.FunctionUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +35,7 @@ public class PathBook extends AbstractModifiableBook {
     public void addWatcher(Consumer<WatchEvent<Path>> cb) throws IOException {
         watcherLock.writeLock().lock();
         try {
-            WatchService watcher = watchers.computeIfAbsent(path.getFileSystem(), (FunctionThrowsIOException<FileSystem, WatchService>) fileSystem -> {
+            WatchService watcher = watchers.computeIfAbsent(path.getFileSystem(), FunctionUtils.unchecked((FunctionThrowsException<FileSystem, WatchService>) fileSystem -> {
                 WatchService fsWatcher = fileSystem.newWatchService();
 
                 new Thread(() -> {
@@ -69,7 +70,7 @@ public class PathBook extends AbstractModifiableBook {
                                         return;
                                     }
                                     if (!watcherSymlinkTargets
-                                            .computeIfAbsent(targetTarget.toAbsolutePath().normalize(), (FunctionThrowsIOException<Path, Set<Path>>) (e -> {
+                                            .computeIfAbsent(targetTarget.toAbsolutePath().normalize(), FunctionUtils.unchecked((FunctionThrowsException<Path, Set<Path>>) e -> {
                                                 e.getParent().register(fsWatcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
                                                 return Collections.synchronizedSet(new HashSet<>());
                                             }))
@@ -129,10 +130,10 @@ public class PathBook extends AbstractModifiableBook {
                         .start();
 
                 return fsWatcher;
-            });
+            }));
 
             watcherCallbacks
-                    .computeIfAbsent(path.toAbsolutePath().normalize(), (FunctionThrowsIOException<Path, List<Consumer<WatchEvent<Path>>>>) (key -> {
+                    .computeIfAbsent(path.toAbsolutePath().normalize(),  FunctionUtils.unchecked((FunctionThrowsException<Path, List<Consumer<WatchEvent<Path>>>>) key -> {
                         key.getParent().register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
                         return Collections.synchronizedList(new LinkedList<>());
                     }))
@@ -141,7 +142,7 @@ public class PathBook extends AbstractModifiableBook {
             while (Files.isSymbolicLink(path)) {
                 Path target = Files.readSymbolicLink(path);
                 if (!watcherSymlinkTargets
-                        .computeIfAbsent(target.toAbsolutePath().normalize(), (FunctionThrowsIOException<Path, Set<Path>>) (key -> {
+                        .computeIfAbsent(target.toAbsolutePath().normalize(), FunctionUtils.unchecked((FunctionThrowsException<Path, Set<Path>>)key -> {
                             key.getParent().register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
                             return Collections.synchronizedSet(new HashSet<>());
                         }))
@@ -171,15 +172,11 @@ public class PathBook extends AbstractModifiableBook {
     @Override
     public boolean exists() throws IOException {
         try {
-            return tryExists();
+            return path.toRealPath().toString().endsWith(".xml");
         }
         catch (NoSuchFileException e) {
             return false;
         }
-    }
-
-    private boolean tryExists() throws IOException {
-        return path.toRealPath().toString().endsWith(".xml") && super.exists();
     }
 
     public Path getPath() {
@@ -194,8 +191,8 @@ public class PathBook extends AbstractModifiableBook {
                 removeWatcher(k);
         });
         this.path = path;
-        setPath(getName(), path);
-        instanceWatchersCopy.forEach((BiConsumerThrowsIOException<Consumer<WatchEvent<Path>>, Integer>) ((k, v) -> {
+        //setPath(getName(), path);
+        instanceWatchersCopy.forEach(FunctionUtils.unchecked((BiConsumerThrowsException<Consumer<WatchEvent<Path>>, Integer>) (k, v) -> {
             for (int i = 0; i < v; i++)
                 addWatcher(k);
         }));
@@ -206,12 +203,11 @@ public class PathBook extends AbstractModifiableBook {
     protected InputStream getInputStream() throws IOException {
         return Files.newInputStream(path);
     }
-
-    protected static void setPath(String name, Path path) throws IOException {
+    /*protected static void setPath(String name, Path path) throws IOException {
         if (!Files.exists(path) || !path.toRealPath().toString().endsWith(".xml"))
             throw new IllegalArgumentException("Path `" + path + "' is not xml");
         Books.getCustomTests().put(name, path.toString());
-    }
+    }*/
 
     @Override
     public Path resolve(Path path) {

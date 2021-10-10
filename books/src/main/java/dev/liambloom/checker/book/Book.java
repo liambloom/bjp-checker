@@ -22,7 +22,7 @@ public interface Book {
      *
      * @return A {@code Result} representing the result of the validation
      * @throws IOException If an i/o error occurs
-     * @see Books#getSchema()
+     * @see AbstractBook#getSchema()
      */
     Result<TestValidationStatus> validate() throws IOException;
 
@@ -36,7 +36,7 @@ public interface Book {
      * @throws ClassNotFoundException If the document references a class that does not exist
      * @throws IllegalStateException  If the book does not exist
      * @throws UnsupportedOperationException If using this document requires operations that are not supported (such as file resolution)
-     * @see Books#getSchema()
+     * @see AbstractBook#getSchema()
      * @see #validate()
      * @see #exists()
      */
@@ -50,9 +50,7 @@ public interface Book {
      * @return True if the book exists, false otherwise
      * @throws IOException If an i/o exception occurs
      */
-    default boolean exists() throws IOException {
-        return Books.bookNameExists(getName());
-    }
+    boolean exists() throws IOException;
 
     /**
      * Resolves a path, which may be a relative path (in which case it should be resolved

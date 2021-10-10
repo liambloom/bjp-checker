@@ -60,7 +60,7 @@ public class Main {
                             String arg = argQ.remove();
 
                             switch (arg) {
-                                case "-c", "--chapter" -> {
+                                case "-c", "--section" -> {
                                     if (chapter.isPresent())
                                         throw new UserErrorException("Repeat argument: " + arg);
                                     try {

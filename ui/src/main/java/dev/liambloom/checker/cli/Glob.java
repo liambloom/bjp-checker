@@ -1,6 +1,5 @@
 package dev.liambloom.checker.cli;
 
-import dev.liambloom.checker.shared.FunctionThrowsIOException;
 import dev.liambloom.checker.shared.LogKind;
 import dev.liambloom.checker.shared.Logger;
 import dev.liambloom.checker.uiShared.UserErrorException;

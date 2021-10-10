@@ -2,7 +2,6 @@ package dev.liambloom.checker.gui;
 
 import dev.liambloom.checker.book.Book;
 import dev.liambloom.checker.uiShared.Books;
-import dev.liambloom.checker.internal.ConsumerThrowsIOException;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;

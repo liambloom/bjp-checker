@@ -17,7 +17,7 @@
     </issueManagement>
 
     <modules>
-        <module>annotations</module>
+<!--        <module>annotations</module>-->
         <module>internal</module>
         <module>ui</module>
         <module>books</module>
@@ -36,6 +36,16 @@
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-graphics</artifactId>
                 <version>17.0.0.1</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.liambloom.util</groupId>
+                <artifactId>function</artifactId>
+                <version>1.0.0</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.liambloom.util</groupId>
+                <artifactId>base</artifactId>
+                <version>1.0.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

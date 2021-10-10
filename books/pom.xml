@@ -18,5 +18,9 @@
             <version>0.1.140</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>dev.liambloom.util</groupId>
+            <artifactId>function</artifactId>
+        </dependency>
     </dependencies>
 </project>

@@ -61,6 +61,10 @@ public abstract class AbstractBook implements Book {
         }
     };
 
+    public static Schema getSchema() {
+        return schema.get();
+    }
+
     private String name;
 
     public AbstractBook(String name) {
@@ -72,7 +76,7 @@ public abstract class AbstractBook implements Book {
         return name;
     }
 
-    protected void setName(String name) {
+    protected void rename(String name) {
         this.name = name;
     }
 
