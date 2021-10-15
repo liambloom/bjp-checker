@@ -25,27 +25,22 @@ public final class PathClassLoader extends ClassLoader {
 
     public PathClassLoader(Stream<Path> glob, ClassLoader parent) throws IOException {
         super(parent);
-        try {
-            classes = glob
-                .map(FunctionUtils.unchecked((FunctionThrowsException<Path, Path>) Path::toRealPath))
-                .flatMap(FunctionUtils.unchecked((FunctionThrowsException<Path, Stream<? extends ClassSource>>)p -> {
-                    if (p.toString().endsWith(".jar"))
-                        return CompressedClassSource.allSources(new JarFile(p.toFile())).stream();
-                    else if (p.toString().endsWith(".class"))
-                        return Stream.of(new PathClassSource(p));
-                    else
-                        throw new IllegalArgumentException("Unable to load classes from `" + p + "' because it is not a .class or .jar file");
-                }))
-                .collect(Collectors.toMap(
-                    s -> new StringBuilder(s.path()).reverse().toString(),
-                    FunctionUtils.unchecked((FunctionThrowsException<ClassSource, LazyClass>)s -> new LazyClass(s.bytes())),
-                    (v1, v2) -> v1.markAsDuplicate(),
-                    TreeMap<String, LazyClass>::new
-                ));
-        }
-        catch (UncheckedIOException e) {
-            throw e.getCause();
-        }
+        classes = glob
+            .map(FunctionUtils.unchecked((FunctionThrowsException<Path, Path>) Path::toRealPath))
+            .flatMap(FunctionUtils.unchecked((FunctionThrowsException<Path, Stream<? extends ClassSource>>)p -> {
+                if (p.toString().endsWith(".jar"))
+                    return CompressedClassSource.allSources(new JarFile(p.toFile())).stream();
+                else if (p.toString().endsWith(".class"))
+                    return Stream.of(new PathClassSource(p));
+                else
+                    throw new IllegalArgumentException("Unable to load classes from `" + p + "' because it is not a .class or .jar file");
+            }))
+            .collect(Collectors.toMap(
+                s -> new StringBuilder(s.path()).reverse().toString(),
+                FunctionUtils.unchecked((FunctionThrowsException<ClassSource, LazyClass>)s -> new LazyClass(s.bytes())),
+                (v1, v2) -> v1.markAsDuplicate(),
+                TreeMap<String, LazyClass>::new
+            ));
     }
 
     public Stream<Class<?>> loadAllOwnClasses() {
