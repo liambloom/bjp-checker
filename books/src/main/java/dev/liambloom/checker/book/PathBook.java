@@ -8,7 +8,6 @@ import dev.liambloom.util.function.FunctionUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -87,8 +86,10 @@ public class PathBook extends AbstractModifiableBook {
                                     if (callbacks == null)
                                         continue;
 
-                                    for (Consumer<WatchEvent<Path>> callback : callbacks)
-                                        callback.accept(event);
+                                    for (Consumer<WatchEvent<Path>> callback : callbacks){
+                                        for (int i = 0; i < instanceWatchers.getOrDefault(callback, 0); i++)
+                                            callback.accept(event);
+                                    }
 
                                     Iterator<Path> symlinks = Optional.ofNullable(watcherSymlinkTargets.get(currentTarget))
                                             .map(Collection::iterator)
@@ -151,10 +152,7 @@ public class PathBook extends AbstractModifiableBook {
                 path = target;
             }
 
-            instanceWatchers.compute(cb, (key, old) -> Optional.ofNullable(old).map(i -> i + 1).orElse(1));
-        }
-        catch (UncheckedIOException e) {
-            throw e.getCause();
+            instanceWatchers.compute(cb, (key, old) -> old == null ? 1 : old + 1);
         }
         finally {
             watcherLock.writeLock().unlock();

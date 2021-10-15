@@ -6,15 +6,10 @@ import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.WatchEvent;
+import java.util.function.Consumer;
 
 public interface Book {
-    /**
-     * Returns the name of the document
-     *
-     * @return The name of the document
-     */
-    String getName();
-
     /**
      * Validates the test using the schema and also checking
      * to make sure that all types referenced in the book are valid. The status of the
@@ -79,4 +74,22 @@ public interface Book {
     default boolean supportsFileResolution() {
         return false;
     }
+
+    /**
+     * Adds a watcher that watches for changes in this book. Multiple instances of the
+     * same callback can be added, and if they are, the callback will be called once for
+     * each time it was added.
+     *
+     * @param cb The function to call when a change is detected
+     * @throws IOException If an i/o error occurs
+     */
+    void addWatcher(Consumer<WatchEvent<Path>> cb) throws IOException;
+
+    /**
+     * Removes a watcher from the book. If there are multiple instances of the same
+     * callback, it decrements the number of times that the callback will be called.
+     *
+     * @param cb The callback of the watcher to remove.
+     */
+    void removeWatcher(Consumer<WatchEvent<Path>> cb);
 }
