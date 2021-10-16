@@ -6,12 +6,13 @@ import org.fusesource.jansi.AnsiConsole;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
+import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -42,6 +43,10 @@ public class Main {
                     System.out.println(App.VERSION);
                 }
                 case "check" -> {
+                    if (args.length == 2 && (args[1].equals("-h") || args[1].equals("--help"))) {
+                        // TODO: help
+                        return;
+                    }
                     try {
                         List<String> globArgs = new LinkedList<>();
                         String testName = null;
@@ -110,9 +115,12 @@ public class Main {
                 // break;
                 case "tests" -> {
                     if (args.length == 1)
-                        throw new UserErrorException("Missing argument, expected one of: add, remove, rename, list, validate, get-default, set-default"); // TODO
+                        throw new UserErrorException("Missing argument, expected one of: add, remove, rename, list, validate, get-default, set-default. See `chk check --help' for details."); // TODO
                     switch (args[1]) {
                         // TODO: handle errors
+                        case "help" -> {
+                            // TODO: help
+                        }
                         case "add" -> {
                             assertArgsPresent(args, 2, "name", "path");
                             Books.addBook(args[2], new Glob(args[3]).single());
@@ -168,10 +176,49 @@ public class Main {
                                 throw new UserErrorException("Tests \"" + args[2] + "\" not found");
                             App.prefs().put("selectedTests", args[2]);
                         }
-                        default -> throw new UserErrorException("Command `tests " + args[1] + "' not recognized. See `checker tests --help' for a list of subcommands of `tests'");
+                        default -> throw new UserErrorException("Command `tests " + args[1] + "' not recognized. See `chk tests --help' for a list of subcommands of `tests'");
                     }
                 }
-                case "gui" -> Application.launch(dev.liambloom.checker.bjp.gui.Main.class, Arrays.copyOfRange(args, 1, args.length));
+                case "gui" -> {
+                    if (args.length == 1) {
+                        Stream.concat(
+                            Stream.of((Supplier<Optional<Path>>) () -> ProcessHandle.current().info().command()
+                                    .map(Path::of)
+                                    .map(p -> p.getParent().resolve("javaw")))
+                                .map(Supplier::get),
+                            Stream.of(System.getProperty("java.home"), System.getenv("JAVA_HOME"))
+                                .filter(Objects::nonNull)
+                                .map(StringBuffer::new)
+                                .map(b -> b.append(File.separatorChar)
+                                        .append(System.getProperty("os.name").equalsIgnoreCase("aix") ? "sh" : "bin"))
+                                .map(StringBuffer::toString)
+                                .map(Path::of)
+                        )
+                            .filter(Optional::isPresent)
+                            .map(Optional::get)
+                            .map(p -> p.resolve("javaw"))
+                            .findFirst()
+                            .ifPresentOrElse(
+                                exe -> {
+
+                                },
+                                () -> {
+
+                                }
+                            );
+                    }
+                    if (args.length == 2) {
+                        switch (args[1]) {
+                            case "-c", "--console" -> Application.launch(dev.liambloom.checker.bjp.gui.Main.class, Arrays.copyOfRange(args, 1, args.length));
+                            case "-h", "--help" -> {
+                                // TODO: help
+                            }
+                            default -> throw new UserErrorException("Unrecognized option: `" + args[1] + "'. See `chk gui --help' for help.");
+                        }
+                    }
+                    else
+                        throw new UserErrorException("Unexpected argument: `" + args[3] + '\'');
+                }
                 default -> throw new UserErrorException("Command `" + args[0] + "' not recognized. See `checker --help' for a list of commands.");
             }
             //}
