@@ -2,6 +2,8 @@ package dev.liambloom.checker.gui;
 
 import dev.liambloom.checker.book.Book;
 import dev.liambloom.checker.uiShared.Books;
+import dev.liambloom.util.function.ConsumerThrowsException;
+import dev.liambloom.util.function.FunctionUtils;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -107,10 +109,10 @@ public class MainController {
         });
 
         dialog.showAndWait()
-            .ifPresent((ConsumerThrowsIOException<Pair<String, File>>) (pair -> {
+            .ifPresent(FunctionUtils.unchecked((ConsumerThrowsException<Pair<String, File>>) (pair -> {
                 Books.addBook(pair.getKey(), pair.getValue().toPath());
                 addTests(Books.getBook(pair.getKey()));
-            }));
+            })));
     }
 
     private void addTests(Book book) throws IOException {
@@ -133,7 +135,7 @@ public class MainController {
     public void initialize() throws IOException {
         try {
             Books.getAllBooks()
-                .forEachOrdered((ConsumerThrowsIOException<Book>) this::addTests);
+                .forEachOrdered(FunctionUtils.unchecked((ConsumerThrowsException<Book>) this::addTests));
             if (testToggleGroup.getSelectedToggle() == null || ((Control) testToggleGroup.getSelectedToggle()).isDisabled())
                 ((Toggle) ((Parent) testList.getChildren().get(1)).getChildrenUnmodifiable().get(0)).setSelected(true);
         }

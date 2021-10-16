@@ -3,6 +3,9 @@ package dev.liambloom.checker.book;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.WatchEvent;
+import java.util.function.Consumer;
 
 public class StreamBook extends AbstractBook {
     private InputStream stream;
@@ -21,5 +24,20 @@ public class StreamBook extends AbstractBook {
             stream = null;
         }
         return new ByteArrayInputStream(buf);
+    }
+
+    @Override
+    public boolean exists() throws IOException {
+        return true;
+    }
+
+    @Override
+    public void addWatcher(Consumer<WatchEvent<Path>> cb) throws IOException {
+
+    }
+
+    @Override
+    public void removeWatcher(Consumer<WatchEvent<Path>> cb) {
+
     }
 }

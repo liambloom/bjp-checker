@@ -29,14 +29,6 @@ public final class Books {
 //        LOCAL_TEST_NAMES.put("BJP 3", "bjp3");
 //    }
 
-    public static Schema getSchema() {
-        return schema.get();
-    }
-
-    public static Lazy<Schema> getSchemaLazy() {
-        return schema;
-    }
-
 //    public static Preferences getCustomTests() {
 //        return customTests.get();
 //    }

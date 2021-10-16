@@ -8,6 +8,8 @@ module dev.liambloom.checker.ui {
     requires dev.liambloom.checker.books;
     requires org.fusesource.jansi;
     requires dev.liambloom.checker.shared;
+    requires dev.liambloom.util.function;
+    requires dev.liambloom.util.base;
     exports dev.liambloom.checker.cli;
     exports dev.liambloom.checker.gui;
     opens views;

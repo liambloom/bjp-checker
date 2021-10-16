@@ -3,6 +3,8 @@ package dev.liambloom.checker.cli;
 import dev.liambloom.checker.shared.LogKind;
 import dev.liambloom.checker.shared.Logger;
 import dev.liambloom.checker.uiShared.UserErrorException;
+import dev.liambloom.util.function.FunctionThrowsException;
+import dev.liambloom.util.function.FunctionUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,16 +27,11 @@ public class Glob {
     public Glob(Collection<String> s) throws IOException {
         if (s.size() == 0)
             throw new UserErrorException("No glob found. For more information, run `check glob --help'");
-        try {
-            pieces = s.stream()
-                .map(pathSeparator::split)
-                .flatMap(Arrays::stream)
-                .map((FunctionThrowsIOException<String, Piece>) Piece::new)
-                .toArray(Piece[]::new);
-        }
-        catch (UncheckedIOException e) {
-            throw e.getCause();
-        }
+        pieces = s.stream()
+            .map(pathSeparator::split)
+            .flatMap(Arrays::stream)
+            .map(FunctionUtils.unchecked((FunctionThrowsException<String, Piece>) Piece::new))
+            .toArray(Piece[]::new);
     }
 
     public Glob(String... s) throws IOException {
@@ -128,9 +125,9 @@ public class Glob {
                             return Stream.concat(
                                 files(base, i + 1),
                                 Files.list(base)
-                                    .map((FunctionThrowsIOException<Path, Path>) Path::toRealPath)
+                                    .map(FunctionUtils.unchecked((FunctionThrowsException<Path, Path>) Path::toRealPath))
                                     .filter(Files::isDirectory)
-                                    .flatMap((FunctionThrowsIOException<Path, Stream<Path>>) (dir -> files(dir, i)))
+                                    .flatMap(FunctionUtils.unchecked((FunctionThrowsException<Path, Stream<Path>>) (dir -> files(dir, i))))
                             );
                         }
                         catch (UncheckedIOException e) {
@@ -211,17 +208,17 @@ public class Glob {
 
                     try {
                         if (i + 1 == segments.length) {
-                            r = r.flatMap((FunctionThrowsIOException<Path, Stream<Path>>) (p -> {
+                            r = r.flatMap(FunctionUtils.unchecked((FunctionThrowsException<Path, Stream<Path>>) (p -> {
                                 if (Files.isDirectory(p))
                                     return files(p, i + 1);
                                 else
                                     return Stream.of(p);
-                            }));
+                            })));
                         }
                         else
                             r = r
                                 .filter(Files::isDirectory)
-                                .flatMap((FunctionThrowsIOException<Path, Stream<Path>>) (dir -> files(dir, i + 1)));
+                                .flatMap(FunctionUtils.unchecked((FunctionThrowsException<Path, Stream<Path>>) (dir -> files(dir, i + 1))));
                     }
                     catch (UncheckedIOException e) {
                         throw e.getCause();
@@ -258,7 +255,7 @@ public class Glob {
             return Arrays.stream(pieces)
                 .unordered()
                 .parallel()
-                .map((FunctionThrowsIOException<Piece, List<Path>>) Piece::files)
+                .map(FunctionUtils.unchecked((FunctionThrowsException<Piece, List<Path>>) Piece::files))
                 .flatMap(List::stream)
                 .distinct()
                 .sorted();

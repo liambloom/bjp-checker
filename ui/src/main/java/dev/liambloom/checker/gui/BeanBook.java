@@ -4,6 +4,8 @@ import dev.liambloom.checker.internal.*;
 import dev.liambloom.checker.book.*;
 import dev.liambloom.checker.shared.Result;
 import dev.liambloom.checker.book.TestValidationStatus;
+import dev.liambloom.util.function.ConsumerThrowsException;
+import dev.liambloom.util.function.FunctionUtils;
 import javafx.beans.property.*;
 
 import java.io.IOException;
@@ -48,7 +50,7 @@ public class BeanBook {
         }));
         onChange(null);
         if (inner instanceof ModifiableBook mb)
-            mb.addWatcher((ConsumerThrowsIOException<WatchEvent<Path>>) this::onChange);
+            mb.addWatcher(FunctionUtils.unchecked(this::onChange));
     }
 
     private void onChange(WatchEvent<Path> e) throws IOException {

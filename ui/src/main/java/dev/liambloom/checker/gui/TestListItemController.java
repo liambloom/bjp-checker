@@ -2,9 +2,10 @@ package dev.liambloom.checker.gui;
 
 import dev.liambloom.checker.book.Book;
 import dev.liambloom.checker.uiShared.Books;
-import dev.liambloom.checker.internal.*;
 import dev.liambloom.checker.shared.Result;
 import dev.liambloom.checker.book.TestValidationStatus;
+import dev.liambloom.util.function.FunctionUtils;
+import dev.liambloom.util.Case;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.binding.ObjectBinding;
@@ -165,7 +166,7 @@ public class TestListItemController {
                 chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
                 Optional.ofNullable(chooser.showOpenDialog(node.getScene().getWindow()))
                     .map(File::toPath)
-                    .ifPresent((ConsumerThrowsIOException<Path>) this.book.get()::setPath);
+                    .ifPresent(FunctionUtils.unchecked(this.book.get()::setPath));
                 // bookPath.setText(p.getParent().toString() + File.separator);
                 // bookFileName.setText(p.getFileName().toString());
             });
