@@ -180,44 +180,9 @@ public class Main {
                     }
                 }
                 case "gui" -> {
-                    if (args.length == 1) {
-                        Stream.concat(
-                            Stream.of((Supplier<Optional<Path>>) () -> ProcessHandle.current().info().command()
-                                    .map(Path::of)
-                                    .map(p -> p.getParent().resolve("javaw")))
-                                .map(Supplier::get),
-                            Stream.of(System.getProperty("java.home"), System.getenv("JAVA_HOME"))
-                                .filter(Objects::nonNull)
-                                .map(StringBuffer::new)
-                                .map(b -> b.append(File.separatorChar)
-                                        .append(System.getProperty("os.name").equalsIgnoreCase("aix") ? "sh" : "bin"))
-                                .map(StringBuffer::toString)
-                                .map(Path::of)
-                        )
-                            .filter(Optional::isPresent)
-                            .map(Optional::get)
-                            .map(p -> p.resolve("javaw"))
-                            .findFirst()
-                            .ifPresentOrElse(
-                                exe -> {
+                    assertArgsPresent(args, 1);
+                    Application.launch(dev.liambloom.checker.bjp.gui.Main.class, Arrays.copyOfRange(args, 1, args.length));
 
-                                },
-                                () -> {
-
-                                }
-                            );
-                    }
-                    if (args.length == 2) {
-                        switch (args[1]) {
-                            case "-c", "--console" -> Application.launch(dev.liambloom.checker.bjp.gui.Main.class, Arrays.copyOfRange(args, 1, args.length));
-                            case "-h", "--help" -> {
-                                // TODO: help
-                            }
-                            default -> throw new UserErrorException("Unrecognized option: `" + args[1] + "'. See `chk gui --help' for help.");
-                        }
-                    }
-                    else
-                        throw new UserErrorException("Unexpected argument: `" + args[3] + '\'');
                 }
                 default -> throw new UserErrorException("Command `" + args[0] + "' not recognized. See `checker --help' for a list of commands.");
             }
