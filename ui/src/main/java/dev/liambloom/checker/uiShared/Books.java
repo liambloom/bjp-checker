@@ -2,12 +2,7 @@ package dev.liambloom.checker.uiShared;
 
 import dev.liambloom.checker.book.Book;
 import dev.liambloom.checker.book.PathBook;
-import dev.liambloom.checker.shared.Lazy;
-import org.xml.sax.SAXException;
 
-import javax.xml.transform.stream.StreamSource;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

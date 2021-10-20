@@ -1,4 +1,4 @@
-package dev.liambloom.checker.book;
+package dev.liambloom.checker.internal;
 
 import dev.liambloom.checker.shared.Color;
 import dev.liambloom.checker.shared.Result;

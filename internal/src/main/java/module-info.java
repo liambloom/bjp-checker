@@ -7,5 +7,6 @@ module dev.liambloom.checker.internal {
     requires dev.liambloom.checker.shared;
     requires dev.liambloom.util.function;
     requires dev.liambloom.util.base;
+
     opens tests;
 }

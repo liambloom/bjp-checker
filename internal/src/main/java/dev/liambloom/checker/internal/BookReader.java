@@ -1,23 +1,23 @@
-package dev.liambloom.checker.book;
+package dev.liambloom.checker.internal;
 
-import dev.liambloom.checker.shared.*;
+import dev.liambloom.checker.book.Book;
+import dev.liambloom.checker.shared.LogKind;
+import dev.liambloom.checker.shared.PrintStreamLogger;
+import dev.liambloom.checker.shared.Result;
+import dev.liambloom.checker.shared.Util;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
+import org.xml.sax.*;
 import org.xml.sax.ext.DefaultHandler2;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.stream.StreamSource;
-import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Objects;
@@ -25,32 +25,10 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-public abstract class AbstractBook implements Book {
-    private static final Lazy<Schema> schema = new Lazy<>(() -> {
-        try {
-            SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1");
-            factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
-            return factory.newSchema(
-                new StreamSource(AbstractBook.class.getResourceAsStream("/book-schema.xsd")));
-        }
-        catch (SAXException e) {
-            throw new RuntimeException(e);
-        }
-    });
-    private static final Lazy<DocumentBuilderFactory> documentBuilderFactory = new Lazy<>(() -> {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        dbf.setSchema(schema.get());
-        dbf.setNamespaceAware(true);
-        return dbf;
-    });
-    private static final ResourcePool<DocumentBuilder> documentBuilderPool = new ResourcePool<>(() -> {
-        try {
-            return documentBuilderFactory.get().newDocumentBuilder();
-        }
-        catch (ParserConfigurationException e) {
-            throw new RuntimeException(e);
-        }
-    });
+/**
+ * Note: this is NOT thread safe.
+ */
+public class BookReader {
     private static final ClassLoader classLoaderAcceptsThis = new ClassLoader() {
         @Override
         protected Class<?> findClass(String name) throws ClassNotFoundException {
@@ -60,61 +38,59 @@ public abstract class AbstractBook implements Book {
                 throw new ClassNotFoundException(name);
         }
     };
+    private static final DocumentBuilderFactory dbf;
 
-    public static Schema getSchema() {
-        return schema.get();
+    static {
+        dbf = DocumentBuilderFactory.newInstance();
+        SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1");
+        try {
+            factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
+            dbf.setSchema(factory.newSchema(
+                new StreamSource(AbstractBook.class.getResourceAsStream("/book-schema.xsd"))));
+        }
+        catch (SAXException e) {
+            e.printStackTrace();
+        }
+        dbf.setNamespaceAware(true);
     }
 
-    private String name;
+    private final DocumentBuilder db;
+    private Book currentBook;
 
-    public AbstractBook(String name) {
-        this.name = name;
-    }
-
-    @Override
-    public String getName() {
-        return name;
-    }
-
-    protected void rename(String name) {
-        this.name = name;
-    }
-
-    private Stream<Element> elementOfType(Document document, String... types) {
-        return Arrays.stream(types)
-            .map(document::getElementsByTagName)
-            .flatMap(Util::streamNodeList)
-            .map(Element.class::cast);
+    public BookReader() {
+        try {
+            db = dbf.newDocumentBuilder();
+        }
+        catch (ParserConfigurationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T validateDocumentAndReturn(Class<T> clazz) throws IOException, SAXException, ClassNotFoundException {
+    private <T> T validateDocumentAndReturn(Book book, Class<T> clazz) throws IOException, SAXException, ClassNotFoundException {
+        currentBook = book;
         if (!clazz.equals(Document.class) && !clazz.equals(Result.class))
             throw new IllegalArgumentException("validateDocumentAndReturn cannot return " + clazz.getName());
         boolean returnDocument = clazz.equals(Document.class);
-        if (!exists()) {
+        if (!book.exists()) {
             if (returnDocument)
-                throw new IllegalStateException("Book " + getName() + " does not exist");
+                throw new IllegalStateException("Book " + book + " does not exist");
             else
-                return (T) new Result<>(getName(), TestValidationStatus.NOT_FOUND);
+                return (T) new Result<>(book.toString(), TestValidationStatus.NOT_FOUND);
         }
-        DocumentBuilder db = documentBuilderPool.get();
         ErrorHandler handler = returnDocument ? new DefaultHandler2() : new ValidationErrorHandler();
         db.setErrorHandler(handler);
         Document document;
         try {
-            document = db.parse(getInputStream());
+            document = db.parse(book.getInputStream());
         }
         catch (SAXException e) {
             if (returnDocument)
                 throw e;
             else
-                return (T) new Result<>(getName(),
+                return (T) new Result<>(book.toString(),
                     TestValidationStatus.INVALID,
                     Optional.of(((ValidationErrorHandler) handler).getLogs()));
-        }
-        finally {
-            documentBuilderPool.offer(db);
         }
         // I'd like to wrap exceptions in SAXParseException, but I have no way to get the line/column number
         //  without using a SAX parser. Since I want a document to end with, I would need to either:
@@ -172,8 +148,8 @@ public abstract class AbstractBook implements Book {
             typeErrors.forEach(((ValidationErrorHandler) handler)::customError);
         }
 
-        if (!supportsFileResolution()
-                && (document.getElementsByTagName("File").getLength() > 0 || document.getElementsByTagName("Path").getLength() > 0)) {
+        if (!book.supportsFileResolution()
+            && (document.getElementsByTagName("File").getLength() > 0 || document.getElementsByTagName("Path").getLength() > 0)) {
             UnsupportedOperationException e =  new UnsupportedOperationException("Book document contains <File> or <Path> element, but Book does not support file resolution");
             if (returnDocument)
                 throw e;
@@ -186,31 +162,34 @@ public abstract class AbstractBook implements Book {
         else {
             ValidationErrorHandler h = (ValidationErrorHandler) handler;
             if (h.getMaxErrorKind() == null)
-                return (T) new Result<>(getName(), TestValidationStatus.VALID);
+                return (T) new Result<>(book.toString(), TestValidationStatus.VALID);
             else if (h.getMaxErrorKind() == LogKind.WARN)
-                return (T) new Result<>(getName(), TestValidationStatus.VALID_WITH_WARNINGS, Optional.of(h.getLogs()));
+                return (T) new Result<>(book.toString(), TestValidationStatus.VALID_WITH_WARNINGS, Optional.of(h.getLogs()));
             else
-                return (T) new Result<>(getName(), TestValidationStatus.INVALID, Optional.of(h.getLogs()));
+                return (T) new Result<>(book.toString(), TestValidationStatus.INVALID, Optional.of(h.getLogs()));
         }
     }
 
+    private Stream<Element> elementOfType(Document document, String... types) {
+        return Arrays.stream(types)
+            .map(document::getElementsByTagName)
+            .flatMap(Util::streamNodeList)
+            .map(Element.class::cast);
+    }
+
     @SuppressWarnings("unchecked")
-    @Override
-    public Result<TestValidationStatus> validate() throws IOException {
+    public Result<TestValidationStatus> validate(Book book) throws IOException {
         try {
-            return validateDocumentAndReturn(Result.class);
+            return (Result<TestValidationStatus>) validateDocumentAndReturn(book, Result.class);
         }
         catch (ClassNotFoundException | SAXException e) {
             throw new IllegalStateException("This exception should not have propagated", e);
         }
     }
 
-    @Override
-    public Document getDocument() throws IOException, SAXException, ClassNotFoundException {
-        return validateDocumentAndReturn(Document.class);
+    public Document getDocument(Book book) throws IOException, ClassNotFoundException, SAXException {
+        return validateDocumentAndReturn(book, Document.class);
     }
-
-    protected abstract InputStream getInputStream() throws IOException;
 
     private class ValidationErrorHandler implements ErrorHandler {
         private ByteArrayOutputStream log;
@@ -255,7 +234,7 @@ public abstract class AbstractBook implements Book {
 
             return message.append(" at ")
                 .append('`')
-                .append(AbstractBook.this instanceof PathBook pathBook ? pathBook.getPath() : getName())
+                .append(currentBook.toString())
                 .append('\'')
                 .append(':')
                 .append(e.getLineNumber())

@@ -12,6 +12,7 @@ module dev.liambloom.checker.ui {
     requires dev.liambloom.util.base;
     exports dev.liambloom.checker.cli;
     exports dev.liambloom.checker.gui;
+    requires net.harawata.appdirs;
     opens views;
     opens css;
     opens dev.liambloom.checker.gui to javafx.fxml;

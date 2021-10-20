@@ -5,12 +5,13 @@ import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 import java.util.function.Consumer;
 
 public interface Book {
-    /**
+    /*
      * Validates the test using the schema and also checking
      * to make sure that all types referenced in the book are valid. The status of the
      * returned result will be an instance of {@link TestValidationStatus}
@@ -18,10 +19,10 @@ public interface Book {
      * @return A {@code Result} representing the result of the validation
      * @throws IOException If an i/o error occurs
      * @see AbstractBook#getSchema()
-     */
+     *
     Result<TestValidationStatus> validate() throws IOException;
 
-    /**
+    /*
      * Returns the document represented by this book. An exception will be thrown if
      * the document is not valid.
      *
@@ -34,8 +35,16 @@ public interface Book {
      * @see AbstractBook#getSchema()
      * @see #validate()
      * @see #exists()
+     *
+    Document getDocument() throws IOException, SAXException, ClassNotFoundException;*/
+
+    /**
+     * Returns the input stream represented by this book.
+     *
+     * @return The input stream
+     * @throws IOException If an i/o error occurs
      */
-    Document getDocument() throws IOException, SAXException, ClassNotFoundException;
+    InputStream getInputStream() throws IOException;
 
     /**
      * Returns {@code true} if the document "exists". The exact definition of this may
@@ -43,7 +52,7 @@ public interface Book {
      * only if, {@code Books.bookNameExists(this.getName())} returns {@code true}.
      *
      * @return True if the book exists, false otherwise
-     * @throws IOException If an i/o exception occurs
+     * @throws IOException If an i/o error occurs
      */
     boolean exists() throws IOException;
 

@@ -1,10 +1,8 @@
 package dev.liambloom.checker.gui;
 
-import dev.liambloom.checker.internal.*;
 import dev.liambloom.checker.book.*;
 import dev.liambloom.checker.shared.Result;
-import dev.liambloom.checker.book.TestValidationStatus;
-import dev.liambloom.util.function.ConsumerThrowsException;
+import dev.liambloom.checker.internal.TestValidationStatus;
 import dev.liambloom.util.function.FunctionUtils;
 import javafx.beans.property.*;
 

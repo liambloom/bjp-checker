@@ -3,7 +3,7 @@ package dev.liambloom.checker.gui;
 import dev.liambloom.checker.book.Book;
 import dev.liambloom.checker.uiShared.Books;
 import dev.liambloom.checker.shared.Result;
-import dev.liambloom.checker.book.TestValidationStatus;
+import dev.liambloom.checker.internal.TestValidationStatus;
 import dev.liambloom.util.function.FunctionUtils;
 import dev.liambloom.util.Case;
 import javafx.beans.binding.BooleanBinding;
