@@ -1,4 +1,4 @@
-package dev.liambloom.checker.gui;
+package dev.liambloom.checker.ui.gui;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;

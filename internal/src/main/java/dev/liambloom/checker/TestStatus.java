@@ -1,7 +1,4 @@
-package dev.liambloom.checker.internal;
-
-import dev.liambloom.checker.shared.Color;
-import dev.liambloom.checker.shared.Result;
+package dev.liambloom.checker;
 
 public enum TestStatus implements Result.Status {
     /*

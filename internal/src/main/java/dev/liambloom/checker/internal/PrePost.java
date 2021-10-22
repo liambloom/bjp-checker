@@ -1,6 +1,5 @@
 package dev.liambloom.checker.internal;
 
-import dev.liambloom.checker.shared.Util;
 import org.w3c.dom.Element;
 
 import java.io.ByteArrayInputStream;

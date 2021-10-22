@@ -7,17 +7,16 @@ import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 import java.util.function.Consumer;
 
-public class StreamBook extends AbstractBook {
+public class StreamBook implements Book {
     private InputStream stream;
     private byte[] buf = null;
 
-    StreamBook(String name, InputStream stream) {
-        super(name);
+    StreamBook(InputStream stream) {
         this.stream = stream;
     }
 
     @Override
-    protected InputStream getInputStream() throws IOException {
+    public InputStream getInputStream() throws IOException {
         if (buf == null) {
             // Is this terrible?
             buf = stream.readAllBytes();

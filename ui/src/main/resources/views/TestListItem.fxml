@@ -11,7 +11,7 @@
 <?import javafx.scene.shape.SVGPath?>
 <AnchorPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="dev.liambloom.checker.gui.TestListItemController"
+            fx:controller="dev.liambloom.checker.ui.gui.TestListItemController"
             fx:id="node"
             minWidth="${controller.sidebarWidth}"
             maxWidth="${controller.sidebarWidth}"

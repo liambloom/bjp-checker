@@ -1,7 +1,7 @@
-package dev.liambloom.checker.internal;
+package dev.liambloom.checker;
 
-import dev.liambloom.checker.shared.Color;
-import dev.liambloom.checker.shared.Result;
+import dev.liambloom.checker.Color;
+import dev.liambloom.checker.Result;
 
 public enum TestValidationStatus implements Result.Status {
     VALID(Color.GREEN),

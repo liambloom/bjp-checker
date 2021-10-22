@@ -1,7 +1,7 @@
-package dev.liambloom.checker.gui;
+package dev.liambloom.checker.ui.gui;
 
 import dev.liambloom.checker.book.Book;
-import dev.liambloom.checker.uiShared.Books;
+import dev.liambloom.checker.ui.Books;
 import dev.liambloom.util.function.ConsumerThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
 import javafx.beans.property.DoubleProperty;

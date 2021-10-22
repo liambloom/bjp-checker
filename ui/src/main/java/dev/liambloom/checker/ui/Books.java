@@ -1,4 +1,4 @@
-package dev.liambloom.checker.uiShared;
+package dev.liambloom.checker.ui;
 
 import dev.liambloom.checker.book.Book;
 import dev.liambloom.checker.book.PathBook;

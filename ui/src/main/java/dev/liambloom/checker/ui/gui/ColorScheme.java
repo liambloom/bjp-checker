@@ -1,4 +1,4 @@
-package dev.liambloom.checker.gui;
+package dev.liambloom.checker.ui.gui;
 
 public enum ColorScheme {
     LIGHT, DARK

@@ -1,4 +1,4 @@
-package dev.liambloom.checker.shared;
+package dev.liambloom.checker.internal;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;

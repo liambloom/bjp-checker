@@ -1,8 +1,9 @@
-package dev.liambloom.checker.cli;
+package dev.liambloom.checker.ui.cli;
 
-import dev.liambloom.checker.shared.*;
-import dev.liambloom.checker.uiShared.Books;
-import dev.liambloom.checker.uiShared.UserErrorException;
+import dev.liambloom.checker.Result;
+import dev.liambloom.checker.TestValidationStatus;
+import dev.liambloom.checker.ui.Books;
+import dev.liambloom.checker.ui.UserErrorException;
 import dev.liambloom.checker.book.*;
 import dev.liambloom.checker.internal.*;
 import javafx.application.Application;
@@ -25,7 +26,7 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            Logger.setLogger(new PrintStreamLogger());
+//            Logger.setLogger(new PrintStreamLogger());
             AnsiConsole.systemInstall();
             Preferences prefs = Preferences.userRoot().node("dev/liambloom/checker");
             /*if (args.length > 1 && (args[1].equals("-h") || args[1].equals("--help"))) {
@@ -104,7 +105,7 @@ public class Main {
 
                         Stream<Path> paths = new Glob(globArgs).files();
 
-                        Checker.check(new CheckArgs(chapter, exercises, programmingProjects, Books.getBook(testName), paths));
+                        BookReader.check(new CheckArgs(chapter, exercises, programmingProjects, Books.getBook(testName), paths));
                     }
                     catch (SAXException | ClassNotFoundException | IllegalArgumentException e) {
                         // TODO: There is probably a better way to do this (should I add a ErrorHandler to Book or CheckArgs?)
@@ -187,7 +188,7 @@ public class Main {
                         default -> throw new UserErrorException("Command `tests " + args[1] + "' not recognized. See `checker tests --help' for a list of subcommands of `tests'");
                     }
                 }
-                case "gui" -> Application.launch(dev.liambloom.checker.gui.Main.class, Arrays.copyOfRange(args, 1, args.length));
+                case "gui" -> Application.launch(dev.liambloom.checker.ui.gui.Main.class, Arrays.copyOfRange(args, 1, args.length));
                 default -> throw new UserErrorException("Command `" + args[0] + "' not recognized. See `checker --help' for a list of commands.");
             }
             //}

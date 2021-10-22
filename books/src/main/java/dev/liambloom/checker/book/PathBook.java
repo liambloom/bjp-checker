@@ -1,7 +1,5 @@
 package dev.liambloom.checker.book;
 
-import dev.liambloom.checker.shared.LogKind;
-import dev.liambloom.checker.shared.Logger;
 import dev.liambloom.util.function.BiConsumerThrowsException;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
@@ -17,7 +15,7 @@ import java.util.function.Consumer;
 import static java.nio.file.StandardWatchEventKinds.*;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
-public class PathBook extends AbstractModifiableBook {
+public class PathBook implements Book {
     private static final Map<Path, List<Consumer<WatchEvent<Path>>>> watcherCallbacks = new HashMap<>();
     private static final Map<FileSystem, WatchService> watchers = new HashMap<>();
     private static final Map<Path, Set<Path>> watcherSymlinkTargets = new HashMap<>();
@@ -25,8 +23,7 @@ public class PathBook extends AbstractModifiableBook {
     private final Map<Consumer<WatchEvent<Path>>, Integer> instanceWatchers = new HashMap<>();
     private Path path;
 
-    PathBook(String name, Path path) {
-        super(name);
+    PathBook(Path path) {
         this.path = path;
     }
 
@@ -44,8 +41,8 @@ public class PathBook extends AbstractModifiableBook {
                             key = fsWatcher.take();
                         }
                         catch (InterruptedException e) {
-                            Logger.logger.log(LogKind.ERROR, e.toString());
-                            throw new RuntimeException(e);
+                            System.getLogger(getClass().getName()).log(System.Logger.Level.ERROR, e);
+                            break;
                         }
 
                         watcherLock.readLock().lock();
@@ -65,7 +62,8 @@ public class PathBook extends AbstractModifiableBook {
                                     try {
                                         targetTarget = Files.readSymbolicLink(target);
                                     } catch (IOException e) {
-                                        Logger.logger.log(LogKind.ERROR, "No longer watching for changes in tests. Reason: " + e.getMessage());
+                                        System.getLogger(getClass().getName()).log(System.Logger.Level.ERROR,
+                                            "No longer watching for changes in tests.", e);
                                         return;
                                     }
                                     if (!watcherSymlinkTargets
@@ -105,7 +103,8 @@ public class PathBook extends AbstractModifiableBook {
                                         try {
                                             symlinkTarget = Files.readSymbolicLink(symlink).toAbsolutePath().normalize();
                                         } catch (IOException e) {
-                                            Logger.logger.log(LogKind.ERROR, "No longer watching for changes in tests. Reason: " + e.getMessage());
+                                            System.getLogger(getClass().getName()).log(System.Logger.Level.ERROR,
+                                                "No longer watching for changes in tests.", e);
                                             return;
                                         }
 
@@ -123,7 +122,8 @@ public class PathBook extends AbstractModifiableBook {
                         }
 
                         if (!key.reset()) {
-                            Logger.logger.log(LogKind.ERROR, "No longer watching for changes in tests. Reason: WatchKey is invalid");
+                            System.getLogger(getClass().getName()).log(System.Logger.Level.ERROR,
+                                "No longer watching for changes in tests. Reason: WatchKey is invalid");
                             break;
                         }
                     }
@@ -198,7 +198,7 @@ public class PathBook extends AbstractModifiableBook {
     }
 
     @Override
-    protected InputStream getInputStream() throws IOException {
+    public InputStream getInputStream() throws IOException {
         return Files.newInputStream(path);
     }
     /*protected static void setPath(String name, Path path) throws IOException {

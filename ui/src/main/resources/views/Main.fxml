@@ -16,7 +16,7 @@
 <?import javafx.scene.shape.SVGPath?>
 <GridPane xmlns="http://javafx.com/javafx"
           xmlns:fx="http://javafx.com/fxml"
-          fx:controller="dev.liambloom.checker.gui.MainController"
+          fx:controller="dev.liambloom.checker.ui.gui.MainController"
           stylesheets="@../css/Main.css"
           fx:id="root">
     <fx:define>

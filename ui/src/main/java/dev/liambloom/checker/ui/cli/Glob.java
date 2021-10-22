@@ -1,8 +1,7 @@
-package dev.liambloom.checker.cli;
+package dev.liambloom.checker.ui.cli;
 
-import dev.liambloom.checker.shared.LogKind;
-import dev.liambloom.checker.shared.Logger;
-import dev.liambloom.checker.uiShared.UserErrorException;
+import dev.liambloom.checker.internal.Logger;
+import dev.liambloom.checker.ui.UserErrorException;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
 

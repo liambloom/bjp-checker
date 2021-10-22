@@ -11,8 +11,8 @@
   </parent>
   <artifactId>ui</artifactId>
 
-  <name>Checker for BJP (UI)</name>
-  <url>https://checker.liambloom.dev/bjp</url>
+  <name>Checker (UI)</name>
+  <url>https://checker.liambloom.dev/</url>
 
   <dependencies>
     <dependency>
@@ -30,11 +30,11 @@
       <artifactId>javafx-fxml</artifactId>
       <version>17</version>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.fusesource.jansi</groupId>
       <artifactId>jansi</artifactId>
       <version>2.3.4</version>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-graphics</artifactId>
@@ -57,14 +57,14 @@
             <execution>
               <id>gui</id>
               <configuration>
-                <mainClass>dev.liambloom.checker.gui.Main</mainClass>
+                <mainClass>dev.liambloom.checker.ui.gui.Main</mainClass>
                 <cleanupDaemonThreads>false</cleanupDaemonThreads>
               </configuration>
             </execution>
             <execution>
               <id>cli</id>
               <configuration>
-                <mainClass>dev.liambloom.checker.cli.Main</mainClass>
+                <mainClass>dev.liambloom.checker.ui.cli.Main</mainClass>
                 <cleanupDaemonThreads>false</cleanupDaemonThreads>
               </configuration>
             </execution>

@@ -1,9 +1,8 @@
 package dev.liambloom.checker.internal;
 
-import dev.liambloom.checker.shared.Result;
-import dev.liambloom.checker.shared.LogKind;
-import dev.liambloom.checker.shared.PrintStreamLogger;
-import dev.liambloom.checker.shared.Util;
+import dev.liambloom.checker.ReLogger;
+import dev.liambloom.checker.Result;
+import dev.liambloom.checker.TestStatus;
 import dev.liambloom.util.Case;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -45,9 +44,9 @@ public interface Test {
                         else if (targets.methods().size() == 1) {
                             Method method = targets.methods().iterator().next();
                             if (!Modifier.isStatic(method.getModifiers())) {
-                                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                                new BadHeaderException("Instance method " + Util.executableToString(method) + " should be static").printStackTrace(new PrintStream(outputStream));
-                                return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
+                                ReLogger logger = new ReLogger(Test.class.getName());
+                                logger.log(System.Logger.Level.ERROR, "Bad Header: Instance method %s should be static", Util.executableToString(method));
+                                return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, Optional.of(logger))));
                             }
                             return Test.streamFromStaticExecutable(name, method, targets, testGroup, resolver);
                         }
@@ -96,7 +95,7 @@ public interface Test {
                 .printStackTrace(new PrintStream(outputStream));
             return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
         }
-        XPath xpath = Checker.getXPathPool().get();
+        XPath xpath = BookReader.getXPathPool().get();
         NodeList expectedParamNodes;
         try {
             expectedParamNodes = (NodeList) xpath.evaluate("parameters/parameter", node, XPathConstants.NODESET);
@@ -105,7 +104,7 @@ public interface Test {
             throw new RuntimeException(e);
         }
         finally {
-            Checker.getXPathPool().offer(xpath);
+            BookReader.getXPathPool().offer(xpath);
         }
         Class<?>[] params = MethodType.methodType(void.class, executable.getParameterTypes()).wrap().parameterArray();
         Class<?>[] expectedParams = MethodType.methodType(void.class, Util.streamNodeList(expectedParamNodes)

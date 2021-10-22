@@ -1,9 +1,5 @@
 package dev.liambloom.checker.book;
 
-import dev.liambloom.checker.shared.Result;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;

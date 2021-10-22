@@ -13,12 +13,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>dev.liambloom.checker</groupId>
-            <artifactId>shared</artifactId>
-            <version>0.1.140</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>dev.liambloom.util</groupId>
             <artifactId>function</artifactId>
         </dependency>
