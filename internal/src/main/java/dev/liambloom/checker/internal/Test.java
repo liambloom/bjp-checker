@@ -46,7 +46,7 @@ public interface Test {
                             if (!Modifier.isStatic(method.getModifiers())) {
                                 ReLogger logger = new ReLogger(Test.class.getName());
                                 logger.log(System.Logger.Level.ERROR, "Bad Header: Instance method %s should be static", Util.executableToString(method));
-                                return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, Optional.of(logger))));
+                                return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, logger)));
                             }
                             return Test.streamFromStaticExecutable(name, method, targets, testGroup, resolver);
                         }
@@ -78,24 +78,20 @@ public interface Test {
                     .map(Result::status)
                     .max(Comparator.naturalOrder())
                     .get(),
-                Optional.empty(),
                 subResults);
         };
     }
 
     static Stream<Test> streamFromStaticExecutable(String name, Executable executable, Targets targets, Node node, UnaryOperatorThrowsIOException<Path> resolver) {
         if (!executable.canAccess(null) && !executable.trySetAccessible()) {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            new BadHeaderException(Case.convert(Util.getAccessibilityModifierName(executable), Case.SENTENCE)
-                + ' '
-                + executable.getClass().getSimpleName().toLowerCase(Locale.ENGLISH)
-                + ' '
-                + Util.executableToString(executable)
-                + " is not accessible")
-                .printStackTrace(new PrintStream(outputStream));
-            return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, Optional.of(outputStream))));
+            ReLogger logger = new ReLogger(Test.class.getName());
+            logger.log(System.Logger.Level.ERROR, "Bad Header: %s %s %s is not accessible",
+                Case.convert(Util.getAccessibilityModifierName(executable), Case.SENTENCE),
+                executable.getClass().getSimpleName().toLowerCase(Locale.ENGLISH),
+                Util.executableToString(executable));
+            return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, logger)));
         }
-        XPath xpath = BookReader.getXPathPool().get();
+        XPath xpath = Util.getXPathPool().get();
         NodeList expectedParamNodes;
         try {
             expectedParamNodes = (NodeList) xpath.evaluate("parameters/parameter", node, XPathConstants.NODESET);
@@ -104,7 +100,7 @@ public interface Test {
             throw new RuntimeException(e);
         }
         finally {
-            BookReader.getXPathPool().offer(xpath);
+            Util.getXPathPool().offer(xpath);
         }
         Class<?>[] params = MethodType.methodType(void.class, executable.getParameterTypes()).wrap().parameterArray();
         Class<?>[] expectedParams = MethodType.methodType(void.class, Util.streamNodeList(expectedParamNodes)
@@ -152,17 +148,14 @@ public interface Test {
                 .mapToObj(i -> Test.staticExecutableTest("Test " + i, executable, targets, tests.item(i), resolver));
         }
         else {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            new PrintStreamLogger(new PrintStream(out))
-                .log(LogKind.NOTICE, executable.getClass().getSimpleName()
-                    + ' '
-                    + Util.executableToString(executable)
-                    + " was detected, but did not have the expected parameters ("
-                    + Util.streamNodeList(expectedParamNodes)
+            ReLogger logger = new ReLogger(Util.generateLoggerName());
+            logger.log(System.Logger.Level.INFO, "%s %s was detected, but did not have the expected parameters (%s)",
+                executable.getClass().getSimpleName(),
+                Util.executableToString(executable),
+                Util.streamNodeList(expectedParamNodes)
                     .map(Node::getTextContent)
-                    .collect(Collectors.joining(", "))
-                    + ')');
-            return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.INCOMPLETE)));
+                    .collect(Collectors.joining(", ")));
+            return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.INCOMPLETE, logger)));
         }
     }
 

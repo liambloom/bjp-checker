@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
     <version>0.1.140</version>
 
-    <name>Checker </name>
+    <name>Checker</name>
     <url>https://checker.liambloom.dev/</url>
     <issueManagement>
         <system>Github</system>

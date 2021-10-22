@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 public class ReLogger implements System.Logger {
     private final String name;
 
-    private ArrayList<LogRecord> logs = new ArrayList<>();
+    private final ArrayList<LogRecord> logs = new ArrayList<>();
 
     public ReLogger(String name) {
         this.name = name;
