@@ -1,5 +1,9 @@
 package dev.liambloom.checker.book;
 
+import dev.liambloom.util.function.ConsumerThrowsException;
+import dev.liambloom.util.function.FunctionThrowsException;
+import dev.liambloom.util.function.FunctionUtils;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -12,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -61,10 +66,34 @@ public class URLBook implements Book {
     }
 
     @Override
-    public Path loadResources(Stream<Path> p) throws IOException {
+    public Path loadResources(Path destination, Stream<String> paths) throws IOException {
         // Obviously, I should create a temp file, but what do I do if the file changes midway through
-        //  a test? Should check be moved to this?
+        //  a test?
         // TODO
+        Set<URL> urls = paths
+            .map(FunctionUtils.unchecked((FunctionThrowsException<String, URL>) p -> new URL(url, p)))
+            .collect(Collectors.toSet());
+        if (urls.isEmpty())
+            return destination;
+        String base = urls.stream()
+            .map(URL::getFile)
+            .reduce((a, b) -> {
+                int l = Math.min(a.length(), b.length());
+                for (int i = 0; i < l; i++) {
+                    if (a.charAt(i) != b.charAt(i))
+                        return a.substring(0, i);
+                }
+                return a.length() == l ? a : b;
+            })
+            .get();
+        base = base.substring(base.lastIndexOf('/'));
+        urls.stream()
+            .forEach(FunctionUtils.unchecked((ConsumerThrowsException<URL>) url -> {
+
+            }));
+
+        return ur
+
 //        return Files.write(Files.createFile(p),
 //            new URL(url, p.toString().replace(File.separatorChar, '/')).openStream().readAllBytes());
     }
@@ -74,6 +103,7 @@ public class URLBook implements Book {
         return true;
     }
 
+    // TODO: Remove watching for now.
     @Override
     public void addWatcher(Consumer<WatchEvent<?>> cb) throws IOException, URISyntaxException {
         getWatcher().addWatcher(url, cb);

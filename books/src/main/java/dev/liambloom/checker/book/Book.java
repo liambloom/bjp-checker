@@ -82,7 +82,7 @@ public interface Book {
      * @throws IOException If an i/o error occurs
      * @throws UnsupportedOperationException If this book does not support path resolution.
      */
-    default Path loadResources(Path destination, Stream<Path> resources) throws IOException {
+    default Path loadResources(Path destination, Stream<String> resources) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -90,7 +90,7 @@ public interface Book {
      * Used to check if this book supports path resolution.
      * 
      * @return {@code true} if this book supports path resolution, {@code false} otherwise
-     * @see #loadResources(Stream)
+     * @see #loadResources(Path, Stream)
      */
     default boolean supportsResourceLoading() {
         return false;
