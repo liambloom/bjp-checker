@@ -154,7 +154,7 @@ public class BookReader {
             typeErrors.forEach(e -> h.log(System.Logger.Level.ERROR, e));
         }
 
-        if (!book.supportsFileResolution()
+        if (!book.supportsResourceLoading()
             && (document.getElementsByTagName("File").getLength() > 0 || document.getElementsByTagName("Path").getLength() > 0)) {
             UnsupportedOperationException e =  new UnsupportedOperationException("Book document contains <File> or <Path> element, but Book does not support file resolution");
             if (returnDocument)
@@ -268,7 +268,7 @@ public class BookReader {
             Util.getXPathPool().offer(xpath2);
         }
 
-        UnaryOperatorThrowsIOException<Path> resolver = tests::resolve;
+        UnaryOperatorThrowsIOException<Path> resolver = tests::loadResources;
 
         return Util.streamNodeList(checkableAnnotations)
             .map(Element.class::cast)

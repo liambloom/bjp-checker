@@ -1,11 +1,11 @@
 package dev.liambloom.checker.book;
 
-import dev.liambloom.util.function.BiConsumerThrowsException;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -15,22 +15,20 @@ import java.util.function.Consumer;
 import static java.nio.file.StandardWatchEventKinds.*;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
-public class PathBook implements Book {
-    private static final Map<Path, List<Consumer<WatchEvent<Path>>>> watcherCallbacks = new HashMap<>();
+@SupportedProtocols("file")
+public class FileURLWatcher implements URLWatcher {
+    private static final Map<Path, List<Consumer<WatchEvent<?>>>> watcherCallbacks = new HashMap<>();
     private static final Map<FileSystem, WatchService> watchers = new HashMap<>();
     private static final Map<Path, Set<Path>> watcherSymlinkTargets = new HashMap<>();
     private static final ReadWriteLock watcherLock = new ReentrantReadWriteLock();
-    private final Map<Consumer<WatchEvent<Path>>, Integer> instanceWatchers = new HashMap<>();
-    private Path path;
-
-    PathBook(Path path) {
-        this.path = path;
-    }
+    // FIXME: instanceWatchers doesn't work anymore
+//    private final Map<Consumer<WatchEvent<?>>, Integer> instanceWatchers = new HashMap<>();
 
     @Override
-    public void addWatcher(Consumer<WatchEvent<Path>> cb) throws IOException {
+    public void addWatcher(URL url, Consumer<WatchEvent<?>> cb) throws IOException, URISyntaxException {
         watcherLock.writeLock().lock();
         try {
+            Path path = Path.of(url.toURI());
             WatchService watcher = watchers.computeIfAbsent(path.getFileSystem(), FunctionUtils.unchecked((FunctionThrowsException<FileSystem, WatchService>) fileSystem -> {
                 WatchService fsWatcher = fileSystem.newWatchService();
 
@@ -67,11 +65,11 @@ public class PathBook implements Book {
                                         return;
                                     }
                                     if (!watcherSymlinkTargets
-                                            .computeIfAbsent(targetTarget.toAbsolutePath().normalize(), FunctionUtils.unchecked((FunctionThrowsException<Path, Set<Path>>) e -> {
-                                                e.getParent().register(fsWatcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
-                                                return Collections.synchronizedSet(new HashSet<>());
-                                            }))
-                                            .add(target.toAbsolutePath().normalize()))
+                                        .computeIfAbsent(targetTarget.toAbsolutePath().normalize(), FunctionUtils.unchecked((FunctionThrowsException<Path, Set<Path>>) e -> {
+                                            e.getParent().register(fsWatcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
+                                            return Collections.synchronizedSet(new HashSet<>());
+                                        }))
+                                        .add(target.toAbsolutePath().normalize()))
                                         break;
                                     target = targetTarget;
                                 }
@@ -79,19 +77,17 @@ public class PathBook implements Book {
                                 while (!targets.isEmpty()) {
                                     Path currentTarget = targets.remove();
 
-                                    Collection<Consumer<WatchEvent<Path>>> callbacks = watcherCallbacks.get(currentTarget);
+                                    List<Consumer<WatchEvent<?>>> callbacks = watcherCallbacks.get(currentTarget);
 
                                     if (callbacks == null)
                                         continue;
 
-                                    for (Consumer<WatchEvent<Path>> callback : callbacks){
-                                        for (int i = 0; i < instanceWatchers.getOrDefault(callback, 0); i++)
-                                            callback.accept(event);
-                                    }
+                                    for (Consumer<WatchEvent<?>> callback : callbacks)
+                                        callback.accept(event);
 
                                     Iterator<Path> symlinks = Optional.ofNullable(watcherSymlinkTargets.get(currentTarget))
-                                            .map(Collection::iterator)
-                                            .orElseGet(Collections::emptyIterator);
+                                        .map(Collection::iterator)
+                                        .orElseGet(Collections::emptyIterator);
                                     while (symlinks.hasNext()) {
                                         Path symlink = symlinks.next();
                                         if (!Files.isSymbolicLink(symlink)) {
@@ -128,31 +124,31 @@ public class PathBook implements Book {
                         }
                     }
                 })
-                        .start();
+                    .start();
 
                 return fsWatcher;
             }));
 
             watcherCallbacks
-                    .computeIfAbsent(path.toAbsolutePath().normalize(),  FunctionUtils.unchecked((FunctionThrowsException<Path, List<Consumer<WatchEvent<Path>>>>) key -> {
-                        key.getParent().register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
-                        return Collections.synchronizedList(new LinkedList<>());
-                    }))
-                    .add(cb);
+                .computeIfAbsent(path.toAbsolutePath().normalize(),  FunctionUtils.unchecked((FunctionThrowsException<Path, List<Consumer<WatchEvent<?>>>>) key -> {
+                    key.getParent().register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
+                    return Collections.synchronizedList(new LinkedList<>());
+                }))
+                .add(cb);
 
             while (Files.isSymbolicLink(path)) {
                 Path target = Files.readSymbolicLink(path);
                 if (!watcherSymlinkTargets
-                        .computeIfAbsent(target.toAbsolutePath().normalize(), FunctionUtils.unchecked((FunctionThrowsException<Path, Set<Path>>)key -> {
-                            key.getParent().register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
-                            return Collections.synchronizedSet(new HashSet<>());
-                        }))
-                        .add(path.toAbsolutePath().normalize()))
+                    .computeIfAbsent(target.toAbsolutePath().normalize(), FunctionUtils.unchecked((FunctionThrowsException<Path, Set<Path>>)key -> {
+                        key.getParent().register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
+                        return Collections.synchronizedSet(new HashSet<>());
+                    }))
+                    .add(path.toAbsolutePath().normalize()))
                     break;
                 path = target;
             }
 
-            instanceWatchers.compute(cb, (key, old) -> old == null ? 1 : old + 1);
+//            instanceWatchers.compute(cb, (key, old) -> old == null ? 1 : old + 1);
         }
         finally {
             watcherLock.writeLock().unlock();
@@ -160,60 +156,16 @@ public class PathBook implements Book {
     }
 
     @Override
-    public void removeWatcher(Consumer<WatchEvent<Path>> cb) {
+    public boolean removeWatcher(URL url, Consumer<WatchEvent<?>> cb) {
         watcherLock.writeLock().lock();
-        if (instanceWatchers.computeIfPresent(cb, (key, old) -> old == 1 ? null : old - 1) == null)
-            watcherCallbacks.get(path.toAbsolutePath().normalize()).remove(cb);
-        watcherLock.writeLock().unlock();
-    }
-
-    @Override
-    public boolean exists() throws IOException {
         try {
-            return path.toRealPath().toString().endsWith(".xml");
+            return watcherCallbacks.get(Path.of(url.toURI()).toAbsolutePath().normalize()).remove(cb);
         }
-        catch (NoSuchFileException e) {
+        catch (URISyntaxException e) {
             return false;
         }
-    }
-
-    public Path getPath() {
-        return path;
-    }
-
-    public void setPath(Path path) throws IOException {
-        watcherLock.writeLock().lock();
-        Map<Consumer<WatchEvent<Path>>, Integer> instanceWatchersCopy = new HashMap<>(instanceWatchers);
-        instanceWatchersCopy.forEach((k, v) -> {
-            for (int i = 0; i < v; i++)
-                removeWatcher(k);
-        });
-        this.path = path;
-        //setPath(getName(), path);
-        instanceWatchersCopy.forEach(FunctionUtils.unchecked((BiConsumerThrowsException<Consumer<WatchEvent<Path>>, Integer>) (k, v) -> {
-            for (int i = 0; i < v; i++)
-                addWatcher(k);
-        }));
-        watcherLock.writeLock().unlock();
-    }
-
-    @Override
-    public InputStream getInputStream() throws IOException {
-        return Files.newInputStream(path);
-    }
-    /*protected static void setPath(String name, Path path) throws IOException {
-        if (!Files.exists(path) || !path.toRealPath().toString().endsWith(".xml"))
-            throw new IllegalArgumentException("Path `" + path + "' is not xml");
-        Books.getCustomTests().put(name, path.toString());
-    }*/
-
-    @Override
-    public Path resolve(Path path) {
-        return this.path.resolveSibling(path);
-    }
-
-    @Override
-    public boolean supportsFileResolution() {
-        return true;
+        finally {
+            watcherLock.writeLock().unlock();
+        }
     }
 }

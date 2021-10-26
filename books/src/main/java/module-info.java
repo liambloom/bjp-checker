@@ -1,7 +1,8 @@
 module dev.liambloom.checker.books {
-//    requires java.prefs;
-//    requires java.xml;
-//    requires dev.liambloom.checker.shared;
+    uses dev.liambloom.checker.book.URLWatcher;
     requires dev.liambloom.util.function;
+//    requires dev.liambloom.util.base;
+    provides dev.liambloom.checker.book.URLWatcher with dev.liambloom.checker.book.FileURLWatcher
+        , dev.liambloom.checker.book.JarURLWatcher;
     exports dev.liambloom.checker.book;
 }

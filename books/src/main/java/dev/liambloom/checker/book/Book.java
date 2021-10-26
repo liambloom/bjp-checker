@@ -2,9 +2,12 @@ package dev.liambloom.checker.book;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public interface Book {
     /*
@@ -53,20 +56,33 @@ public interface Book {
     boolean exists() throws IOException;
 
     /**
-     * Resolves a path, which may be a relative path (in which case it should be resolved
-     * relative to the book), or may be an absolute path, in which case it should be relative
-     * to the root.
+     * Loads all the resources required by a book. The list of resources is passed in by a
+     * {@code dev.liambloom.checker.BookReader} (not found in this module). The resources
+     * should be loaded and placed into the destination directory.
+     *
+     * This function returns the location that the resources were loaded relative to. For
+     * example: if {@code resources} contains the path {@code ../foo.txt}, then this should
+     * <strong>not</strong> be placed in the parent directory of {@code destination}. Instead,
+     * it should be placed directly into {@code destination}, and the function should return a
+     * directory one level deeper than {@code destination}. This way, provided relative path
+     * relative to the return value points to the correct file.
+     *
+     * Also note: the return value should <em>never</em> be outside of {@code destination}.
+     *
+     * If in {@code resources} contains a path to a resource that does not exist, simply skip
+     * it, rather than throwing a {@code FileNotFoundException}, as this may be intentional.
      *
      * The default implementation throws an {@link UnsupportedOperationException}. If you do
      * not override this method to provide an implementation, then validation MUST fail if
      * the {@code <File>} element appears at any point in the document.
      *
-     * @param p The path to resolve
-     * @return The path represented by the argument (does not have to exist)
+     * @param destination The folder in which to place the loaded resources
+     * @param resources The resources which must be loaded
+     * @return The root path from which to access the resources with the given paths.
      * @throws IOException If an i/o error occurs
      * @throws UnsupportedOperationException If this book does not support path resolution.
      */
-    default Path resolve(Path p) throws IOException {
+    default Path loadResources(Path destination, Stream<Path> resources) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -74,9 +90,9 @@ public interface Book {
      * Used to check if this book supports path resolution.
      * 
      * @return {@code true} if this book supports path resolution, {@code false} otherwise
-     * @see #resolve(Path)
+     * @see #loadResources(Stream)
      */
-    default boolean supportsFileResolution() {
+    default boolean supportsResourceLoading() {
         return false;
     }
 
@@ -88,13 +104,15 @@ public interface Book {
      * @param cb The function to call when a change is detected
      * @throws IOException If an i/o error occurs
      */
-    void addWatcher(Consumer<WatchEvent<Path>> cb) throws IOException;
+    void addWatcher(Consumer<WatchEvent<?>> cb) throws IOException, URISyntaxException;
 
     /**
      * Removes a watcher from the book. If there are multiple instances of the same
      * callback, it decrements the number of times that the callback will be called.
+     * If there is no instances of the given callback, it returns {@code false}
      *
      * @param cb The callback of the watcher to remove.
+     * @return whether the callback was removed
      */
-    void removeWatcher(Consumer<WatchEvent<Path>> cb);
+    boolean removeWatcher(Consumer<WatchEvent<?>> cb) throws IOException, URISyntaxException;
 }
