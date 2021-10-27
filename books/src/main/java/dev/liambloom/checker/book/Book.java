@@ -95,24 +95,4 @@ public interface Book {
     default boolean supportsResourceLoading() {
         return false;
     }
-
-    /**
-     * Adds a watcher that watches for changes in this book. Multiple instances of the
-     * same callback can be added, and if they are, the callback will be called once for
-     * each time it was added.
-     *
-     * @param cb The function to call when a change is detected
-     * @throws IOException If an i/o error occurs
-     */
-    void addWatcher(Consumer<WatchEvent<?>> cb) throws IOException, URISyntaxException;
-
-    /**
-     * Removes a watcher from the book. If there are multiple instances of the same
-     * callback, it decrements the number of times that the callback will be called.
-     * If there is no instances of the given callback, it returns {@code false}
-     *
-     * @param cb The callback of the watcher to remove.
-     * @return whether the callback was removed
-     */
-    boolean removeWatcher(Consumer<WatchEvent<?>> cb) throws IOException, URISyntaxException;
 }
