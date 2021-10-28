@@ -1,15 +1,11 @@
-package dev.liambloom.checker.book;
+package dev.liambloom.checker;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.WatchEvent;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-public interface Book {
+public abstract class Book {
     /*
      * Validates the test using the schema and also checking
      * to make sure that all types referenced in the book are valid. The status of the
@@ -43,7 +39,7 @@ public interface Book {
      * @return The input stream
      * @throws IOException If an i/o error occurs
      */
-    InputStream getInputStream() throws IOException;
+    protected abstract InputStream getInputStream() throws IOException;
 
     /**
      * Returns {@code true} if the document "exists". The exact definition of this may
@@ -53,7 +49,7 @@ public interface Book {
      * @return True if the book exists, false otherwise
      * @throws IOException If an i/o error occurs
      */
-    boolean exists() throws IOException;
+    public abstract boolean exists() throws IOException;
 
     /**
      * Loads all the resources required by a book. The list of resources is passed in by a
@@ -82,7 +78,7 @@ public interface Book {
      * @throws IOException If an i/o error occurs
      * @throws UnsupportedOperationException If this book does not support path resolution.
      */
-    default Path loadResources(Path destination, Stream<String> resources) throws IOException {
+    protected Path loadResources(Path destination, Stream<String> resources) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -92,7 +88,7 @@ public interface Book {
      * @return {@code true} if this book supports path resolution, {@code false} otherwise
      * @see #loadResources(Path, Stream)
      */
-    default boolean supportsResourceLoading() {
+    protected boolean supportsResourceLoading() {
         return false;
     }
 }

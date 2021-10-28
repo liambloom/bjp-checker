@@ -1,6 +1,6 @@
 package dev.liambloom.checker.ui.gui;
 
-import dev.liambloom.checker.book.*;
+import dev.liambloom.checker.Book;
 import dev.liambloom.checker.Result;
 import dev.liambloom.checker.TestValidationStatus;
 import dev.liambloom.util.function.FunctionUtils;

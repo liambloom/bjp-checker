@@ -20,9 +20,8 @@ import java.util.stream.Stream;
 public class CheckerTargetGroup<T extends Annotation> {
     private final Targets[] targets;
     private final CheckableType<T> checkableType;
-    private final UnaryOperatorThrowsIOException<Path> resolver;
 
-    public CheckerTargetGroup(CheckableType<T> checkableType, boolean[] initWhich, UnaryOperatorThrowsIOException<Path> resolver) {
+    public CheckerTargetGroup(CheckableType<T> checkableType, boolean[] initWhich) {
         targets = new Targets[initWhich.length];
         for (int i = 0; i < initWhich.length; i++) {
             if (initWhich[i])
@@ -30,7 +29,6 @@ public class CheckerTargetGroup<T extends Annotation> {
         }
 
         this.checkableType = checkableType;
-        this.resolver = resolver;
     }
 
     public void addPotentialTarget(AnnotatedElement e) throws InvocationTargetException, IllegalAccessException {
@@ -60,7 +58,7 @@ public class CheckerTargetGroup<T extends Annotation> {
                                 (xpath = Util.getXPathPool().get())
                                     .evaluate(checkableType.name() + "[@num='" + i + "']", tests, XPathConstants.NODE))
                                 .map(Element.class::cast)
-                                .orElseThrow(() -> new IllegalArgumentException("Unable to find tests for " + testName)), resolver));
+                                .orElseThrow(() -> new IllegalArgumentException("Unable to find tests for " + testName))));
                     }
                     catch (XPathExpressionException e) {
                         throw new RuntimeException(e);

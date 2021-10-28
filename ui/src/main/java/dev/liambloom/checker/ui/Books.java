@@ -1,6 +1,6 @@
 package dev.liambloom.checker.ui;
 
-import dev.liambloom.checker.book.Book;
+import dev.liambloom.checker.Book;
 import dev.liambloom.checker.book.PathBook;
 
 import java.io.IOException;

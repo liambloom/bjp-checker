@@ -1,26 +1,21 @@
-package dev.liambloom.checker.book;
+package dev.liambloom.checker;
 
-import dev.liambloom.util.function.ConsumerThrowsException;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.UnknownServiceException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.WatchEvent;
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class URLBook implements Book {
+public class URLBook extends Book {
     private final URL url;
 
     public URLBook(URL url) {
@@ -28,7 +23,7 @@ public class URLBook implements Book {
     }
 
     @Override
-    public InputStream getInputStream() throws IOException {
+    protected InputStream getInputStream() throws IOException {
         return url.openStream();
     }
 
@@ -44,7 +39,7 @@ public class URLBook implements Book {
     }
 
     @Override
-    public Path loadResources(Path destination, Stream<String> paths) throws IOException {
+    protected Path loadResources(Path destination, Stream<String> paths) throws IOException {
         // Obviously, I should create a temp file, but what do I do if the file changes midway through
         //  a test?
         // TODO
@@ -64,16 +59,33 @@ public class URLBook implements Book {
                 return a.length() == l ? a : b;
             })
             .get();
-        base = base.substring(base.lastIndexOf('/'));
-        urls.stream()
-            .forEach(FunctionUtils.unchecked((ConsumerThrowsException<URL>) url -> {
+        base = base.substring(0, base.lastIndexOf('/') +  1);
+        URL baseURL = new URL(url.getProtocol(), url.getHost(), url.getPort(), base);
+        URI baseURI;
+        try {
+            baseURI = baseURL.toURI();
+        }
+        catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+        for (URL url : urls) {
+            Path d;
+            try {
+                d = destination.resolve(Path.of(baseURI.relativize(url.toURI()).toString()));
+            }
+            catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+            assert !d.startsWith(destination);
+            Files.createDirectories(d.getParent());
+            Files.createFile(d);
+            try (InputStream stream = url.openStream()) {
+                Files.write(d, stream.readAllBytes());
+            }
+            catch (FileNotFoundException ignored) {}
+        }
 
-            }));
-
-        return ur
-
-//        return Files.write(Files.createFile(p),
-//            new URL(url, p.toString().replace(File.separatorChar, '/')).openStream().readAllBytes());
+        return destination.resolve(baseURI.toString());
     }
 
     @Override

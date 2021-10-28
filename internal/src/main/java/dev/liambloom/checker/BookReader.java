@@ -1,6 +1,5 @@
 package dev.liambloom.checker;
 
-import dev.liambloom.checker.book.Book;
 import dev.liambloom.checker.internal.*;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
@@ -23,6 +22,7 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -60,7 +60,6 @@ public class BookReader {
     }
 
     private final DocumentBuilder db;
-    private Book currentBook;
 
     public BookReader() {
         try {
@@ -73,7 +72,6 @@ public class BookReader {
 
     @SuppressWarnings("unchecked")
     private <T> T validateDocumentAndReturn(Book book, Class<T> clazz) throws IOException, SAXException, ClassNotFoundException {
-        currentBook = book;
         if (!clazz.equals(Document.class) && !clazz.equals(Result.class))
             throw new IllegalArgumentException("validateDocumentAndReturn cannot return " + clazz.getName());
         boolean returnDocument = clazz.equals(Document.class);
@@ -218,22 +216,28 @@ public class BookReader {
         // Should this method be moved to BookReader?
         Document document = validateDocumentAndReturn(tests, Document.class);
 
-        XPath xpath1 = Util.getXPathPool().get();
         Class<? extends Annotation> sectionAnnotation;
         NodeList checkableAnnotations;
-        try {
-            //noinspection unchecked
-            sectionAnnotation = (Class<? extends Annotation>) ClassLoader.getPlatformClassLoader().loadClass(
-                (String) xpath1.evaluate("/book/meta/sectionType/@annotation", document, XPathConstants.STRING));
-            checkableAnnotations = (NodeList) xpath1.evaluate("/book/meta/checkableType", document, XPathConstants.NODESET);
-        }
-        catch (XPathExpressionException e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            Util.getXPathPool().offer(xpath1);
+        {
+            XPath xpath1 = Util.getXPathPool().get();
+            try {
+                //noinspection unchecked
+                sectionAnnotation = (Class<? extends Annotation>) ClassLoader.getPlatformClassLoader().loadClass(
+                    (String) xpath1.evaluate("/book/meta/sectionType/@annotation", document, XPathConstants.STRING));
+                checkableAnnotations = (NodeList) xpath1.evaluate("/book/meta/checkableType", document, XPathConstants.NODESET);
+
+                xpath1.evaluate("/book/")
+                tests.loadResources(Files.createTempDirectory(null), );
+            }
+            catch (XPathExpressionException e) {
+                throw new RuntimeException(e);
+            }
+            finally {
+                Util.getXPathPool().offer(xpath1);
+            }
         }
         Method m = sectionAnnotation.getMethod("value");
+
 
         int chapter;
         AtomicInteger detectedChapter = new AtomicInteger(-1);
@@ -268,12 +272,10 @@ public class BookReader {
             Util.getXPathPool().offer(xpath2);
         }
 
-        UnaryOperatorThrowsIOException<Path> resolver = tests::loadResources;
-
         return Util.streamNodeList(checkableAnnotations)
             .map(Element.class::cast)
             .map(FunctionUtils.unchecked((FunctionThrowsException<Element, CheckableType<?>>) CheckableType::new))
-            .map(a -> new CheckerTargetGroup<>(a, checkables.get(a.annotation()), resolver))
+            .map(a -> new CheckerTargetGroup<>(a, checkables.get(a.annotation())))
             .flatMap(FunctionUtils.unchecked((FunctionThrowsException<CheckerTargetGroup<?>, Stream<Test>>) (e -> {
                 e.addPotentialTargets(classes.iterator());
                 return e.apply(ch);

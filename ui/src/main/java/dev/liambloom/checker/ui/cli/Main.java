@@ -1,11 +1,10 @@
 package dev.liambloom.checker.ui.cli;
 
+import dev.liambloom.checker.Book;
 import dev.liambloom.checker.Result;
 import dev.liambloom.checker.TestValidationStatus;
 import dev.liambloom.checker.ui.Books;
 import dev.liambloom.checker.ui.UserErrorException;
-import dev.liambloom.checker.book.*;
-import dev.liambloom.checker.internal.*;
 import javafx.application.Application;
 import org.fusesource.jansi.AnsiConsole;
 import org.xml.sax.SAXException;

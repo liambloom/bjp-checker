@@ -20,7 +20,7 @@
 <!--        <module>annotations</module>-->
         <module>internal</module>
         <module>ui</module>
-        <module>books</module>
+<!--        <module>books</module>-->
     </modules>
 
     <properties>

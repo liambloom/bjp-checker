@@ -3,6 +3,7 @@ package dev.liambloom.checker.internal;
 import org.w3c.dom.Element;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.lang.reflect.Array;
 import java.nio.file.Path;
 import java.util.*;
@@ -12,11 +13,9 @@ import java.util.stream.Stream;
 
 public class PrePost {
     private final Element e;
-    private final UnaryOperatorThrowsIOException<Path> resolver;
 
-    public PrePost(Element e, UnaryOperatorThrowsIOException<Path> resolver) {
+    public PrePost(Element e) {
         this.e = e;
-        this.resolver = resolver;
     }
 
     public Object getPre() {
@@ -45,8 +44,8 @@ public class PrePost {
                 case "char" -> e.getTextContent().charAt(0);
                 case "boolean" -> Boolean.parseBoolean(e.getTextContent());
                 case "String" -> e.getTextContent();
-                case "File" -> resolver.apply(Path.of(e.getTextContent())).toFile();
-                case "Path" -> resolver.apply(Path.of(e.getTextContent()));
+                case "File" -> new File(e.getTextContent());
+                case "Path" -> Path.of(e.getTextContent());
                 case "Scanner" -> new Scanner(new ByteArrayInputStream(e.getTextContent().getBytes()));
                 case "Array" -> parseJavaListElements(e)
                     .toArray(l -> {

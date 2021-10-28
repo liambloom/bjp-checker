@@ -33,7 +33,7 @@ public interface Test {
         return () -> result;
     }
 
-    static Test multiTest(String name, Targets targets, Node testGroup, UnaryOperatorThrowsIOException<Path> resolver) {
+    static Test multiTest(String name, Targets targets, Node testGroup) {
         Stream<Test> subTests = Util.streamNodeList(testGroup.getChildNodes())
             .map(Element.class::cast)
             .flatMap(node -> {
@@ -48,7 +48,7 @@ public interface Test {
                                 logger.log(System.Logger.Level.ERROR, "Bad Header: Instance method %s should be static", Util.executableToString(method));
                                 return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, logger)));
                             }
-                            return Test.streamFromStaticExecutable(name, method, targets, testGroup, resolver);
+                            return Test.streamFromStaticExecutable(name, method, targets, testGroup);
                         }
                         else {
 
@@ -58,7 +58,7 @@ public interface Test {
                         if (targets.constructors().isEmpty())
                             return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.INCOMPLETE)));
                         else if (targets.constructors().size() == 1)
-                            return Test.streamFromStaticExecutable(name, targets.constructors().iterator().next(), targets, testGroup, resolver);
+                            return Test.streamFromStaticExecutable(name, targets.constructors().iterator().next(), targets, testGroup);
                         else {
                             // TODO
                         }
@@ -82,7 +82,7 @@ public interface Test {
         };
     }
 
-    static Stream<Test> streamFromStaticExecutable(String name, Executable executable, Targets targets, Node node, UnaryOperatorThrowsIOException<Path> resolver) {
+    static Stream<Test> streamFromStaticExecutable(String name, Executable executable, Targets targets, Node node) {
         if (!executable.canAccess(null) && !executable.trySetAccessible()) {
             ReLogger logger = new ReLogger(Test.class.getName());
             logger.log(System.Logger.Level.ERROR, "Bad Header: %s %s %s is not accessible",
@@ -145,7 +145,7 @@ public interface Test {
                 throw new RuntimeException(e);
             }
             return IntStream.range(0, tests.getLength())
-                .mapToObj(i -> Test.staticExecutableTest("Test " + i, executable, targets, tests.item(i), resolver));
+                .mapToObj(i -> Test.staticExecutableTest("Test " + i, executable, targets, tests.item(i)));
         }
         else {
             ReLogger logger = new ReLogger(Util.generateLoggerName());
@@ -159,7 +159,7 @@ public interface Test {
         }
     }
 
-    static Test staticExecutableTest(String name, Executable executable, Targets targets, Node test, UnaryOperatorThrowsIOException<Path> resolver) {
+    static Test staticExecutableTest(String name, Executable executable, Targets targets, Node test) {
         int i = 0;
         NodeList children = test.getChildNodes();
         InputStream in = ((Element) children.item(i)).getTagName().equals("System.in")
@@ -170,7 +170,7 @@ public interface Test {
         PrePost[] args = ((Element) children.item(i)).getTagName().equals("arguments")
             ? Util.streamNodeList(children.item(i++).getChildNodes())
                 .map(Element.class::cast)
-                .map(e -> new PrePost(e, resolver))
+                .map(e -> new PrePost(e))
                 .toArray(PrePost[]::new)
             : new PrePost[0];
         Class<? extends Throwable> expectedThrows;
