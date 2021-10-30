@@ -218,6 +218,7 @@ public class BookReader {
 
         Class<? extends Annotation> sectionAnnotation;
         NodeList checkableAnnotations;
+        Stream<String> resources;
         {
             XPath xpath1 = Util.getXPathPool().get();
             try {
@@ -226,8 +227,9 @@ public class BookReader {
                     (String) xpath1.evaluate("/book/meta/sectionType/@annotation", document, XPathConstants.STRING));
                 checkableAnnotations = (NodeList) xpath1.evaluate("/book/meta/checkableType", document, XPathConstants.NODESET);
 
-                xpath1.evaluate("/book/")
-                tests.loadResources(Files.createTempDirectory(null), );
+                resources = Util.streamNodeList((NodeList) xpath1.evaluate("/book/meta/rsc", document, XPathConstants.NODESET))
+                    .map(Element.class::cast)
+                    .map(e -> e.getAttribute("href"));
             }
             catch (XPathExpressionException e) {
                 throw new RuntimeException(e);
@@ -236,8 +238,8 @@ public class BookReader {
                 Util.getXPathPool().offer(xpath1);
             }
         }
-        Method m = sectionAnnotation.getMethod("value");
 
+        Method m = sectionAnnotation.getMethod("value");
 
         int chapter;
         AtomicInteger detectedChapter = new AtomicInteger(-1);
@@ -259,6 +261,8 @@ public class BookReader {
             )
             .collect(Collectors.toList());
         chapter = section.orElseGet(detectedChapter::get);
+
+        changeDirectory(tests.loadResources(Files.createTempDirectory(null), resources));
 
         XPath xpath2 = Util.getXPathPool().get();
         Node ch;
@@ -283,4 +287,5 @@ public class BookReader {
             .map(Test::run);
     }
 
+    private static native void changeDirectory(Path path); // TODO
 }

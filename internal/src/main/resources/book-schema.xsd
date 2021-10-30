@@ -56,12 +56,17 @@
         <xs:sequence>
             <xs:element name="sectionType" type="annotationDef" />
             <xs:element name="checkableType" maxOccurs="unbounded" type="annotationDef" />
+            <xs:element name="rsc" minOccurs="0" maxOccurs="unbounded" type="rsc" />
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="annotationDef">
         <xs:attribute name="name" type="xs:string" />
         <xs:attribute name="annotation" type="className" />
+    </xs:complexType>
+
+    <xs:complexType name="rsc">
+        <xs:attribute name="href" type="xs:anyURI" use="required" />
     </xs:complexType>
 
     <!--<xs:complexType name="definitions">
