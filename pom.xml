@@ -148,6 +148,12 @@
         </plugins>
     </build>
 
+    <!-- on wsl, I compiled the c with the following commands:
+    g++ -std=c++17 -c -fPIC -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux dev_liambloom_checker_BookReader.cpp -o com_baeldung_jni_HelloWorldJNI.o
+    g++ -shared -fPIC -o ../resources/libnative.so com_baeldung_jni_HelloWorldJNI.o -lc
+
+    my ubuntu JAVA_HOME is "/usr/lib/jvm/java-17-openjdk-amd64"
+    -->
 <!--    <profiles>-->
 <!--        <profile>-->
 <!--            <id>windows-native-build</id>-->
