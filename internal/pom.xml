@@ -60,4 +60,46 @@
       <artifactId>javafx-graphics</artifactId>
     </dependency>
   </dependencies>
+
+<!--  <build>-->
+<!--    <plugins>-->
+<!--      <plugin>-->
+<!--        <groupId>org.codehaus.mojo</groupId>-->
+<!--        <artifactId>native-maven-plugin</artifactId>-->
+
+<!--        <configuration>-->
+<!--          <javahClassNames>-->
+<!--            <javahClassName>dev.liambloom.checker.BookReader</javahClassName>-->
+<!--          </javahClassNames>-->
+<!--        </configuration>-->
+<!--      </plugin>-->
+<!--    </plugins>-->
+<!--  </build>-->
+<!--  <build>-->
+<!--    <plugins>-->
+
+<!--      <plugin>-->
+<!--        <groupId>org.codehaus.mojo</groupId>-->
+<!--        <artifactId>exec-maven-plugin</artifactId>-->
+<!--        <version>3.0.0</version>-->
+<!--        <executions>-->
+<!--          <execution>-->
+<!--            <id>generate-jni-headers</id>-->
+<!--            <phase>generate-sources</phase>-->
+<!--            <goals>-->
+<!--              <goal>exec</goal>-->
+<!--            </goals>-->
+<!--            <configuration>-->
+<!--              <workingDirectory>${project.basedir}</workingDirectory>-->
+<!--              <executable>javac</executable>-->
+<!--              <arguments>-->
+<!--                <argument>-h</argument>-->
+<!--                <argument>${project.build.outputDirectory}</argument>-->
+<!--              </arguments>-->
+<!--            </configuration>-->
+<!--          </execution>-->
+<!--        </executions>-->
+<!--      </plugin>-->
+<!--    </plugins>-->
+<!--  </build>-->
 </project>

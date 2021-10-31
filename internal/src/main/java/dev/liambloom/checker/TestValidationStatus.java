@@ -1,8 +1,5 @@
 package dev.liambloom.checker;
 
-import dev.liambloom.checker.Color;
-import dev.liambloom.checker.Result;
-
 public enum TestValidationStatus implements Result.Status {
     VALID(Color.GREEN),
     VALID_WITH_WARNINGS(Color.YELLOW),

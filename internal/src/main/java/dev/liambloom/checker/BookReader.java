@@ -57,6 +57,8 @@ public class BookReader {
             e.printStackTrace();
         }
         dbf.setNamespaceAware(true);
+
+        System.loadLibrary("native");
     }
 
     private final DocumentBuilder db;
@@ -287,5 +289,9 @@ public class BookReader {
             .map(Test::run);
     }
 
-    private static native void changeDirectory(Path path); // TODO
+    private static void changeDirectory(Path path) {
+        changeDirectory(path.toString());
+    }
+
+    private static native void changeDirectory(String path); // TODO
 }

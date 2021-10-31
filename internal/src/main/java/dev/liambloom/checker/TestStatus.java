@@ -47,13 +47,12 @@ public enum TestStatus implements Result.Status {
      */
     BAD_HEADER(Color.RED);
 
-    public final Color color;
+    private final Color color;
 
     TestStatus(Color color) {
         this.color = color;
     }
 
-    @Override
     public Color color() {
         return color;
     }

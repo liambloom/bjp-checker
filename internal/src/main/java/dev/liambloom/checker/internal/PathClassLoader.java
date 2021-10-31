@@ -7,10 +7,12 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Function;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -25,9 +27,12 @@ public final class PathClassLoader extends ClassLoader {
 
     public PathClassLoader(Stream<Path> glob, ClassLoader parent) throws IOException {
         super(parent);
+        //noinspection RedundantCast
         classes = glob
             .map(FunctionUtils.unchecked((FunctionThrowsException<Path, Path>) Path::toRealPath))
-            .flatMap(FunctionUtils.unchecked((FunctionThrowsException<Path, Stream<? extends ClassSource>>)p -> {
+            // Intellij says that the cast to (Function<...>) is redundant, but the code doesn't compile without it, so Imma say it's not
+            .flatMap((Function<Path, Stream<? extends ClassSource>>)
+                FunctionUtils.unchecked((FunctionThrowsException<Path, Stream<? extends ClassSource>>) p -> {
                 if (p.toString().endsWith(".jar"))
                     return CompressedClassSource.allSources(new JarFile(p.toFile())).stream();
                 else if (p.toString().endsWith(".class"))
@@ -37,7 +42,7 @@ public final class PathClassLoader extends ClassLoader {
             }))
             .collect(Collectors.toMap(
                 s -> new StringBuilder(s.path()).reverse().toString(),
-                FunctionUtils.unchecked((FunctionThrowsException<ClassSource, LazyClass>)s -> new LazyClass(s.bytes())),
+                FunctionUtils.unchecked((FunctionThrowsException<ClassSource, LazyClass>) s -> new LazyClass(s.bytes())),
                 (v1, v2) -> v1.markAsDuplicate(),
                 TreeMap<String, LazyClass>::new
             ));

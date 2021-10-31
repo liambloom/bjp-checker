@@ -7,7 +7,8 @@ module dev.liambloom.checker.ui {
     requires javafx.controls;
     requires javafx.fxml;
     requires dev.liambloom.checker.internal;
-    requires dev.liambloom.checker.books;
+//    requires dev.liambloom.checker.books;
+    requires org.fusesource.jansi;
     requires dev.liambloom.util.function;
     requires dev.liambloom.util.base;
     requires net.harawata.appdirs;

@@ -57,6 +57,5 @@ public record Result<T extends Result.Status>(String name, T status, ReLogger lo
     public interface Status {
         Color color();
         String name();
-        boolean isOk();
     }
 }
