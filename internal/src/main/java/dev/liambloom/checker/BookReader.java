@@ -25,6 +25,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -44,6 +45,7 @@ public class BookReader {
         }
     };
     private static final DocumentBuilderFactory dbf;
+    private static final boolean loadedNative;
 
     static {
         dbf = DocumentBuilderFactory.newInstance();
@@ -58,7 +60,19 @@ public class BookReader {
         }
         dbf.setNamespaceAware(true);
 
-        System.loadLibrary("native");
+        boolean loadedNativeTemp;
+        try {
+            System.loadLibrary("native");
+            loadedNativeTemp = true;
+        }
+        catch (UnsatisfiedLinkError e) {
+            loadedNativeTemp = false;
+            System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.WARNING,
+                "Failed to load native library for " + System.getProperty("os.name")
+                    + " on " + System.getProperty("os.arch"),
+                e);
+        }
+        loadedNative = loadedNativeTemp;
     }
 
     private final DocumentBuilder db;
@@ -290,8 +304,9 @@ public class BookReader {
     }
 
     private static void changeDirectory(Path path) {
-        changeDirectory(path.toString());
+        if (loadedNative)
+            changeDirectory(path.toString());
     }
 
-    private static native void changeDirectory(String path); // TODO
+    private static native void changeDirectory(String path);
 }
