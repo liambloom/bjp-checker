@@ -61,7 +61,7 @@
     </xs:complexType>
 
     <xs:complexType name="annotationDef">
-        <xs:attribute name="name" type="xs:string" />
+        <xs:attribute name="name" type="nonEmptyString" />
         <xs:attribute name="annotation" type="className" />
     </xs:complexType>
 
@@ -444,6 +444,12 @@
     <xs:simpleType name="char">
         <xs:restriction base="xs:string">
             <xs:length value="1" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="nonEmptyString">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1" />
         </xs:restriction>
     </xs:simpleType>
 

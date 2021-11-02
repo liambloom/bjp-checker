@@ -51,8 +51,7 @@ public class Main {
                         List<String> globArgs = new LinkedList<>();
                         String testName = null;
                         OptionalInt chapter = OptionalInt.empty();
-                        boolean[] exercises = null;
-                        boolean[] programmingProjects = null;
+                        Map<String, boolean[]> checkables = new HashMap<>();
 
                         Queue<String> argQ = new ArrayDeque<>(Arrays.asList(args).subList(1, args.length));
 
@@ -60,7 +59,7 @@ public class Main {
                             String arg = argQ.remove();
 
                             switch (arg) {
-                                case "-c", "--section" -> {
+                                case "-s", "--section" -> {
                                     if (chapter.isPresent())
                                         throw new UserErrorException("Repeat argument: " + arg);
                                     try {
@@ -82,12 +81,23 @@ public class Main {
                                         throw new UserErrorException("Repeat argument: " + arg);
                                     programmingProjects = putRanges(argQ, "programming project");
                                 }
-                                case "-t", "--tests" -> {
+                                case "-b", "--books" -> {
                                     if (testName != null)
                                         throw new UserErrorException("Repeat argument: " + arg);
                                     testName = Optional.ofNullable(argQ.poll()).orElseThrow(() -> new UserErrorException("Missing argument: expected a value after " + arg));
                                 }
-                                default -> globArgs.add(arg);
+                                default -> {
+                                    String target;
+                                    if (arg.startsWith("-t:"))
+                                        target = arg.substring(3);
+                                    else if (arg.startsWith("--target:"))
+                                        target = arg.substring(9);
+                                    else {
+                                        globArgs.add(arg);
+                                        break;
+                                    }
+                                    // todo: checkables
+                                }
                             }
                         }
 
@@ -98,7 +108,7 @@ public class Main {
                         if (programmingProjects == null)
                             programmingProjects = new boolean[0];
                         if (testName == null)
-                            testName = prefs.get("selectedTests", CheckArgs.DEFAULT_TEST_NAME);
+                            testName = Books.defaultBook().orElseThrow(() -> new UserErrorException("Either provide book argument (`-b') or set a default book"));//prefs.get("selectedTests", CheckArgs.DEFAULT_TEST_NAME);
 
                         // TODO: Do something to catch other error (like references to non-existant types)
 

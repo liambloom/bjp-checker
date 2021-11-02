@@ -1,4 +1,4 @@
-package dev.liambloom.checker.ui.gui;
+package dev.liambloom.checker.ui;
 
 import dev.liambloom.checker.Book;
 import dev.liambloom.checker.Result;

@@ -1,6 +1,7 @@
 package dev.liambloom.checker;
 
 import dev.liambloom.checker.internal.*;
+import dev.liambloom.util.Case;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
 import org.w3c.dom.Document;
@@ -114,7 +115,7 @@ public class BookReader {
         // I'd like to wrap exceptions in SAXParseException, but I have no way to get the line/column number
         //  without using a SAX parser. Since I want a document to end with, I would need to either:
         //  a: parse it twice, or b: build my own DocumentBuilder.
-        Stream<Exception> typeErrors = Stream.concat(
+        Stream<Exception> typeErrors = Stream.of(
             Stream.of(
                 elementOfType(document, "parameter")
                     .map(Node::getTextContent),
@@ -143,14 +144,27 @@ public class BookReader {
                 .map(String::trim)
                 .map(type -> {
                     try {
-                        Throwable.class.cast(ClassLoader.getSystemClassLoader().loadClass(type));
+                        Throwable.class.isAssignableFrom(ClassLoader.getSystemClassLoader().loadClass(type));
+                        return null;
+                    }
+                    catch (ClassNotFoundException | ClassCastException e) {
+                        return e;
+                    }
+                }),
+            elementOfType(document, "sectionType", "checkableType")
+                .map(e -> e.getAttribute("annotation"))
+                .map(String::trim)
+                .map(type -> {
+                    try {
+                        Annotation.class.isAssignableFrom(ClassLoader.getSystemClassLoader().loadClass(type));
                         return null;
                     }
                     catch (ClassNotFoundException | ClassCastException e) {
                         return e;
                     }
                 })
-        );
+        )
+            .flatMap(Function.identity());
         if (returnDocument) {
             Optional<Exception> oe = typeErrors.findAny();
             if (oe.isPresent()) {
@@ -213,7 +227,7 @@ public class BookReader {
      * @param checkables          A map between annotations for checkables and the checkables of that type to run.
      * @param tests               The document containing the tests, which must follow the
      *                            <a href="https://checker.liambloom.dev/book-schema.xsd">schema</a>
-     * @param paths               A stream of the paths for all .class and .jar files to check
+     * @param targets             A stream of classes that should be checked
      * @return A stream containing the results of all checks
      *
      * @throws IOException If an i/o error occurs
@@ -226,26 +240,20 @@ public class BookReader {
      * @throws InvocationTargetException If the book's section or checkable annotations' {@code value()} method throws an exception
      */
     @SuppressWarnings("RedundantThrows")
-    public Stream<Result<TestStatus>> check(OptionalInt section, Map<Class<? extends Annotation>, boolean[]> checkables, Book tests,
-                                            Stream<Path> paths) throws IOException, ClassNotFoundException,
+    public Stream<Result<TestStatus>> check(OptionalInt section, Map<String, boolean[]> checkables, Book tests,
+                                            Stream<Class<?>> targets) throws IOException, ClassNotFoundException,
         SAXException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        // Should this method be moved to BookReader?
         Document document = validateDocumentAndReturn(tests, Document.class);
 
-        Class<? extends Annotation> sectionAnnotation;
-        NodeList checkableAnnotations;
+        NodeList metadataNodes;
+//        sectionAnnotation;
+//        Map<String, Class<? extends Annotation>> checkableAnnotations = new HashMap<>();
+//        checkableAnnotations;
         Stream<String> resources;
         {
             XPath xpath1 = Util.getXPathPool().get();
             try {
-                //noinspection unchecked
-                sectionAnnotation = (Class<? extends Annotation>) ClassLoader.getPlatformClassLoader().loadClass(
-                    (String) xpath1.evaluate("/book/meta/sectionType/@annotation", document, XPathConstants.STRING));
-                checkableAnnotations = (NodeList) xpath1.evaluate("/book/meta/checkableType", document, XPathConstants.NODESET);
-
-                resources = Util.streamNodeList((NodeList) xpath1.evaluate("/book/meta/rsc", document, XPathConstants.NODESET))
-                    .map(Element.class::cast)
-                    .map(e -> e.getAttribute("href"));
+                metadataNodes = ((Element) xpath1.evaluate("/book/meta", document, XPathConstants.NODE)).getChildNodes();
             }
             catch (XPathExpressionException e) {
                 throw new RuntimeException(e);
@@ -255,11 +263,40 @@ public class BookReader {
             }
         }
 
+        Element[] meta = Util.streamNodeList(metadataNodes)
+            .map(Element.class::cast)
+            .toArray(Element[]::new);
+        @SuppressWarnings("unchecked")
+        Class<? extends Annotation> sectionAnnotation = (Class<? extends Annotation>) ClassLoader.getPlatformClassLoader()
+            .loadClass(meta[0].getAttribute("annotation"));
+        int i;
+        Stream.Builder<Element> checkableAnnotationsBuilder = Stream.builder();
+
+        // todo: this belongs in ui code, but requires information from the book document
+        Map<String, Class<? extends Annotation>> checkableNameMap = new HashMap<>();
+//        Map<Class<? extends Annotation>, boolean[]> processedCheckables = new HashMap<>();
+        for (i = 0; i < meta.length && meta[i].getTagName().equals("checkableType"); i++) {
+            checkableAnnotationsBuilder.add(meta[i]);
+            String name = meta[i].getAttribute("name");
+            Set<String> variations = Stream.of(Case.PASCAL, Case.CAMEL, Case.SNAKE, Case.CONST, Case.SKEWER)
+                .map(c -> Case.convert(name, c))
+                .collect(Collectors.toSet());
+            variations.add(name.substring(0, 1));
+            StringBuilder initialization = new StringBuilder();
+
+            for (String abbr : Set.of(name, Case.convert(name, Case.PASCAL), Case.convert(name, Case.)))
+        }
+
+
+        resources = Util.streamNodeList((NodeList) xpath1.evaluate("/book/meta/rsc", document, XPathConstants.NODESET))
+            .map(Element.class::cast)
+            .map(e -> e.getAttribute("href"));
+
         Method m = sectionAnnotation.getMethod("value");
 
         int chapter;
         AtomicInteger detectedChapter = new AtomicInteger(-1);
-        List<Class<?>> classes = new PathClassLoader(paths).loadAllOwnClasses()
+        List<Class<?>> classes = /*new PathClassLoader(*/targets//).loadAllOwnClasses()
             .filter(clazz -> Arrays.stream(clazz.getAnnotationsByType(sectionAnnotation))
                 .map(FunctionUtils.unchecked((FunctionThrowsException<Annotation, Integer>) a -> {
                     m.trySetAccessible();
@@ -292,10 +329,9 @@ public class BookReader {
             Util.getXPathPool().offer(xpath2);
         }
 
-        return Util.streamNodeList(checkableAnnotations)
-            .map(Element.class::cast)
+        return checkableAnnotationsBuilder.build()
             .map(FunctionUtils.unchecked((FunctionThrowsException<Element, CheckableType<?>>) CheckableType::new))
-            .map(a -> new CheckerTargetGroup<>(a, checkables.get(a.annotation())))
+            .map(a -> new CheckerTargetGroup<>(a, processedCheckables.getOrDefault(a.annotation(), new boolean[0])))
             .flatMap(FunctionUtils.unchecked((FunctionThrowsException<CheckerTargetGroup<?>, Stream<Test>>) (e -> {
                 e.addPotentialTargets(classes.iterator());
                 return e.apply(ch);

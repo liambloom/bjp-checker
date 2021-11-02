@@ -1,6 +1,7 @@
 package dev.liambloom.checker.ui.gui;
 
 import dev.liambloom.checker.Book;
+import dev.liambloom.checker.ui.BeanBook;
 import dev.liambloom.checker.ui.Books;
 import dev.liambloom.checker.Result;
 import dev.liambloom.checker.TestValidationStatus;

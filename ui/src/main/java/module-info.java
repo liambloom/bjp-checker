@@ -1,4 +1,4 @@
-import dev.liambloom.checker.ui.cli.PrintStreamLoggerFinder;
+import dev.liambloom.checker.ui.CheckerUILoggerFinder;
 
 module dev.liambloom.checker.ui {
     requires static java.xml; // why is this static?
@@ -15,8 +15,9 @@ module dev.liambloom.checker.ui {
     exports dev.liambloom.checker.ui.cli;
     exports dev.liambloom.checker.ui.gui;
     exports dev.liambloom.checker.ui;
-    provides System.LoggerFinder with PrintStreamLoggerFinder;
+    provides System.LoggerFinder with CheckerUILoggerFinder;
     opens views;
     opens css;
     opens dev.liambloom.checker.ui.gui to javafx.fxml;
+    opens dev.liambloom.checker.ui to javafx.fxml;
 }
