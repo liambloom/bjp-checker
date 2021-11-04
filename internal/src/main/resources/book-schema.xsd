@@ -33,7 +33,12 @@
     <xs:complexType name="bookType">
         <xs:sequence>
             <!--<xs:element name="definitions" type="definitions" minOccurs="0" />-->
-            <xs:element name="meta" type="meta" />
+            <xs:element name="meta" type="meta">
+                <xs:unique name="checkableNameUnique">
+                    <xs:selector xpath="checkableType" />
+                    <xs:field xpath="@name" />
+                </xs:unique>
+            </xs:element>
             <xs:element name="section" type="sectionType" maxOccurs="unbounded">
                 <xs:unique name="exerciseNumUnique">
                     <xs:selector xpath="exercise" />

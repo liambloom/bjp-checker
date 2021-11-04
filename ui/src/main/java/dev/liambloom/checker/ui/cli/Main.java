@@ -5,6 +5,7 @@ import dev.liambloom.checker.Result;
 import dev.liambloom.checker.TestValidationStatus;
 import dev.liambloom.checker.ui.Books;
 import dev.liambloom.checker.ui.UserErrorException;
+import dev.liambloom.util.StringUtils;
 import javafx.application.Application;
 import org.fusesource.jansi.AnsiConsole;
 import org.xml.sax.SAXException;
@@ -96,7 +97,10 @@ public class Main {
                                         globArgs.add(arg);
                                         break;
                                     }
-                                    // todo: checkables
+                                    checkables.compute(target, (k, v) -> {
+                                        if (v == null)
+                                            return putRanges(argQ, /* TODO: get name */)
+                                    })
                                 }
                             }
                         }
@@ -244,7 +248,7 @@ public class Main {
     public static void printResults(Stream<Result<?>> s) throws IOException {
         try {
             s.forEachOrdered(r -> {
-                System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), Case.convert(r.status().toString(), Case.SPACE));
+                System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), StringUtils.convertCase(r.status().toString(), StringUtils.Case.SPACE));
                 r.console().ifPresent((ConsumerThrowsIOException<ByteArrayOutputStream>) (c -> c.writeTo(System.out)));
             });
         }
@@ -281,7 +285,7 @@ public class Main {
         }
 
         if (ranges.isEmpty())
-            throw new UserErrorException("Missing argument: expected value(s) after " + name);
+            throw new UserErrorException("Missing argument: expected value(s) after " + /* TODO: --name */);
 
         boolean[] nums = new boolean[absMax + 1];
 

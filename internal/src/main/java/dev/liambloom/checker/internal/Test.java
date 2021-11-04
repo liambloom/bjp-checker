@@ -3,7 +3,7 @@ package dev.liambloom.checker.internal;
 import dev.liambloom.checker.ReLogger;
 import dev.liambloom.checker.Result;
 import dev.liambloom.checker.TestStatus;
-import dev.liambloom.util.Case;
+import dev.liambloom.util.StringUtils;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -86,7 +86,7 @@ public interface Test {
         if (!executable.canAccess(null) && !executable.trySetAccessible()) {
             ReLogger logger = new ReLogger(Test.class.getName());
             logger.log(System.Logger.Level.ERROR, "Bad Header: %s %s %s is not accessible",
-                Case.convert(Util.getAccessibilityModifierName(executable), Case.SENTENCE),
+                StringUtils.convertCase(Util.getAccessibilityModifierName(executable), StringUtils.Case.SENTENCE),
                 executable.getClass().getSimpleName().toLowerCase(Locale.ENGLISH),
                 Util.executableToString(executable));
             return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, logger)));

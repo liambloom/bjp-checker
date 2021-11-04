@@ -1,6 +1,6 @@
 package dev.liambloom.checker.ui.gui;
 
-import dev.liambloom.util.Case;
+import dev.liambloom.util.StringUtils;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 
@@ -39,7 +39,7 @@ public class GUILogger implements System.Logger {
                 default -> null; // Unreachable
             }
         );
-        alert.setTitle(Case.convert(alert.getAlertType().name(), Case.TITLE));
+        alert.setTitle(StringUtils.convertCase(alert.getAlertType().name(), StringUtils.Case.TITLE));
         alert.setHeaderText(thrown == null ? null : msg);
         StringWriter sw = new StringWriter();
         if (thrown != null)  {

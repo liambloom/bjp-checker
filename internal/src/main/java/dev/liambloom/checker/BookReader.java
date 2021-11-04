@@ -1,7 +1,7 @@
 package dev.liambloom.checker;
 
 import dev.liambloom.checker.internal.*;
-import dev.liambloom.util.Case;
+import dev.liambloom.util.StringUtils;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
 import org.w3c.dom.Document;
@@ -249,7 +249,7 @@ public class BookReader {
 //        sectionAnnotation;
 //        Map<String, Class<? extends Annotation>> checkableAnnotations = new HashMap<>();
 //        checkableAnnotations;
-        Stream<String> resources;
+//        Stream<String> resources;
         {
             XPath xpath1 = Util.getXPathPool().get();
             try {
@@ -273,24 +273,49 @@ public class BookReader {
         Stream.Builder<Element> checkableAnnotationsBuilder = Stream.builder();
 
         // todo: this belongs in ui code, but requires information from the book document
-        Map<String, Class<? extends Annotation>> checkableNameMap = new HashMap<>();
-//        Map<Class<? extends Annotation>, boolean[]> processedCheckables = new HashMap<>();
+        Map<String, String> checkableNameAbbrMap = new HashMap<>();
+        Set<String> names = new HashSet<>();
         for (i = 0; i < meta.length && meta[i].getTagName().equals("checkableType"); i++) {
             checkableAnnotationsBuilder.add(meta[i]);
             String name = meta[i].getAttribute("name");
-            Set<String> variations = Stream.of(Case.PASCAL, Case.CAMEL, Case.SNAKE, Case.CONST, Case.SKEWER)
-                .map(c -> Case.convert(name, c))
+            names.add(name);
+            Set<String> variations = Stream.of(StringUtils.Case.PASCAL, StringUtils.Case.CAMEL, StringUtils.Case.SNAKE, StringUtils.Case.CONST, StringUtils.Case.SKEWER)
+                .map(c -> StringUtils.convertCase(name, c))
                 .collect(Collectors.toSet());
             variations.add(name.substring(0, 1));
-            StringBuilder initialization = new StringBuilder();
+            variations.add(String.valueOf(StringUtils.initials(name)));
 
-            for (String abbr : Set.of(name, Case.convert(name, Case.PASCAL), Case.convert(name, Case.)))
+            for (String abbr : variations) {
+                checkableNameAbbrMap.merge(abbr, name, (oldValue, newValue) -> {
+                    String r = null;
+                    if (abbr.equals(newValue))
+                        r = newValue;
+                    else if (names.contains(oldValue))
+                        r = oldValue;
+                    if (checkables.containsKey(abbr)) {
+                        if (r == null)
+                            throw new IllegalArgumentException("Ambiguous abbreviation " + abbr + ": could refer to " + oldValue + " or " + newValue);
+                        else
+                            return r;
+                    }
+                    else
+                        return null;
+                });
+            }
         }
 
+        Map<String, boolean[]> processedCheckables = new HashMap<>();
+        for (Map.Entry<String, boolean[]> e : checkables.entrySet()) {
+            String k = checkableNameAbbrMap.get(e.getKey());
+            if (k == null)
+                throw new IllegalArgumentException("Unknown checkable type: " + e.getKey());
+            processedCheckables.merge(k, e.getValue(), (v1, v2) -> { throw new IllegalArgumentException("Repeat argument: --target:" + k); });
+        }
 
-        resources = Util.streamNodeList((NodeList) xpath1.evaluate("/book/meta/rsc", document, XPathConstants.NODESET))
-            .map(Element.class::cast)
-            .map(e -> e.getAttribute("href"));
+        Stream.Builder<String> rscStreamBuilder = Stream.builder();
+        for (; i < meta.length; i++) {
+            rscStreamBuilder.add(meta[i].getAttribute("href"));
+        }
 
         Method m = sectionAnnotation.getMethod("value");
 
@@ -315,7 +340,7 @@ public class BookReader {
             .collect(Collectors.toList());
         chapter = section.orElseGet(detectedChapter::get);
 
-        changeDirectory(tests.loadResources(Files.createTempDirectory(null), resources));
+        changeDirectory(tests.loadResources(Files.createTempDirectory(null), rscStreamBuilder.build()));
 
         XPath xpath2 = Util.getXPathPool().get();
         Node ch;

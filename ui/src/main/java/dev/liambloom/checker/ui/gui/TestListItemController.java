@@ -6,7 +6,7 @@ import dev.liambloom.checker.ui.Books;
 import dev.liambloom.checker.Result;
 import dev.liambloom.checker.TestValidationStatus;
 import dev.liambloom.util.function.FunctionUtils;
-import dev.liambloom.util.Case;
+import dev.liambloom.util.StringUtils;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.binding.ObjectBinding;
@@ -339,7 +339,7 @@ public class TestListItemController {
 
             @Override
             protected String computeValue() {
-                return getBook() == null ? null : Case.convert(getBook().getValidationResult().status().toString(), Case.TITLE);
+                return getBook() == null ? null : StringUtils.convertCase(getBook().getValidationResult().status().toString(), StringUtils.Case.TITLE);
             }
         });
         Tooltip.install(iconPane, iconTooltip);
