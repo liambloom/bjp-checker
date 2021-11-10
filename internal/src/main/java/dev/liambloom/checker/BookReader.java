@@ -243,9 +243,9 @@ public class BookReader {
      * @throws InvocationTargetException If the book's section or checkable annotations' {@code value()} method throws an exception
      */
     @SuppressWarnings("RedundantThrows")
-    public Stream<Result<TestStatus>> check(OptionalInt section, Map<String, boolean[]> checkables, Book tests,
+    public Result<TestStatus>[] check(OptionalInt section, Map<String, boolean[]> checkables, Book tests,
                                             Stream<Path> targets) throws IOException, ClassNotFoundException,
-        SAXException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        SAXException, NoSuchMethodException, IllegalAccessException {
         Document document = validateDocumentAndReturn(tests, Document.class);
 
         NodeList metadataNodes;
@@ -361,18 +361,24 @@ public class BookReader {
         PrintStream prevOut = System.out;
         PrintStream prevErr = System.err;
         try {
-            return checkableAnnotationsBuilder.build()
-                .map(FunctionUtils.unchecked((FunctionThrowsException<Element, CheckableType<?>>) CheckableType::new))
-                .map(a -> new CheckerTargetGroup<>(a, processedCheckables.getOrDefault(a.name(), new boolean[0])))
-                .flatMap(FunctionUtils.unchecked((FunctionThrowsException<CheckerTargetGroup<?>, Stream<Test>>) (e -> {
-                    e.addPotentialTargets(classes.iterator());
-                    return e.apply(ch);
-                })))
-                .map(Test::start)
-                .map(Future::get);
+             List<Future<Result<TestStatus>>> futures = checkableAnnotationsBuilder.build()
+                 .parallel()
+                 .map(FunctionUtils.unchecked((FunctionThrowsException<Element, CheckableType<?>>) CheckableType::new))
+                 .map(a -> new CheckerTargetGroup<>(a, processedCheckables.getOrDefault(a.name(), new boolean[0])))
+                 .flatMap(FunctionUtils.unchecked((FunctionThrowsException<CheckerTargetGroup<?>, Stream<Test>>) (e -> {
+                     e.addPotentialTargets(classes.iterator());
+                     return e.apply(ch);
+                 })))
+                 .map(Test::start)
+                 .collect(Collectors.toList());
+             Result<TestStatus>[] r = new Result[futures.size()];
+             Iterator<Future<Result<TestStatus>>> iter = futures.iterator();
+             for (int j = 0; iter.hasNext(); j++)
+                 r[j] = iter.next().get();
+             return r;
         }
-        catch (ExecutionException | InterruptedException e) {
-
+        catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
         }
         finally {
             System.setIn(prevIn);
