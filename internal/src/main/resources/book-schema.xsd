@@ -238,10 +238,9 @@
                     <!-- Remove trailing whitespace -->
                     <!-- replace /(?<=\W)\w+(?=\r?\n)/ with "" -->
                     <!-- add a sub-element to prints <marker> that marks the left bound -->
-                    <xs:element name="prints" type="printType" minOccurs="0" />
+                    <xs:element name="prints" type="preString" minOccurs="0" />
 
-                    <!--<xs:element name="post" type="postType" minOccurs="0" />-->
-                    <!-- TODO: <post> this -->
+                    <xs:element name="writesTo" type="writesTo" minOccurs="0" maxOccurs="unbounded" />
                 </xs:sequence>
             </xs:choice>
         </xs:sequence>
@@ -250,7 +249,15 @@
     <xs:complexType name="printType">
         <xs:simpleContent>
             <xs:extension base="preString">
-                <xs:attribute name="repeated" type="xs:int" default="1" />
+<!--                <xs:attribute name="repeated" type="xs:int" default="1" />-->
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="writesTo">
+        <xs:simpleContent>
+            <xs:extension base="preString">
+                <xs:attribute name="href" type="xs:anyURI" use="required" />
             </xs:extension>
         </xs:simpleContent>
     </xs:complexType>

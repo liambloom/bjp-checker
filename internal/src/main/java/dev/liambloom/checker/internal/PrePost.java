@@ -1,5 +1,6 @@
 package dev.liambloom.checker.internal;
 
+import dev.liambloom.checker.NotYetImplementedError;
 import org.w3c.dom.Element;
 
 import java.io.ByteArrayInputStream;
@@ -23,7 +24,7 @@ public class PrePost {
     }
 
     public void checkPost(Object o) {
-
+        throw new NotYetImplementedError("PrePost#checkPost");
     }
 
     private Stream<Object> parseJavaListElements(Element e) {
@@ -82,8 +83,7 @@ public class PrePost {
 
     private Object parseJavaItem(Element e) {
         if (e.getTagName().equals("class")) {
-            // TODO
-            return null;
+            throw new NotYetImplementedError("PrePost parse java <class> item");
         }
         else
             return parseJavaValue(e);

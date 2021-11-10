@@ -1,9 +1,12 @@
 package dev.liambloom.checker.internal;
 
+import dev.liambloom.checker.NotYetImplementedError;
 import dev.liambloom.checker.ReLogger;
 import dev.liambloom.checker.Result;
 import dev.liambloom.checker.TestStatus;
 import dev.liambloom.util.StringUtils;
+import dev.liambloom.util.function.FunctionThrowsException;
+import dev.liambloom.util.function.FunctionUtils;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -11,10 +14,7 @@ import org.w3c.dom.NodeList;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
@@ -22,15 +22,25 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.*;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public interface Test {
-    Result<TestStatus> run();
+    Future<Result<TestStatus>> start();
+
+    ReadWriteLock testLock = new ReentrantReadWriteLock();
+    ExecutorService readOnlyTest = Executors.newCachedThreadPool();
+    ExecutorService writingTest = Executors.newSingleThreadExecutor();
 
     static Test withFixedResult(Result<TestStatus> result) {
-        return () -> result;
+        return () -> CompletableFuture.completedFuture(result);
     }
 
     static Test multiTest(String name, Targets targets, Node testGroup) {
@@ -51,7 +61,7 @@ public interface Test {
                             return Test.streamFromStaticExecutable(name, method, targets, testGroup);
                         }
                         else {
-
+                            throw new NotYetImplementedError("Resolving method from multiple target");
                         }
                     }
                     case "constructor" -> {
@@ -60,26 +70,28 @@ public interface Test {
                         else if (targets.constructors().size() == 1)
                             return Test.streamFromStaticExecutable(name, targets.constructors().iterator().next(), targets, testGroup);
                         else {
-                            // TODO
+                            throw new NotYetImplementedError("Resolving constructor from multiple target");
                         }
                     }
                     case "project" -> {
-                        // TODO
+                        throw new NotYetImplementedError("Resolving project");
                     }
                     default -> throw new IllegalStateException("This should not have passed the schema");
                 }
-                return null; // TODO
             });
-        return () -> {
-            List<Result<TestStatus>> subResults = subTests.map(Test::run).collect(Collectors.toList());
+        return () -> readOnlyTest.submit(() -> {
+            List<Result<TestStatus>> subResults = subTests.sequential()
+                .map(Test::start)
+                .map(FunctionUtils.unchecked((FunctionThrowsException<Future<Result<TestStatus>>, Result<TestStatus>>) Future::get))
+                .collect(Collectors.toList());
             return new Result<>(
                 name,
                 subResults.stream()
                     .map(Result::status)
                     .max(Comparator.naturalOrder())
-                    .get(),
+                    .orElseThrow(),
                 subResults);
-        };
+        });
     }
 
     static Stream<Test> streamFromStaticExecutable(String name, Executable executable, Targets targets, Node node) {
@@ -164,18 +176,19 @@ public interface Test {
         NodeList children = test.getChildNodes();
         InputStream in = ((Element) children.item(i)).getTagName().equals("System.in")
             ? new ByteArrayInputStream(children.item(i++).getTextContent().getBytes())
-            : InputStream.nullInputStream();
+            : null;
         if (((Element) children.item(i)).getTagName().equals("this")) // TODO: Update Schema
             throw new IllegalArgumentException("Element <this> invalid in top level method");
         PrePost[] args = ((Element) children.item(i)).getTagName().equals("arguments")
             ? Util.streamNodeList(children.item(i++).getChildNodes())
                 .map(Element.class::cast)
-                .map(e -> new PrePost(e))
+                .map(PrePost::new)
                 .toArray(PrePost[]::new)
             : new PrePost[0];
         Class<? extends Throwable> expectedThrows;
         Element expectedReturns;
-        String expectedPrints;
+        String expectedOut;
+        Map<Path, String> writesTo;
         if (((Element) children.item(i)).getTagName().equals("throws")) {
             try {
                 expectedThrows = (Class<? extends Throwable>) ClassLoader.getSystemClassLoader().loadClass(children.item(i++).getTextContent());
@@ -184,7 +197,8 @@ public interface Test {
                 throw new IllegalStateException("This should not have passed validation.", e);
             }
             expectedReturns = null;
-            expectedPrints = null;
+            expectedOut = null;
+            writesTo = Collections.emptyMap();
         }
         else {
             expectedThrows = null;
@@ -196,16 +210,43 @@ public interface Test {
                 i++;
             String rawExpectedPrints = Optional.ofNullable(children.item(i))
                 .map(Element.class::cast)
+                .filter(n -> n.getTagName().equals("prints"))
                 .map(Element::getTextContent)
                 .map(String::stripIndent)
                 .orElse(null);
             if (rawExpectedPrints == null)
-                expectedPrints = null;
+                expectedOut = null;
             else {
-                expectedPrints = Util.cleansePrint(rawExpectedPrints);
+                expectedOut = Util.cleansePrint(rawExpectedPrints);
+                i++;
             }
+            writesTo = IntStream.range(i, children.getLength())
+                .mapToObj(children::item)
+                .map(Element.class::cast)
+                .collect(Collectors.toMap(
+                    e -> Path.of(e.getAttribute("href")),
+                    e -> e.getTextContent().stripIndent()
+                ));
         }
-        return null; // TODO
+        ExecutorService executor = in == null && expectedOut == null && writesTo.isEmpty() ? readOnlyTest : writingTest;
+        // TODO: Re-load classes to allow them to write to files in writesTo
+        return () -> executor.submit(() -> {
+            testLock.readLock().lock();
+            try {
+//                InputStream prevIn = System.in;
+//                PrintStream prevOut = System.out;
+//                PrintStream prevErr = System.err;
+                System.setIn(in == null ? InputStream.nullInputStream(): in);
+                ByteArrayOutputStream actualOut = expectedOut == null ? null : new ByteArrayOutputStream();
+                PrintStream ps = new PrintStream(expectedOut == null ? OutputStream.nullOutputStream() : actualOut);
+                System.setOut(ps);
+                System.setErr(ps);
+                throw new NotYetImplementedError("Run a static executable test");
+            }
+            finally {
+                testLock.writeLock().unlock();
+            }
+        });
     }
 
 //    static Test

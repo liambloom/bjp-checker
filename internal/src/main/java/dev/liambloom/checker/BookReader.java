@@ -20,13 +20,16 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -241,7 +244,7 @@ public class BookReader {
      */
     @SuppressWarnings("RedundantThrows")
     public Stream<Result<TestStatus>> check(OptionalInt section, Map<String, boolean[]> checkables, Book tests,
-                                            Stream<Class<?>> targets) throws IOException, ClassNotFoundException,
+                                            Stream<Path> targets) throws IOException, ClassNotFoundException,
         SAXException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         Document document = validateDocumentAndReturn(tests, Document.class);
 
@@ -321,7 +324,7 @@ public class BookReader {
 
         int chapter;
         AtomicInteger detectedChapter = new AtomicInteger(-1);
-        List<Class<?>> classes = /*new PathClassLoader(*/targets//).loadAllOwnClasses()
+        List<Class<?>> classes = new PathClassLoader(targets).loadAllOwnClasses()
             .filter(clazz -> Arrays.stream(clazz.getAnnotationsByType(sectionAnnotation))
                 .map(FunctionUtils.unchecked((FunctionThrowsException<Annotation, Integer>) a -> {
                     m.trySetAccessible();
@@ -354,14 +357,28 @@ public class BookReader {
             Util.getXPathPool().offer(xpath2);
         }
 
-        return checkableAnnotationsBuilder.build()
-            .map(FunctionUtils.unchecked((FunctionThrowsException<Element, CheckableType<?>>) CheckableType::new))
-            .map(a -> new CheckerTargetGroup<>(a, processedCheckables.getOrDefault(a.annotation(), new boolean[0])))
-            .flatMap(FunctionUtils.unchecked((FunctionThrowsException<CheckerTargetGroup<?>, Stream<Test>>) (e -> {
-                e.addPotentialTargets(classes.iterator());
-                return e.apply(ch);
-            })))
-            .map(Test::run);
+        InputStream prevIn = System.in;
+        PrintStream prevOut = System.out;
+        PrintStream prevErr = System.err;
+        try {
+            return checkableAnnotationsBuilder.build()
+                .map(FunctionUtils.unchecked((FunctionThrowsException<Element, CheckableType<?>>) CheckableType::new))
+                .map(a -> new CheckerTargetGroup<>(a, processedCheckables.getOrDefault(a.name(), new boolean[0])))
+                .flatMap(FunctionUtils.unchecked((FunctionThrowsException<CheckerTargetGroup<?>, Stream<Test>>) (e -> {
+                    e.addPotentialTargets(classes.iterator());
+                    return e.apply(ch);
+                })))
+                .map(Test::start)
+                .map(Future::get);
+        }
+        catch (ExecutionException | InterruptedException e) {
+
+        }
+        finally {
+            System.setIn(prevIn);
+            System.setOut(prevOut);
+            System.setErr(prevErr);
+        }
     }
 
     private static void changeDirectory(Path path) {
