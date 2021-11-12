@@ -16,6 +16,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.*;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -28,6 +29,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -58,7 +61,7 @@ public interface Test {
                                 logger.log(System.Logger.Level.ERROR, "Bad Header: Instance method %s should be static", Util.executableToString(method));
                                 return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, logger)));
                             }
-                            return Test.streamFromStaticExecutable(name, method, targets, testGroup);
+                            return Test.streamFromStaticExecutable(name, method, p -> method.invoke(null, p), targets, testGroup);
                         }
                         else {
                             throw new NotYetImplementedError("Resolving method from multiple target");
@@ -67,8 +70,10 @@ public interface Test {
                     case "constructor" -> {
                         if (targets.constructors().isEmpty())
                             return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.INCOMPLETE)));
-                        else if (targets.constructors().size() == 1)
-                            return Test.streamFromStaticExecutable(name, targets.constructors().iterator().next(), targets, testGroup);
+                        else if (targets.constructors().size() == 1) {
+                            Constructor<?> c = targets.constructors().iterator().next();
+                            return Test.streamFromStaticExecutable(name, c, c::newInstance, targets, testGroup);
+                        }
                         else {
                             throw new NotYetImplementedError("Resolving constructor from multiple target");
                         }
@@ -94,7 +99,7 @@ public interface Test {
         });
     }
 
-    static Stream<Test> streamFromStaticExecutable(String name, Executable executable, Targets targets, Node node) {
+    static Stream<Test> streamFromStaticExecutable(String name, Executable executable, ExecutableInvocation invoke, Targets targets, Node node) {
         if (!executable.canAccess(null) && !executable.trySetAccessible()) {
             ReLogger logger = new ReLogger(Test.class.getName());
             logger.log(System.Logger.Level.ERROR, "Bad Header: %s %s %s is not accessible",
@@ -157,7 +162,7 @@ public interface Test {
                 throw new RuntimeException(e);
             }
             return IntStream.range(0, tests.getLength())
-                .mapToObj(i -> Test.staticExecutableTest("Test " + i, executable, targets, tests.item(i)));
+                .mapToObj(i -> Test.staticExecutableTest("Test " + i, executable, invoke, targets, tests.item(i)));
         }
         else {
             ReLogger logger = new ReLogger(Util.generateLoggerName());
@@ -171,7 +176,7 @@ public interface Test {
         }
     }
 
-    static Test staticExecutableTest(String name, Executable executable, Targets targets, Node test) {
+    static Test staticExecutableTest(String name, Executable executable, ExecutableInvocation invoke, Targets targets, Node test) {
         int i = 0;
         NodeList children = test.getChildNodes();
         InputStream in = ((Element) children.item(i)).getTagName().equals("System.in")
@@ -186,7 +191,7 @@ public interface Test {
                 .toArray(PrePost[]::new)
             : new PrePost[0];
         Class<? extends Throwable> expectedThrows;
-        Element expectedReturns;
+        Post expectedReturns;
         String expectedOut;
         Map<Path, String> writesTo;
         if (((Element) children.item(i)).getTagName().equals("throws")) {
@@ -205,6 +210,7 @@ public interface Test {
             expectedReturns = Optional.ofNullable(children.item(i))
                 .map(Element.class::cast)
                 .filter(n -> n.getTagName().equals("returns"))
+                .map(Post::new)
                 .orElse(null);
             if (expectedReturns != null)
                 i++;
@@ -233,14 +239,51 @@ public interface Test {
         return () -> executor.submit(() -> {
             testLock.readLock().lock();
             try {
-//                InputStream prevIn = System.in;
-//                PrintStream prevOut = System.out;
-//                PrintStream prevErr = System.err;
                 System.setIn(in == null ? InputStream.nullInputStream(): in);
                 ByteArrayOutputStream actualOut = expectedOut == null ? null : new ByteArrayOutputStream();
                 PrintStream ps = new PrintStream(expectedOut == null ? OutputStream.nullOutputStream() : actualOut);
                 System.setOut(ps);
                 System.setErr(ps);
+                Object[] argArr = new Object[executable.getParameterCount()];
+                int nonVarArgCount = executable.getParameterCount();
+                if (executable.isVarArgs())
+                    nonVarArgCount--;
+                for (int j = 0; j < nonVarArgCount; j++)
+                    argArr[j] = args[j].getPre();
+                if (executable.isVarArgs()) {
+                    Object[] varArgs = new Object[args.length - nonVarArgCount];
+                    argArr[argArr.length - 1] = varArgs;
+                    for (int j = 0; j < varArgs.length; j++)
+                        varArgs[j] = args[argArr.length + j].getPre();
+                }
+                Object actualReturn = invoke.invoke(argArr);
+                if (expectedReturns != null && !expectedReturns.check(actualReturn)) {
+                    ReLogger logger = new ReLogger(Util.generateLoggerName());
+                    logger.log(System.Logger.Level.ERROR, """
+                        Incorrect return value:
+                          Expected: %s%n
+                          Actual: %s""", expectedReturns.toString(), actualReturn.toString());
+                    return new Result<>(name, TestStatus.FAILED, logger);
+                }
+                String cleansedActualOutput;
+                if (expectedOut != null && !expectedOut.equals(cleansedActualOutput = Util.cleansePrint(actualOut.toString()))) {
+                    StringBuilder errMsg = new StringBuilder();
+                    errMsg.append("Incorrect Console Output:\n")
+                        .append("  Expected:");
+                    for (String line : expectedOut.split("\\n")) {
+                        errMsg.append("\n  | ")
+                            .append(line);
+                    }
+                    errMsg.append("\n  Actual:");
+                    for (String line : cleansedActualOutput.split("\\n")) {
+                        errMsg.append("\n  | ")
+                            .append(line);
+                    }
+                    ReLogger logger = new ReLogger(Util.generateLoggerName());
+                    logger.log(System.Logger.Level.ERROR, errMsg.toString());
+                    return new Result<>(name, TestStatus.FAILED, logger);
+                }
+
                 throw new NotYetImplementedError("Run a static executable test");
             }
             finally {

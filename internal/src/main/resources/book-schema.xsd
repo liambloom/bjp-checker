@@ -214,7 +214,7 @@
     <xs:complexType name="testType">
         <xs:sequence>
             <xs:element name="System.in" type="xs:string" minOccurs="0" />
-            <xs:element name="this" type="prePost" minOccurs="0" />
+<!--            <xs:element name="this" type="prePost" minOccurs="0" />-->
             <xs:element name="arguments" type="argumentsType" minOccurs="0" />
             <xs:choice>
                 <!-- There are more things a method can do -->
@@ -233,7 +233,7 @@
 
                     <!-- TODO: returns should have the same type as pre and post,
                         to allow full on tests to be done on the return value (like for iterator()) -->
-                    <xs:element name="returns" type="javaItem" minOccurs="0" />
+                    <xs:element name="returns" type="postType" minOccurs="0" />
 
                     <!-- Remove trailing whitespace -->
                     <!-- replace /(?<=\W)\w+(?=\r?\n)/ with "" -->
@@ -314,7 +314,7 @@
     <xs:group name="prePost">
         <xs:sequence>
             <!-- TODO: This probably needs to be a javaItem, some methods take custom data types (like ch 8)  -->
-            <xs:element name="pre" type="javaItem" />
+            <xs:element name="pre" type="javaValue" />
             <xs:element name="post" type="postType" minOccurs="0" />
         </xs:sequence>
     </xs:group>

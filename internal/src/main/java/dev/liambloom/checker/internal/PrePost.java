@@ -14,17 +14,24 @@ import java.util.stream.Stream;
 
 public class PrePost {
     private final Element e;
+    private final Post p;
 
     public PrePost(Element e) {
         this.e = e;
+        p = Optional.ofNullable(e.getChildNodes().item(2))
+            .map(Element.class::cast)
+            .map(Post::new)
+            .orElse(null);
     }
 
     public Object getPre() {
-        return parseJavaItem((Element) e.getFirstChild().getFirstChild());
+        return parseJavaValue((Element) e.getFirstChild().getFirstChild());
     }
 
-    public void checkPost(Object o) {
-        throw new NotYetImplementedError("PrePost#checkPost");
+    public boolean checkPost(Object o) {
+        if (p == null)
+            return true;
+        throw new NotYetImplementedError("Argument Post-condition");
     }
 
     private Stream<Object> parseJavaListElements(Element e) {
