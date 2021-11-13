@@ -144,11 +144,12 @@ public interface Test {
             .wrap()
             .parameterArray();
         boolean isCorrectParams = false;
+        boolean usesVarArgs = false;
         if (params.length == expectedParams.length || executable.isVarArgs() && expectedParams.length >= params.length - 1) {
             for (int i = 0; i < expectedParams.length; i++) {
                 if (!(isCorrectParams = i < params.length && params[i].isAssignableFrom(expectedParams[i])
-                    && (i != params.length - 1 || executable.isVarArgs() && params.length == expectedParams.length)
-                    || executable.isVarArgs() && i >= params.length - 1 && params[params.length - 1].getComponentType().isAssignableFrom(expectedParams[i])))
+                    && (!executable.isVarArgs() || i != params.length - 1 || params.length == expectedParams.length)
+                    || (usesVarArgs = executable.isVarArgs() && i >= params.length - 1 && params[params.length - 1].getComponentType().isAssignableFrom(expectedParams[i]))))
                     break;
             }
         }
@@ -161,8 +162,20 @@ public interface Test {
             catch (XPathExpressionException e) {
                 throw new RuntimeException(e);
             }
+            ExecutableInvocation invokeWrapper;
+            if (usesVarArgs) {
+                final int nonVarArgCount = params.length - 1;
+                invokeWrapper = args -> {
+                    Object[] newArgs = Arrays.copyOfRange(args, 0, nonVarArgCount + 1);
+                    newArgs[nonVarArgCount] = new Object[args.length - nonVarArgCount];
+                    System.arraycopy(args, nonVarArgCount + 1, newArgs[nonVarArgCount], 0, args.length - nonVarArgCount);
+                    return invoke.invoke(newArgs);
+                };
+            }
+            else
+                invokeWrapper = invoke;
             return IntStream.range(0, tests.getLength())
-                .mapToObj(i -> Test.staticExecutableTest("Test " + i, executable, invoke, targets, tests.item(i)));
+                .mapToObj(i -> Test.staticExecutableTest("Test " + i, executable, invokeWrapper, targets, tests.item(i)));
         }
         else {
             ReLogger logger = new ReLogger(Util.generateLoggerName());
@@ -184,7 +197,7 @@ public interface Test {
             : null;
         if (((Element) children.item(i)).getTagName().equals("this")) // TODO: Update Schema
             throw new IllegalArgumentException("Element <this> invalid in top level method");
-        PrePost[] args = ((Element) children.item(i)).getTagName().equals("arguments")
+        PrePost[] argConditions = ((Element) children.item(i)).getTagName().equals("arguments")
             ? Util.streamNodeList(children.item(i++).getChildNodes())
                 .map(Element.class::cast)
                 .map(PrePost::new)
@@ -196,6 +209,7 @@ public interface Test {
         Map<Path, String> writesTo;
         if (((Element) children.item(i)).getTagName().equals("throws")) {
             try {
+                //noinspection unchecked
                 expectedThrows = (Class<? extends Throwable>) ClassLoader.getSystemClassLoader().loadClass(children.item(i++).getTextContent());
             }
             catch (ClassNotFoundException | ClassCastException e) {
@@ -244,26 +258,20 @@ public interface Test {
                 PrintStream ps = new PrintStream(expectedOut == null ? OutputStream.nullOutputStream() : actualOut);
                 System.setOut(ps);
                 System.setErr(ps);
-                Object[] argArr = new Object[executable.getParameterCount()];
-                int nonVarArgCount = executable.getParameterCount();
-                if (executable.isVarArgs())
-                    nonVarArgCount--;
-                for (int j = 0; j < nonVarArgCount; j++)
-                    argArr[j] = args[j].getPre();
-                if (executable.isVarArgs()) {
-                    Object[] varArgs = new Object[args.length - nonVarArgCount];
-                    argArr[argArr.length - 1] = varArgs;
-                    for (int j = 0; j < varArgs.length; j++)
-                        varArgs[j] = args[argArr.length + j].getPre();
-                }
-                Object actualReturn = invoke.invoke(argArr);
-                if (expectedReturns != null && !expectedReturns.check(actualReturn)) {
-                    ReLogger logger = new ReLogger(Util.generateLoggerName());
-                    logger.log(System.Logger.Level.ERROR, """
-                        Incorrect return value:
-                          Expected: %s%n
-                          Actual: %s""", expectedReturns.toString(), actualReturn.toString());
-                    return new Result<>(name, TestStatus.FAILED, logger);
+                Object[] args = new Object[argConditions.length];
+                for (int j = 0; j < argConditions.length; j++)
+                    args[j] = argConditions[j].getPre();
+                Object actualReturn = invoke.invoke(args);
+                TestStatus status = TestStatus.OK;
+                ReLogger logger = new ReLogger(Util.generateLoggerName());
+                boolean consoleInLogger;
+                List<Result<? extends TestStatus>> subResults = new ArrayList<>();
+                if (expectedReturns != null) {
+                    Result<TestStatus> post = expectedReturns.check(actualReturn);
+                    if (status.compareTo(post.status()) < 0)
+                        status = post.status();
+                    post.logs().ifPresent(l -> l.logTo(logger));
+                    subResults.addAll(post.subResults());
                 }
                 String cleansedActualOutput;
                 if (expectedOut != null && !expectedOut.equals(cleansedActualOutput = Util.cleansePrint(actualOut.toString()))) {
@@ -279,12 +287,21 @@ public interface Test {
                         errMsg.append("\n  | ")
                             .append(line);
                     }
-                    ReLogger logger = new ReLogger(Util.generateLoggerName());
                     logger.log(System.Logger.Level.ERROR, errMsg.toString());
-                    return new Result<>(name, TestStatus.FAILED, logger);
+                    status = TestStatus.FAILED;
+                    consoleInLogger = true;
                 }
-
-                throw new NotYetImplementedError("Run a static executable test");
+                else
+                    consoleInLogger = false;
+                // TODO: DRY -- this code is repeated from the return value check
+                for (int j = 0; j < args.length; j++) {
+                    Result<TestStatus> post = argConditions[j].checkPost(args[j]);
+                    if (status.compareTo(post.status()) < 0)
+                        status = post.status();
+                    post.logs().ifPresent(l -> l.logTo(logger));
+                    subResults.addAll(post.subResults());
+                }
+                return new Result<>(name, status, Optional.of(logger), consoleInLogger || status != TestStatus.FAILED ? Optional.empty() : Optional.ofNullable(actualOut), subResults);
             }
             finally {
                 testLock.writeLock().unlock();

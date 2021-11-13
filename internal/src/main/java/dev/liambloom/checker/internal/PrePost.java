@@ -1,6 +1,8 @@
 package dev.liambloom.checker.internal;
 
 import dev.liambloom.checker.NotYetImplementedError;
+import dev.liambloom.checker.Result;
+import dev.liambloom.checker.TestStatus;
 import org.w3c.dom.Element;
 
 import java.io.ByteArrayInputStream;
@@ -28,10 +30,11 @@ public class PrePost {
         return parseJavaValue((Element) e.getFirstChild().getFirstChild());
     }
 
-    public boolean checkPost(Object o) {
+    public Result<TestStatus> checkPost(Object o) {
         if (p == null)
-            return true;
-        throw new NotYetImplementedError("Argument Post-condition");
+            return new Result<>(null /* TODO */, TestStatus.OK);
+        else
+            return p.check(o);
     }
 
     private Stream<Object> parseJavaListElements(Element e) {

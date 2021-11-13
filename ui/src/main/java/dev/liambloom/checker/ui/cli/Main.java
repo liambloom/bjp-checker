@@ -72,16 +72,16 @@ public class Main {
                                         throw new UserErrorException(e);
                                     }
                                 }
-                                case "-e", "--exercise", "--exercises" -> {
-                                    if (exercises != null)
-                                        throw new UserErrorException("Repeat argument: " + arg);
-                                    exercises = putRanges(argQ, "exercise");
-                                }
-                                case "--pp", "--programming-project", "--programmingProject", "--programming-projects", "--programmingProjects" -> {
-                                    if (programmingProjects != null)
-                                        throw new UserErrorException("Repeat argument: " + arg);
-                                    programmingProjects = putRanges(argQ, "programming project");
-                                }
+//                                case "-e", "--exercise", "--exercises" -> {
+//                                    if (exercises != null)
+//                                        throw new UserErrorException("Repeat argument: " + arg);
+//                                    exercises = putRanges(argQ, "exercise");
+//                                }
+//                                case "--pp", "--programming-project", "--programmingProject", "--programming-projects", "--programmingProjects" -> {
+//                                    if (programmingProjects != null)
+//                                        throw new UserErrorException("Repeat argument: " + arg);
+//                                    programmingProjects = putRanges(argQ, "programming project");
+//                                }
                                 case "-b", "--books" -> {
                                     if (testName != null)
                                         throw new UserErrorException("Repeat argument: " + arg);
