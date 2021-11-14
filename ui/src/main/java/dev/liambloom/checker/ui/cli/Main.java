@@ -1,6 +1,7 @@
 package dev.liambloom.checker.ui.cli;
 
 import dev.liambloom.checker.Book;
+import dev.liambloom.checker.BookReader;
 import dev.liambloom.checker.Result;
 import dev.liambloom.checker.TestValidationStatus;
 import dev.liambloom.checker.ui.Books;
@@ -52,7 +53,7 @@ public class Main {
                         List<String> globArgs = new LinkedList<>();
                         String testName = null;
                         OptionalInt chapter = OptionalInt.empty();
-                        Map<String, boolean[]> checkables = new HashMap<>();
+                        Map<String, boolean[]> preCheckables = new HashMap<>();
 
                         Queue<String> argQ = new ArrayDeque<>(Arrays.asList(args).subList(1, args.length));
 
@@ -72,16 +73,6 @@ public class Main {
                                         throw new UserErrorException(e);
                                     }
                                 }
-//                                case "-e", "--exercise", "--exercises" -> {
-//                                    if (exercises != null)
-//                                        throw new UserErrorException("Repeat argument: " + arg);
-//                                    exercises = putRanges(argQ, "exercise");
-//                                }
-//                                case "--pp", "--programming-project", "--programmingProject", "--programming-projects", "--programmingProjects" -> {
-//                                    if (programmingProjects != null)
-//                                        throw new UserErrorException("Repeat argument: " + arg);
-//                                    programmingProjects = putRanges(argQ, "programming project");
-//                                }
                                 case "-b", "--books" -> {
                                     if (testName != null)
                                         throw new UserErrorException("Repeat argument: " + arg);
@@ -97,20 +88,59 @@ public class Main {
                                         globArgs.add(arg);
                                         break;
                                     }
-                                    checkables.compute(target, (k, v) -> {
-                                        if (v == null)
-                                            return putRanges(argQ, /* TODO: get name */)
-                                    })
+                                    preCheckables.compute(target, (k, v) -> {
+                                        if (v == null) {
+                                            int absMax = Integer.MIN_VALUE;
+                                            List<int[]> ranges = new ArrayList<>(); //[args.length - i][];
+
+                                            while (!argQ.isEmpty() && RANGED_NUM.matcher(argQ.peek()).matches()) {
+                                                for (String s : argQ.remove().split(",")) {
+                                                    if (s.isEmpty())
+                                                        continue;
+                                                    int min, max;
+                                                    if (s.contains("-")) {
+                                                        String[] range = s.split("-");
+                                                        min = Integer.parseInt(range[0]);
+                                                        max = Integer.parseInt(range[1]);
+                                                    }
+                                                    else
+                                                        min = max = Integer.parseInt(s);
+
+                                                    if (absMax < max)
+                                                        absMax = max;
+
+                                                    if (min > max || min <= 0)
+                                                        throw new UserErrorException("Range " + s + " is invalid");
+
+                                                    ranges.add(new int[]{ min, max });
+                                                }
+                                            }
+
+                                            if (ranges.isEmpty())
+                                                throw new UserErrorException("Missing argument: expected value(s) after " + arg);
+
+                                            boolean[] nums = new boolean[absMax + 1];
+
+                                            for (int[] range : ranges) {
+                                                for (int j = range[0]; j <= range[1]; j++) {
+                                                    if (nums[j])
+                                                        throw new UserErrorException("Attempt to list " + target + " " + j + " twice");
+                                                    else
+                                                        nums[j] = true;
+                                                }
+                                            }
+
+                                            return nums;
+                                        }
+                                        else
+                                            throw new UserErrorException("Duplicate Argument: " + arg);
+                                    });
                                 }
                             }
                         }
 
-                        if (exercises == null && programmingProjects == null)
+                        if (preCheckables.isEmpty())
                             throw new UserErrorException("No exercises or programming projects specified");
-                        if (exercises == null)
-                            exercises = new boolean[0];
-                        if (programmingProjects == null)
-                            programmingProjects = new boolean[0];
                         if (testName == null)
                             testName = Books.defaultBook().orElseThrow(() -> new UserErrorException("Either provide book argument (`-b') or set a default book"));//prefs.get("selectedTests", CheckArgs.DEFAULT_TEST_NAME);
 
@@ -118,10 +148,48 @@ public class Main {
 
                         Stream<Path> paths = new Glob(globArgs).files();
 
-                        BookReader.check(new CheckArgs(chapter, exercises, programmingProjects, Books.getBook(testName), paths));
+                        BookReader reader = Books.getBook(testName).getReader();
+
+                        Map<String, String> checkableNameAbbrMap = new HashMap<>();
+                        Set<String> names = new HashSet<>();
+                        for (String name : reader.getCheckableTypeSet()) {
+                            names.add(name);
+                            Set<String> variations = Stream.of(StringUtils.Case.PASCAL, StringUtils.Case.CAMEL, StringUtils.Case.SNAKE, StringUtils.Case.CONST, StringUtils.Case.SKEWER)
+                                .map(c -> StringUtils.convertCase(name, c))
+                                .collect(Collectors.toSet());
+                            variations.add(name.substring(0, 1));
+                            variations.add(String.valueOf(StringUtils.initials(name)));
+
+                            for (String abbr : variations) {
+                                checkableNameAbbrMap.merge(abbr, name, (oldValue, newValue) -> {
+                                    String r = null;
+                                    if (abbr.equals(newValue))
+                                        r = newValue;
+                                    else if (names.contains(oldValue))
+                                        r = oldValue;
+                                    if (preCheckables.containsKey(abbr)) {
+                                        if (r == null)
+                                            throw new IllegalArgumentException("Ambiguous abbreviation " + abbr + ": could refer to " + oldValue + " or " + newValue);
+                                        else
+                                            return r;
+                                    }
+                                    else
+                                        return null;
+                                });
+                            }
+                        }
+
+                        Map<String, boolean[]> processedCheckables = new HashMap<>();
+                        for (Map.Entry<String, boolean[]> e : preCheckables.entrySet()) {
+                            String k = checkableNameAbbrMap.get(e.getKey());
+                            if (k == null)
+                                throw new IllegalArgumentException("Unknown checkable type: " + e.getKey());
+                            processedCheckables.merge(k, e.getValue(), (v1, v2) -> { throw new IllegalArgumentException("Repeat argument: --target:" + k); });
+                        }
+
+                        reader.check(chapter, processedCheckables, paths);
                     }
                     catch (SAXException | ClassNotFoundException | IllegalArgumentException e) {
-                        // TODO: There is probably a better way to do this (should I add a ErrorHandler to Book or CheckArgs?)
                         throw new UserErrorException(e);
                     }
                 }
@@ -257,47 +325,4 @@ public class Main {
         }
     }
 
-    private static boolean[] putRanges(Queue<String> args, String name) {
-        int absMax = Integer.MIN_VALUE;
-        List<int[]> ranges = new ArrayList<>(); //[args.length - i][];
-
-        while (!args.isEmpty() && RANGED_NUM.matcher(args.peek()).matches()) {
-            for (String s : args.remove().split(",")) {
-                if (s.isEmpty())
-                    continue;
-                int min, max;
-                if (s.contains("-")) {
-                    String[] range = s.split("-");
-                    min = Integer.parseInt(range[0]);
-                    max = Integer.parseInt(range[1]);
-                }
-                else
-                    min = max = Integer.parseInt(s);
-
-                if (absMax < max)
-                    absMax = max;
-
-                if (min > max || min <= 0)
-                    throw new UserErrorException("Range " + s + " is invalid");
-
-                ranges.add(new int[]{ min, max });
-            }
-        }
-
-        if (ranges.isEmpty())
-            throw new UserErrorException("Missing argument: expected value(s) after " + /* TODO: --name */);
-
-        boolean[] nums = new boolean[absMax + 1];
-
-        for (int[] range : ranges) {
-            for (int j = range[0]; j <= range[1]; j++) {
-                if (nums[j])
-                    throw new UserErrorException("Attempt to list " + name + " " + j + " twice");
-                else
-                    nums[j] = true;
-            }
-        }
-
-        return nums;
-    }
 }

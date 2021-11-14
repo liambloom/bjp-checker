@@ -2,6 +2,7 @@ package dev.liambloom.checker;
 
 import dev.liambloom.checker.internal.*;
 import dev.liambloom.util.StringUtils;
+import dev.liambloom.util.function.ConsumerThrowsException;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
 import org.w3c.dom.Document;
@@ -19,14 +20,20 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -38,7 +45,7 @@ import java.util.stream.Stream;
 /**
  * Note: this is NOT thread safe.
  */
-public class BookReader {
+public final class BookReader {
     private static final ClassLoader classLoaderAcceptsThis = new ClassLoader() {
         @Override
         protected Class<?> findClass(String name) throws ClassNotFoundException {
@@ -48,6 +55,9 @@ public class BookReader {
                 throw new ClassNotFoundException(name);
         }
     };
+    private static final Path initDir = Path.of(".").toAbsolutePath().normalize();
+    private static final Thread dirResetter = new Thread(BookReader::resetDir);
+    private static final XPathFactory xpf = XPathFactory.newInstance();
     private static final DocumentBuilderFactory dbf;
     private static final boolean loadedNative;
 
@@ -79,131 +89,151 @@ public class BookReader {
         loadedNative = loadedNativeTemp;
     }
 
-    private final DocumentBuilder db;
+    private final XPath xpath = xpf.newXPath();
+    private final Book book;
+    private MessageDigest digest;
+    private Document document = null;
+    private Result<TestValidationStatus> result = null;
+    private Path tempDir = null;
+    private boolean isInvalidated = false;
+    private Exception documentParseException;
+    private CheckableType<? extends Annotation> sectionType = null;
+    private CheckableType<? extends Annotation>[] checkableTypes = null;
+    private Set<String> checkableTypeSet = null;
+    private String[] resources = null;
 
-    public BookReader() {
+    protected BookReader(Book book) {
+        this.book = book;
         try {
-            db = dbf.newDocumentBuilder();
+            digest = MessageDigest.getInstance("SHA-256");
         }
-        catch (ParserConfigurationException e) {
+        catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                removeTempDir();
+            }
+            catch (IOException e) {
+                System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.ERROR, "Error removing temp dir", e);
+            }
+        }));
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> T validateDocumentAndReturn(Book book, Class<T> clazz) throws IOException, SAXException, ClassNotFoundException {
-        if (!clazz.equals(Document.class) && !clazz.equals(Result.class))
-            throw new IllegalArgumentException("validateDocumentAndReturn cannot return " + clazz.getName());
-        boolean returnDocument = clazz.equals(Document.class);
-        if (!book.exists()) {
-            if (returnDocument)
-                throw new IllegalStateException("Book " + book + " does not exist");
-            else
-                return (T) new Result<>(book.toString(), TestValidationStatus.NOT_FOUND);
-        }
-        ErrorHandler handler = returnDocument ? new DefaultHandler2() : new ValidationErrorHandler(book.toString());
-        db.setErrorHandler(handler);
+    private void parseAndValidateDocument() throws IOException, SAXException, ClassNotFoundException {
+        if (document != null)
+            return;
         Document document;
-        try {
-            document = db.parse(book.getInputStream());
-        }
-        catch (SAXException e) {
-            if (returnDocument)
-                throw e;
-            else
-                return (T) new Result<>(book.toString(),
-                    TestValidationStatus.INVALID,
-                    ((ValidationErrorHandler) handler).getLogs());
-        }
-        // I'd like to wrap exceptions in SAXParseException, but I have no way to get the line/column number
-        //  without using a SAX parser. Since I want a document to end with, I would need to either:
-        //  a: parse it twice, or b: build my own DocumentBuilder.
-        Stream<Exception> typeErrors = Stream.of(
-            Stream.of(
-                elementOfType(document, "parameter")
-                    .map(Node::getTextContent),
-                elementOfType(document, "Array", "ArrayList", "LinkedList", "TargetArrayList", "Stack", "HashSet", "TreeSet", "TargetTree")
-                    .map(e -> e.getAttribute("elementType")),
-                elementOfType(document, "HashMap", "TreeMap")
-                    .flatMap(e -> Stream.of("keyType", "valueType").map(e::getAttribute))
-            )
-                .flatMap(Function.identity())
-                .map(String::trim)
-                .map(type -> switch (type) {
-                    case "byte", "short", "int", "long", "float", "double", "boolean", "char", "this" -> null;
-                    default -> {
-                        try {
-                            Util.loadClass(classLoaderAcceptsThis, type);
-                            yield null;
-                        }
-                        catch (ClassNotFoundException e) {
-                            yield e;
-                        }
-                    }
-                })
-                .filter(Objects::nonNull),
-            elementOfType(document, "throws")
-                .map(Node::getTextContent)
-                .map(String::trim)
-                .map(type -> {
-                    try {
-                        Throwable.class.isAssignableFrom(ClassLoader.getSystemClassLoader().loadClass(type));
-                        return null;
-                    }
-                    catch (ClassNotFoundException | ClassCastException e) {
-                        return e;
-                    }
-                }),
-            elementOfType(document, "sectionType", "checkableType")
-                .map(e -> e.getAttribute("annotation"))
-                .map(String::trim)
-                .map(type -> {
-                    try {
-                        Annotation.class.isAssignableFrom(ClassLoader.getSystemClassLoader().loadClass(type));
-                        return null;
-                    }
-                    catch (ClassNotFoundException | ClassCastException e) {
-                        return e;
-                    }
-                })
-        )
-            .flatMap(Function.identity());
-        if (returnDocument) {
-            Optional<Exception> oe = typeErrors.findAny();
-            if (oe.isPresent()) {
-                Exception e = oe.get();
-                if (e instanceof ClassCastException cce)
-                    throw cce;
-                else if (e instanceof ClassNotFoundException cnfe)
-                    throw cnfe;
-                else
-                    throw new IllegalStateException("An exception of an unexpected type was thrown during validation", e);
+        if (documentParseException == null) {
+            if (!book.exists()) {
+                result = new Result<>(book.toString(), TestValidationStatus.NOT_FOUND);
+                throw (IllegalStateException) (documentParseException = new IllegalStateException("Book " + book + " does not exist"));
             }
-        }
-        else {
-            ValidationErrorHandler h = (ValidationErrorHandler) handler;
-            typeErrors.forEach(e -> h.log(System.Logger.Level.ERROR, e));
-        }
+            ValidationErrorHandler handler = new ValidationErrorHandler(book.toString());
+            DocumentBuilder db;
+            try {
+                db = dbf.newDocumentBuilder();
+            }
+            catch (ParserConfigurationException e) {
+                throw new RuntimeException(e);
+            }
+            db.setErrorHandler(handler);
+            try {
+                document = db.parse(new DigestInputStream(book.getInputStream(), digest));
+            }
+            catch (SAXException e) {
+                result = new Result<>(book.toString(), TestValidationStatus.INVALID, handler.getLogs());
+                documentParseException = e;
+                throw e;
+            }
+            // I'd like to wrap exceptions in SAXParseException, but I have no way to get the line/column number
+            //  without using a SAX parser. Since I want a document to end with, I would need to either:
+            //  a: parse it twice, or b: build my own DocumentBuilder.
+            Stream<Exception> typeErrors = Stream.of(
+                Stream.of(
+                    elementOfType(document, "parameter")
+                        .map(Node::getTextContent),
+                    elementOfType(document, "Array", "ArrayList", "LinkedList", "TargetArrayList", "Stack", "HashSet", "TreeSet", "TargetTree")
+                        .map(e -> e.getAttribute("elementType")),
+                    elementOfType(document, "HashMap", "TreeMap")
+                        .flatMap(e -> Stream.of("keyType", "valueType").map(e::getAttribute))
+                )
+                    .flatMap(Function.identity())
+                    .map(String::trim)
+                    .map(type -> switch (type) {
+                        case "byte", "short", "int", "long", "float", "double", "boolean", "char", "this" -> null;
+                        default -> {
+                            try {
+                                Util.loadClass(classLoaderAcceptsThis, type);
+                                yield null;
+                            }
+                            catch (ClassNotFoundException e) {
+                                yield e;
+                            }
+                        }
+                    })
+                    .filter(Objects::nonNull),
+                elementOfType(document, "throws")
+                    .map(Node::getTextContent)
+                    .map(String::trim)
+                    .map(type -> {
+                        try {
+                            Throwable.class.isAssignableFrom(ClassLoader.getSystemClassLoader().loadClass(type));
+                            return null;
+                        }
+                        catch (ClassNotFoundException | ClassCastException e) {
+                            return e;
+                        }
+                    }),
+                elementOfType(document, "sectionType", "checkableType")
+                    .map(e -> e.getAttribute("annotation"))
+                    .map(String::trim)
+                    .map(type -> {
+                        try {
+                            Annotation.class.isAssignableFrom(ClassLoader.getSystemClassLoader().loadClass(type));
+                            return null;
+                        }
+                        catch (ClassNotFoundException | ClassCastException e) {
+                            return e;
+                        }
+                    })
+            )
+                .flatMap(Function.identity());
+            typeErrors.forEach(e -> handler.log(System.Logger.Level.ERROR, e));
+            Optional<Exception> oe = typeErrors.findAny();
+            oe.ifPresent(e -> documentParseException = e);
 
-        if (!book.supportsResourceLoading()
-            && (document.getElementsByTagName("File").getLength() > 0 || document.getElementsByTagName("Path").getLength() > 0)) {
-            UnsupportedOperationException e =  new UnsupportedOperationException("Book document contains <File> or <Path> element, but Book does not support file resolution");
-            if (returnDocument)
+            if (!book.supportsResourceLoading()
+                && (document.getElementsByTagName("File").getLength() > 0 || document.getElementsByTagName("Path").getLength() > 0)) {
+                UnsupportedOperationException e = new UnsupportedOperationException("Book document contains <File> or <Path> element, but Book does not support file resolution");
+                handler.log(System.Logger.Level.ERROR, e);
+                if (documentParseException == null)
+                    documentParseException = e;
+            }
+
+            if (handler.getMaxErrorKind() == null)
+                result = new Result<>(book.toString(), TestValidationStatus.VALID);
+            else if (handler.getMaxErrorKind() == System.Logger.Level.WARNING)
+                result = new Result<>(book.toString(), TestValidationStatus.VALID_WITH_WARNINGS, handler.getLogs());
+            else
+                result = new Result<>(book.toString(), TestValidationStatus.INVALID, handler.getLogs());
+        }
+        else
+            document = null;
+
+        if (documentParseException == null)
+            this.document = document;
+        else {
+            if (documentParseException instanceof RuntimeException e)
+                throw e;
+            else if (documentParseException instanceof IOException e)
+                throw e;
+            else if (documentParseException instanceof SAXException e)
+                throw e;
+            else if (documentParseException instanceof ClassNotFoundException e)
                 throw e;
             else
-                ((ValidationErrorHandler) handler).log(System.Logger.Level.ERROR, e);
-        }
-
-        if (returnDocument)
-            return (T) document;
-        else {
-            ValidationErrorHandler h = (ValidationErrorHandler) handler;
-            if (h.getMaxErrorKind() == null)
-                return (T) new Result<>(book.toString(), TestValidationStatus.VALID);
-            else if (h.getMaxErrorKind() == System.Logger.Level.WARNING)
-                return (T) new Result<>(book.toString(), TestValidationStatus.VALID_WITH_WARNINGS, h.getLogs());
-            else
-                return (T) new Result<>(book.toString(), TestValidationStatus.INVALID, h.getLogs());
+                throw new IllegalStateException("DocumentParseException had unexpected value");
         }
     }
 
@@ -214,22 +244,75 @@ public class BookReader {
             .map(Element.class::cast);
     }
 
-    @SuppressWarnings("unchecked")
-    public Result<TestValidationStatus> validate(Book book) throws IOException {
+    public Result<TestValidationStatus> validate() throws IOException {
         try {
-            return (Result<TestValidationStatus>) validateDocumentAndReturn(book, Result.class);
+            parseAndValidateDocument();
         }
-        catch (ClassNotFoundException | SAXException e) {
-            throw new IllegalStateException("This exception should not have propagated", e);
+        catch (ClassNotFoundException | SAXException | RuntimeException ignored) {
+
         }
+        return result;
+    }
+
+    private Document getDocument() throws IOException, ClassNotFoundException, SAXException {
+        parseAndValidateDocument();
+        return document;
+    }
+
+    private CheckableType<? extends Annotation> getSectionType() throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException {
+        if (sectionType != null)
+            return sectionType;
+
+        try {
+            return sectionType = new CheckableType<>((Element) xpath.evaluate("/book/meta/sectionType", getDocument(), XPathConstants.NODE));
+        }
+        catch (XPathExpressionException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private CheckableType<? extends Annotation>[] getCheckableTypes() throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException {
+        if (checkableTypes != null)
+            return checkableTypes;
+
+        NodeList nodes;
+        try {
+            nodes = (NodeList) xpath.evaluate("/book/meta/checkableType", getDocument(), XPathConstants.NODESET);
+        }
+        catch (XPathExpressionException e) {
+            throw new RuntimeException(e);
+        }
+        checkableTypes = new CheckableType[nodes.getLength()];
+        for (int i = 0; i < checkableTypes.length; i++)
+            checkableTypes[i] = new CheckableType<>((Element) nodes.item(i));
+        return checkableTypes;
+    }
+
+    public Set<String> getCheckableTypeSet() throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException {
+        return checkableTypeSet == null ? checkableTypeSet = Arrays.stream(getCheckableTypes()).map(CheckableType::name).collect(Collectors.toCollection(HashSet::new)) : checkableTypeSet;
+    }
+
+    private String[] getResources() throws IOException, ClassNotFoundException, SAXException {
+        if (resources != null)
+            return resources;
+
+        NodeList nodes;
+        try {
+            nodes = (NodeList) xpath.evaluate("/book/meta/rsc", getDocument(), XPathConstants.NODESET);
+        }
+        catch (XPathExpressionException e) {
+            throw new RuntimeException(e);
+        }
+        resources = new String[nodes.getLength()];
+        for (int i = 0; i < resources.length; i++)
+            resources[i] = ((Element) nodes.item(i)).getAttribute("href");
+        return resources;
     }
 
     /**
      * Checks according to args
      * @param section             The section to check, or {@code OptionalInt.empty()} to auto-detect.
      * @param checkables          A map between annotations for checkables and the checkables of that type to run.
-     * @param tests               The document containing the tests, which must follow the
-     *                            <a href="https://checker.liambloom.dev/book-schema.xsd">schema</a>
      * @param targets             A stream of classes that should be checked
      * @return A stream containing the results of all checks
      *
@@ -243,10 +326,9 @@ public class BookReader {
      * @throws InvocationTargetException If the book's section or checkable annotations' {@code value()} method throws an exception
      */
     @SuppressWarnings("RedundantThrows")
-    public Result<TestStatus>[] check(OptionalInt section, Map<String, boolean[]> checkables, Book tests,
-                                            Stream<Path> targets) throws IOException, ClassNotFoundException,
+    public Result<TestStatus>[] check(OptionalInt section, Map<String, boolean[]> checkables, Stream<Path> targets) throws IOException, ClassNotFoundException,
         SAXException, NoSuchMethodException, IllegalAccessException {
-        Document document = validateDocumentAndReturn(tests, Document.class);
+        Document document = getDocument();
 
         NodeList metadataNodes;
 //        sectionAnnotation;
@@ -254,70 +336,25 @@ public class BookReader {
 //        checkableAnnotations;
 //        Stream<String> resources;
         {
-            XPath xpath1 = Util.getXPathPool().get();
             try {
-                metadataNodes = ((Element) xpath1.evaluate("/book/meta", document, XPathConstants.NODE)).getChildNodes();
+                metadataNodes = ((Element) xpath.evaluate("/book/meta", document, XPathConstants.NODE)).getChildNodes();
             }
             catch (XPathExpressionException e) {
                 throw new RuntimeException(e);
             }
             finally {
-                Util.getXPathPool().offer(xpath1);
+                Util.getXPathPool().offer(xpath);
             }
         }
 
         Element[] meta = Util.streamNodeList(metadataNodes)
             .map(Element.class::cast)
             .toArray(Element[]::new);
-        @SuppressWarnings("unchecked")
-        Class<? extends Annotation> sectionAnnotation = (Class<? extends Annotation>) ClassLoader.getPlatformClassLoader()
-            .loadClass(meta[0].getAttribute("annotation"));
-        int i;
-        Stream.Builder<Element> checkableAnnotationsBuilder = Stream.builder();
+        Class<? extends Annotation> sectionAnnotation = getSectionType().annotation();
 
-        // todo: this belongs in ui code, but requires information from the book document
-        Map<String, String> checkableNameAbbrMap = new HashMap<>();
-        Set<String> names = new HashSet<>();
-        for (i = 0; i < meta.length && meta[i].getTagName().equals("checkableType"); i++) {
-            checkableAnnotationsBuilder.add(meta[i]);
-            String name = meta[i].getAttribute("name");
-            names.add(name);
-            Set<String> variations = Stream.of(StringUtils.Case.PASCAL, StringUtils.Case.CAMEL, StringUtils.Case.SNAKE, StringUtils.Case.CONST, StringUtils.Case.SKEWER)
-                .map(c -> StringUtils.convertCase(name, c))
-                .collect(Collectors.toSet());
-            variations.add(name.substring(0, 1));
-            variations.add(String.valueOf(StringUtils.initials(name)));
-
-            for (String abbr : variations) {
-                checkableNameAbbrMap.merge(abbr, name, (oldValue, newValue) -> {
-                    String r = null;
-                    if (abbr.equals(newValue))
-                        r = newValue;
-                    else if (names.contains(oldValue))
-                        r = oldValue;
-                    if (checkables.containsKey(abbr)) {
-                        if (r == null)
-                            throw new IllegalArgumentException("Ambiguous abbreviation " + abbr + ": could refer to " + oldValue + " or " + newValue);
-                        else
-                            return r;
-                    }
-                    else
-                        return null;
-                });
-            }
-        }
-
-        Map<String, boolean[]> processedCheckables = new HashMap<>();
-        for (Map.Entry<String, boolean[]> e : checkables.entrySet()) {
-            String k = checkableNameAbbrMap.get(e.getKey());
-            if (k == null)
-                throw new IllegalArgumentException("Unknown checkable type: " + e.getKey());
-            processedCheckables.merge(k, e.getValue(), (v1, v2) -> { throw new IllegalArgumentException("Repeat argument: --target:" + k); });
-        }
-
-        Stream.Builder<String> rscStreamBuilder = Stream.builder();
-        for (; i < meta.length; i++) {
-            rscStreamBuilder.add(meta[i].getAttribute("href"));
+        for (String checkable : checkables.keySet()) {
+            if (!getCheckableTypeSet().contains(checkable))
+                throw new IllegalArgumentException("Checkable \"" + checkable + "\" does not exist");
         }
 
         Method m = sectionAnnotation.getMethod("value");
@@ -343,28 +380,27 @@ public class BookReader {
             .collect(Collectors.toList());
         chapter = section.orElseGet(detectedChapter::get);
 
-        changeDirectory(tests.loadResources(Files.createTempDirectory(null), rscStreamBuilder.build()));
 
-        XPath xpath2 = Util.getXPathPool().get();
+        Runtime.getRuntime().addShutdownHook(dirResetter);
+        if (tempDir == null)
+            tempDir = Files.createTempDirectory(null);
+        changeDirectory(book.loadResources(tempDir, getResources()));
+
         Node ch;
         try {
-            ch = (Node) xpath2.evaluate("/book/chapter[@num='" + chapter + "']", document, XPathConstants.NODE);
+            ch = (Node) xpath.evaluate("/book/chapter[@num='" + chapter + "']", document, XPathConstants.NODE);
         }
         catch (XPathExpressionException e) {
             throw new RuntimeException(e);
-        }
-        finally {
-            Util.getXPathPool().offer(xpath2);
         }
 
         InputStream prevIn = System.in;
         PrintStream prevOut = System.out;
         PrintStream prevErr = System.err;
         try {
-             List<Future<Result<TestStatus>>> futures = checkableAnnotationsBuilder.build()
+             List<Future<Result<TestStatus>>> futures = Arrays.stream(getCheckableTypes())
                  .parallel()
-                 .map(FunctionUtils.unchecked((FunctionThrowsException<Element, CheckableType<?>>) CheckableType::new))
-                 .map(a -> new CheckerTargetGroup<>(a, processedCheckables.getOrDefault(a.name(), new boolean[0])))
+                 .map(a -> new CheckerTargetGroup<>(a, checkables.getOrDefault(a.name(), new boolean[0])))
                  .flatMap(FunctionUtils.unchecked((FunctionThrowsException<CheckerTargetGroup<?>, Stream<Test>>) (e -> {
                      e.addPotentialTargets(classes.iterator());
                      return e.apply(ch);
@@ -384,7 +420,21 @@ public class BookReader {
             System.setIn(prevIn);
             System.setOut(prevOut);
             System.setErr(prevErr);
+            resetDir();
+            Runtime.getRuntime().removeShutdownHook(dirResetter);
         }
+    }
+
+    private static void resetDir() {
+        changeDirectory(initDir);
+    }
+
+    private void removeTempDir() throws IOException {
+        if (tempDir == null)
+            return;
+        Files.walk(tempDir)
+            .sorted(Comparator.comparing(Path::getNameCount))
+            .forEach(FunctionUtils.unchecked(Files::delete));
     }
 
     private static void changeDirectory(Path path) {
@@ -393,4 +443,55 @@ public class BookReader {
     }
 
     private static native void changeDirectory(String path);
+
+    public boolean verify() throws IOException, ClassNotFoundException, SAXException {
+        if (isInvalidated)
+            return false;
+
+        if (document == null)
+            return true;
+
+        MessageDigest oldDigest = digest;
+        MessageDigest newDigest = digest();
+
+        try {
+            digest = (MessageDigest) newDigest.clone();
+        }
+        catch (CloneNotSupportedException e) {
+            digest = newDigest;
+            newDigest = digest();
+        }
+
+
+        return !(isInvalidated = !MessageDigest.isEqual(digest.digest(), newDigest.digest()));
+
+
+    }
+
+    private MessageDigest digest() throws IOException, ClassNotFoundException, SAXException {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+
+        digest.update(book.getInputStream().readAllBytes());
+        if (tempDir == null)
+            return digest;
+
+        Path newTempDir = Files.createTempDirectory(null);
+        book.loadResources(newTempDir, getResources());
+        Files.walk(tempDir)
+            .forEachOrdered(FunctionUtils.unchecked((ConsumerThrowsException<Path>) p -> {
+                digest.update(p.getFileName().toString().getBytes());
+                if (Files.isRegularFile(p))
+                    digest.update(Files.readAllBytes(p));
+                else if (Files.isDirectory(p))
+                    digest.update((byte) File.separatorChar);
+            }));
+
+        return digest;
+    }
 }

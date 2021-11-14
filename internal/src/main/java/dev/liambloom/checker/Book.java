@@ -6,33 +6,6 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 public abstract class Book {
-    /*
-     * Validates the test using the schema and also checking
-     * to make sure that all types referenced in the book are valid. The status of the
-     * returned result will be an instance of {@link TestValidationStatus}
-     *
-     * @return A {@code Result} representing the result of the validation
-     * @throws IOException If an i/o error occurs
-     * @see AbstractBook#getSchema()
-     *
-    Result<TestValidationStatus> validate() throws IOException;
-
-    /*
-     * Returns the document represented by this book. An exception will be thrown if
-     * the document is not valid.
-     *
-     * @return The document represented by this book
-     * @throws IOException            If an i/o error occurs
-     * @throws SAXException           If the document is not valid XML or does not follow the schema
-     * @throws ClassNotFoundException If the document references a class that does not exist
-     * @throws IllegalStateException  If the book does not exist
-     * @throws UnsupportedOperationException If using this document requires operations that are not supported (such as file resolution)
-     * @see AbstractBook#getSchema()
-     * @see #validate()
-     * @see #exists()
-     *
-    Document getDocument() throws IOException, SAXException, ClassNotFoundException;*/
-
     /**
      * Returns the input stream represented by this book.
      *
@@ -78,7 +51,7 @@ public abstract class Book {
      * @throws IOException If an i/o error occurs
      * @throws UnsupportedOperationException If this book does not support path resolution.
      */
-    protected Path loadResources(Path destination, Stream<String> resources) throws IOException {
+    protected Path loadResources(Path destination, String[] resources) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -90,5 +63,9 @@ public abstract class Book {
      */
     protected boolean supportsResourceLoading() {
         return false;
+    }
+
+    public final BookReader getReader() {
+        return new BookReader(this);
     }
 }
