@@ -1,7 +1,6 @@
 package dev.liambloom.checker;
 
 import dev.liambloom.checker.internal.*;
-import dev.liambloom.util.StringUtils;
 import dev.liambloom.util.function.ConsumerThrowsException;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
@@ -10,7 +9,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.*;
-import org.xml.sax.ext.DefaultHandler2;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -21,17 +19,16 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.DigestInputStream;
+import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -41,6 +38,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * Note: this is NOT thread safe.
@@ -244,7 +243,7 @@ public final class BookReader {
             .map(Element.class::cast);
     }
 
-    public Result<TestValidationStatus> validate() throws IOException {
+    public Result<TestValidationStatus> validateBook() throws IOException {
         try {
             parseAndValidateDocument();
         }
@@ -444,54 +443,62 @@ public final class BookReader {
 
     private static native void changeDirectory(String path);
 
-    public boolean verify() throws IOException, ClassNotFoundException, SAXException {
+    public boolean validateResults() throws IOException, ClassNotFoundException, SAXException {
         if (isInvalidated)
             return false;
 
         if (document == null)
             return true;
 
-        MessageDigest oldDigest = digest;
-        MessageDigest newDigest = digest();
+        MessageDigest oldDigest, newDigest;
 
         try {
-            digest = (MessageDigest) newDigest.clone();
+            oldDigest = (MessageDigest) digest.clone();
+            newDigest = digests(1)[0];
         }
         catch (CloneNotSupportedException e) {
-            digest = newDigest;
-            newDigest = digest();
+            oldDigest = digest;
+            MessageDigest[] digests = digests(2);
+            digest = digests[0];
+            newDigest = digests[1];
         }
 
-
-        return !(isInvalidated = !MessageDigest.isEqual(digest.digest(), newDigest.digest()));
-
-
+        return !(isInvalidated = !MessageDigest.isEqual(oldDigest.digest(), newDigest.digest()));
     }
 
-    private MessageDigest digest() throws IOException, ClassNotFoundException, SAXException {
-        MessageDigest digest;
+    private MessageDigest[] digests(int count) throws IOException, ClassNotFoundException, SAXException {
+        MessageDigest[] digests = new MessageDigest[count];
         try {
-            digest = MessageDigest.getInstance("SHA-256");
+            for (MessageDigest digest : digests)
+                digest = MessageDigest.getInstance("SHA-256");
         }
         catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
 
-        digest.update(book.getInputStream().readAllBytes());
-        if (tempDir == null)
-            return digest;
+        if (document != null) {
+            for (MessageDigest digest : digests)
+                digest.update(book.getInputStream().readAllBytes());
+        }
 
-        Path newTempDir = Files.createTempDirectory(null);
-        book.loadResources(newTempDir, getResources());
-        Files.walk(tempDir)
-            .forEachOrdered(FunctionUtils.unchecked((ConsumerThrowsException<Path>) p -> {
-                digest.update(p.getFileName().toString().getBytes());
-                if (Files.isRegularFile(p))
-                    digest.update(Files.readAllBytes(p));
-                else if (Files.isDirectory(p))
-                    digest.update((byte) File.separatorChar);
-            }));
-
-        return digest;
+        if (tempDir != null) {
+            Path newTempDir = Files.createTempDirectory(null);
+            book.loadResources(newTempDir, getResources());
+            OutputStream os = OutputStream.nullOutputStream();
+            for (MessageDigest digest : digests)
+                os = new DigestOutputStream(os, digest);
+            try (ZipOutputStream out = new ZipOutputStream(os)) {
+                Files.walk(tempDir)
+                    .forEachOrdered(FunctionUtils.unchecked((ConsumerThrowsException<Path>) p -> {
+                        String name = tempDir.relativize(p).toString();
+                        if (Files.isDirectory(p))
+                            name += '/';
+                        out.putNextEntry(new ZipEntry(name));
+                        if (!Files.isDirectory(p))
+                            Files.copy(p, out);
+                    }));
+            }
+        }
+        return digests;
     }
 }
