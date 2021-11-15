@@ -1,9 +1,6 @@
 package dev.liambloom.checker.ui.cli;
 
-import dev.liambloom.checker.Book;
-import dev.liambloom.checker.BookReader;
-import dev.liambloom.checker.Result;
-import dev.liambloom.checker.TestValidationStatus;
+import dev.liambloom.checker.*;
 import dev.liambloom.checker.ui.Books;
 import dev.liambloom.checker.ui.UserErrorException;
 import dev.liambloom.util.StringUtils;
@@ -148,46 +145,57 @@ public class Main {
 
                         Stream<Path> paths = new Glob(globArgs).files();
 
-                        BookReader reader = Books.getBook(testName).getReader();
+                        Book book = Books.getBook(testName);
+                        Result<TestStatus>[] result;
+                        BookReader reader;
 
-                        Map<String, String> checkableNameAbbrMap = new HashMap<>();
-                        Set<String> names = new HashSet<>();
-                        for (String name : reader.getCheckableTypeSet()) {
-                            names.add(name);
-                            Set<String> variations = Stream.of(StringUtils.Case.PASCAL, StringUtils.Case.CAMEL, StringUtils.Case.SNAKE, StringUtils.Case.CONST, StringUtils.Case.SKEWER)
-                                .map(c -> StringUtils.convertCase(name, c))
-                                .collect(Collectors.toSet());
-                            variations.add(name.substring(0, 1));
-                            variations.add(String.valueOf(StringUtils.initials(name)));
+                        do {
+                            reader = book.getReader();
 
-                            for (String abbr : variations) {
-                                checkableNameAbbrMap.merge(abbr, name, (oldValue, newValue) -> {
-                                    String r = null;
-                                    if (abbr.equals(newValue))
-                                        r = newValue;
-                                    else if (names.contains(oldValue))
-                                        r = oldValue;
-                                    if (preCheckables.containsKey(abbr)) {
-                                        if (r == null)
-                                            throw new IllegalArgumentException("Ambiguous abbreviation " + abbr + ": could refer to " + oldValue + " or " + newValue);
+                            Map<String, String> checkableNameAbbrMap = new HashMap<>();
+                            Set<String> names = new HashSet<>();
+                            for (String name : reader.getCheckableTypeSet()) {
+                                names.add(name);
+                                Set<String> variations = Stream.of(StringUtils.Case.PASCAL, StringUtils.Case.CAMEL, StringUtils.Case.SNAKE, StringUtils.Case.CONST, StringUtils.Case.SKEWER)
+                                    .map(c -> StringUtils.convertCase(name, c))
+                                    .collect(Collectors.toSet());
+                                variations.add(name.substring(0, 1));
+                                variations.add(String.valueOf(StringUtils.initials(name)));
+
+                                for (String abbr : variations) {
+                                    checkableNameAbbrMap.merge(abbr, name, (oldValue, newValue) -> {
+                                        String r = null;
+                                        if (abbr.equals(newValue))
+                                            r = newValue;
+                                        else if (names.contains(oldValue))
+                                            r = oldValue;
+                                        if (preCheckables.containsKey(abbr)) {
+                                            if (r == null)
+                                                throw new IllegalArgumentException("Ambiguous abbreviation " + abbr + ": could refer to " + oldValue + " or " + newValue);
+                                            else
+                                                return r;
+                                        }
                                         else
-                                            return r;
-                                    }
-                                    else
-                                        return null;
+                                            return null;
+                                    });
+                                }
+                            }
+
+                            Map<String, boolean[]> processedCheckables = new HashMap<>();
+                            for (Map.Entry<String, boolean[]> e : preCheckables.entrySet()) {
+                                String k = checkableNameAbbrMap.get(e.getKey());
+                                if (k == null)
+                                    throw new IllegalArgumentException("Unknown checkable type: " + e.getKey());
+                                processedCheckables.merge(k, e.getValue(), (v1, v2) -> {
+                                    throw new IllegalArgumentException("Repeat argument: --target:" + k);
                                 });
                             }
-                        }
 
-                        Map<String, boolean[]> processedCheckables = new HashMap<>();
-                        for (Map.Entry<String, boolean[]> e : preCheckables.entrySet()) {
-                            String k = checkableNameAbbrMap.get(e.getKey());
-                            if (k == null)
-                                throw new IllegalArgumentException("Unknown checkable type: " + e.getKey());
-                            processedCheckables.merge(k, e.getValue(), (v1, v2) -> { throw new IllegalArgumentException("Repeat argument: --target:" + k); });
+                             result = reader.check(chapter, processedCheckables, paths);
                         }
+                        while (!reader.validateResults());
 
-                        reader.check(chapter, processedCheckables, paths);
+                        printResults(result);
                     }
                     catch (SAXException | ClassNotFoundException | IllegalArgumentException e) {
                         throw new UserErrorException(e);
@@ -195,7 +203,7 @@ public class Main {
                 }
                 case "submit" -> throw new UserErrorException("Command `submit' not supported in current checker version");
                 // break;
-                case "tests" -> {
+                case "books" -> {
                     if (args.length == 1)
                         throw new UserErrorException("Missing argument, expected one of: add, remove, rename, list, validate, get-default, set-default"); // TODO
                     switch (args[1]) {
@@ -313,12 +321,12 @@ public class Main {
             throw new UserErrorException("Unexpected argument: `" + args[i + names.length] + '\'');
     }
 
-    public static void printResults(Stream<Result<?>> s) throws IOException {
+    public static void printResults(Result<?>[] s) throws IOException {
         try {
-            s.forEachOrdered(r -> {
+            for (Result<?> r : s) {
                 System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), StringUtils.convertCase(r.status().toString(), StringUtils.Case.SPACE));
                 r.console().ifPresent((ConsumerThrowsIOException<ByteArrayOutputStream>) (c -> c.writeTo(System.out)));
-            });
+            }
         }
         catch (UncheckedIOException e) {
             throw e.getCause();
