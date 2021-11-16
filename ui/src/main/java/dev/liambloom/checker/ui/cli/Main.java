@@ -139,7 +139,7 @@ public class Main {
                         if (preCheckables.isEmpty())
                             throw new UserErrorException("No exercises or programming projects specified");
                         if (testName == null)
-                            testName = Books.defaultBook().orElseThrow(() -> new UserErrorException("Either provide book argument (`-b') or set a default book"));//prefs.get("selectedTests", CheckArgs.DEFAULT_TEST_NAME);
+                            testName = Books.getDefaultBookName().orElseThrow(() -> new UserErrorException("Either provide book argument (`-b') or set a default book"));//prefs.get("selectedTests", CheckArgs.DEFAULT_TEST_NAME);
 
                         // TODO: Do something to catch other error (like references to non-existant types)
 

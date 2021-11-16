@@ -1,84 +1,57 @@
 package dev.liambloom.checker.ui;
 
 import dev.liambloom.checker.Book;
+import dev.liambloom.checker.URLBook;
 import net.harawata.appdirs.AppDirs;
 import net.harawata.appdirs.AppDirsFactory;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public final class Books {
-//    private Books() {
-//    }
-//
-//    private static final Path userData = Path.of(AppDirsFactory.getInstance()
-//        .getUserDataDir("Checker", null, null));
-//    private static List<String> orderedBooks = null;
-//    private static Map<String, URL> books = null;
-//
-//
-////    private static final char GROUP_SEPARATOR = 29;
-//    private static final char RECORD_SEPARATOR = 30;
-//    private static final char UNIT_SEPARATOR = 31;
-//
-//    private static void init() throws IOException {
-//        if (books == null)
-//            books = readBookList();
-//    }
-//
-//    private static Map<String, URL> readBookList() throws IOException {
-//        Path listFile = Files.createDirectories(userData.resolve("books")).resolve("list.dat");
-//        try {
-//            Files.createFile(listFile);
-//        }
-//        catch (FileAlreadyExistsException ignored) { }
-//        InputStream is = new BufferedInputStream(Files.newInputStream(listFile));
-//        StringBuilder currentString = null;
-//        URL currentURL = null;
-//        int b;
-//        loop: while (true) {
-//            switch (b = is.read()) {
-//                case GROUP_SEPARATOR, UNIT_SEPARATOR, -1 -> {
-//                    if (currentString == null || currentURL == null)
-//                        throw new IllegalStateException("Corrupted book list: Unexpected " + (b == -1 ? "EOF" : (b == UNIT_SEPARATOR ? "unit" : "group") + " separator"));
-//                    String alias = currentString.toString();
-//                    if (books.containsKey(alias))
-//                        throw new IllegalStateException("Corrupted book list: Duplicate alias");
-//                    books.put(alias, currentURL);
-//                    currentString = null;
-//                    if (b == -1)
-//                        break loop;
-//                }
-//                case RECORD_SEPARATOR -> {
-//                    if (currentURL != null || currentString == null)
-//                        throw new IllegalStateException("Corrupted book list: Unexpected record separator");
-//                    currentURL = new URL(currentString.toString());
-//                    currentString = null;
-//                }
-//                // todo: default
-//            }
-//        }
-//    }
+    private static final Preferences prefs = Preferences.systemNodeForPackage(Books.class);
+
+    private Books() {
+    }
 
     public static Book getBook(String string) {
-        return null;
+        String url = prefs.node("books").get(string, null);
+        try {
+            return new URLBook(new URL(Objects.requireNonNull(url, "Book \"" + string + "\" does not exist")));
+        }
+        catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public static List<Book> getAllBooks() {
-
+    public static Book[] getAllBooks() throws BackingStoreException {
+        String[] names = prefs.node("books").keys();
+        Book[] books = new Book[names.length];
+        for (int i = 0; i < books.length; i++)
+            books[i] = getBook(names[i]);
+        return books;
     }
 
-    public static Optional<String> defaultBook() {
+    public static Optional<String> getDefaultBookName() {
+        return Optional.ofNullable(prefs.get("defaultBook", null));
+            //.map(Books::getBook);
+    }
 
+    public static void addBook(String s, URL url) {
+        if (prefs.get(s, null) == null)
+            throw new IllegalArgumentException()
+        prefs.put(s, url.toString());
     }
 
 //    private static final Map<String, Book> loadedTests = Collections.synchronizedMap(new HashMap<>());
