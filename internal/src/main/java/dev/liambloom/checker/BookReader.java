@@ -90,6 +90,7 @@ public final class BookReader {
 
     private final XPath xpath = xpf.newXPath();
     private final Book book;
+    private final String name;
     private MessageDigest digest;
     private Document document = null;
     private Result<TestValidationStatus> result = null;
@@ -101,7 +102,12 @@ public final class BookReader {
     private Set<String> checkableTypeSet = null;
     private String[] resources = null;
 
-    protected BookReader(Book book) {
+    public BookReader(Book book) {
+        this(book.toString(), book);
+    }
+
+    public BookReader(String name, Book book) {
+        this.name = name;
         this.book = book;
         try {
             digest = MessageDigest.getInstance("SHA-256");
@@ -125,10 +131,10 @@ public final class BookReader {
         Document document;
         if (documentParseException == null) {
             if (!book.exists()) {
-                result = new Result<>(book.toString(), TestValidationStatus.NOT_FOUND);
+                result = new Result<>(name, TestValidationStatus.NOT_FOUND);
                 throw (IllegalStateException) (documentParseException = new IllegalStateException("Book " + book + " does not exist"));
             }
-            ValidationErrorHandler handler = new ValidationErrorHandler(book.toString());
+            ValidationErrorHandler handler = new ValidationErrorHandler(name);
             DocumentBuilder db;
             try {
                 db = dbf.newDocumentBuilder();
@@ -141,7 +147,7 @@ public final class BookReader {
                 document = db.parse(new DigestInputStream(book.getInputStream(), digest));
             }
             catch (SAXException e) {
-                result = new Result<>(book.toString(), TestValidationStatus.INVALID, handler.getLogs());
+                result = new Result<>(name, TestValidationStatus.INVALID, handler.getLogs());
                 documentParseException = e;
                 throw e;
             }
@@ -211,11 +217,11 @@ public final class BookReader {
             }
 
             if (handler.getMaxErrorKind() == null)
-                result = new Result<>(book.toString(), TestValidationStatus.VALID);
+                result = new Result<>(name, TestValidationStatus.VALID);
             else if (handler.getMaxErrorKind() == System.Logger.Level.WARNING)
-                result = new Result<>(book.toString(), TestValidationStatus.VALID_WITH_WARNINGS, handler.getLogs());
+                result = new Result<>(name, TestValidationStatus.VALID_WITH_WARNINGS, handler.getLogs());
             else
-                result = new Result<>(book.toString(), TestValidationStatus.INVALID, handler.getLogs());
+                result = new Result<>(name, TestValidationStatus.INVALID, handler.getLogs());
         }
         else
             document = null;

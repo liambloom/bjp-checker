@@ -39,13 +39,13 @@ public class URLBook extends Book {
     }
 
     @Override
-    protected Path loadResources(Path destination, Stream<String> paths) throws IOException {
+    protected Path loadResources(Path destination, String[] paths) throws IOException {
         // Obviously, I should create a temp file, but what do I do if the file changes midway through
         //  a test?
         // TODO
-        Set<URL> urls = paths
-            .map(FunctionUtils.unchecked((FunctionThrowsException<String, URL>) p -> new URL(url, p)))
-            .collect(Collectors.toSet());
+        Set<URL> urls = new HashSet<>();
+        for (String p : paths)
+            urls.add(new URL(url, p));
         if (urls.isEmpty())
             return destination;
         String base = urls.stream()

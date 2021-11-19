@@ -110,8 +110,8 @@ public class MainController {
 
         dialog.showAndWait()
             .ifPresent(FunctionUtils.unchecked((ConsumerThrowsException<Pair<String, File>>) (pair -> {
-                Books.addBook(pair.getKey(), pair.getValue().toPath());
-                addTests(Books.getBook(pair.getKey()));
+                Books.add(pair.getKey(), pair.getValue().toPath());
+                addTests(Books.get(pair.getKey()));
             })));
     }
 
@@ -134,7 +134,7 @@ public class MainController {
 
     public void initialize() throws IOException {
         try {
-            Books.getAllBooks()
+            Books.getAll()
                 .forEachOrdered(FunctionUtils.unchecked((ConsumerThrowsException<Book>) this::addTests));
             if (testToggleGroup.getSelectedToggle() == null || ((Control) testToggleGroup.getSelectedToggle()).isDisabled())
                 ((Toggle) ((Parent) testList.getChildren().get(1)).getChildrenUnmodifiable().get(0)).setSelected(true);

@@ -145,12 +145,12 @@ public class Main {
 
                         Stream<Path> paths = new Glob(globArgs).files();
 
-                        Book book = Books.getBook(testName);
+                        Book book = Books.get(testName);
                         Result<TestStatus>[] result;
                         BookReader reader;
 
                         do {
-                            reader = book.getReader();
+                            reader = new BookReader(book);
 
                             Map<String, String> checkableNameAbbrMap = new HashMap<>();
                             Set<String> names = new HashSet<>();
@@ -211,36 +211,32 @@ public class Main {
                         case "add" -> {
                             assertArgsPresent(args, 2, "name", "path");
                             try {
-                                Books.addBook(args[2], new Glob(args[3]).single());
+                                Books.add(args[2], new Glob(args[3]).single().toUri().toURL());
                             }
                             catch (IllegalArgumentException e) {
                                 throw new UserErrorException(e);
                             }
                         }
-                        case "remove" -> Books.removeBook(args[2]);
+                        case "remove" -> Books.remove(args[2]);
                         case "rename" -> {
                             assertArgsPresent(args, 2, "old name", "new name");
-                            if (Books.getBook(args[2]) instanceof ModifiableBook book) {
-                                try {
-                                    book.rename(args[3]);
-                                }
-                                catch (IllegalArgumentException e) {
-                                    throw new UserErrorException(e);
-                                }
+                            try {
+                                Books.rename(args[2], args[3]);
                             }
-                            else
-                                throw new UserErrorException("Book `" + args[2] + "' can't be renamed");
+                            catch (NullPointerException e) {
+                                throw new UserErrorException(e.getMessage(), e);
+                            }
                         }
                         case "change" -> {
                             assertArgsPresent(args, 2, "name", "new path");
-                            if (Books.getBook(args[2]) instanceof PathBook book)
+                            if (Books.get(args[2]) instanceof PathBook book)
                                 book.setPath(new Glob(args[3]).single());
                             else
                                 throw new UserErrorException("Book `" + args[2] + "' has no path associated with it");
                         }
                         case "list" -> {
                             assertArgsPresent(args, 2);
-                            List<Book> books = Books.getAllBooks().collect(Collectors.toList());
+                            List<Book> books = Books.getAll().collect(Collectors.toList());
                             String[][] names = new String[books.size()][2];
                             int maxBookNameLength = 0;
                             for (int i = 0; i < names.length; i++) {
@@ -259,9 +255,10 @@ public class Main {
                                 throw new UserErrorException("Missing argument after validate");
                             try {
                                 printResults((args[2].equals("-a") || args[2].equals("--all")
-                                    ? Books.getAllBooks()
-                                    : Arrays.stream(args).skip(2).map(Books::getBook))
-                                    .map((FunctionThrowsIOException<Book, Result<TestValidationStatus>>) Book::validate));
+                                    ? Arrays.stream(Books.getAll())
+                                    : Arrays.stream(args).skip(2).map(Books::get))
+                                    .map(new BookReader)
+                                    .toArray());
                             }
                             catch (UncheckedIOException e) {
                                 throw e.getCause();

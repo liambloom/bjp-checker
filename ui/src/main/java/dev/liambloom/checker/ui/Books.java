@@ -2,31 +2,22 @@ package dev.liambloom.checker.ui;
 
 import dev.liambloom.checker.Book;
 import dev.liambloom.checker.URLBook;
-import net.harawata.appdirs.AppDirs;
-import net.harawata.appdirs.AppDirsFactory;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public final class Books {
     private static final Preferences prefs = Preferences.systemNodeForPackage(Books.class);
+    private static final Preferences books = prefs.node("books");
 
     private Books() {
     }
 
-    public static Book getBook(String string) {
-        String url = prefs.node("books").get(string, null);
+    public static Book get(String string) {
+        String url = books.get(string, null);
         try {
             return new URLBook(new URL(Objects.requireNonNull(url, "Book \"" + string + "\" does not exist")));
         }
@@ -35,11 +26,11 @@ public final class Books {
         }
     }
 
-    public static Book[] getAllBooks() throws BackingStoreException {
-        String[] names = prefs.node("books").keys();
+    public static Book[] getAll() throws BackingStoreException {
+        String[] names = books.keys();
         Book[] books = new Book[names.length];
         for (int i = 0; i < books.length; i++)
-            books[i] = getBook(names[i]);
+            books[i] = get(names[i]);
         return books;
     }
 
@@ -48,10 +39,20 @@ public final class Books {
             //.map(Books::getBook);
     }
 
-    public static void addBook(String s, URL url) {
-        if (prefs.get(s, null) == null)
-            throw new IllegalArgumentException()
+    public static void add(String s, URL url) {
+        if (prefs.get(s, null) != null)
+            throw new IllegalArgumentException("Book `" + s + "' already exists");
         prefs.put(s, url.toString());
+    }
+
+    public static void remove(String s) {
+        books.remove(s);
+    }
+
+    public static void rename(String oldName, String newName) {
+        String val = Objects.requireNonNull(books.get("oldName", null), "Book \"" + oldName + "\" doesn't exist");
+        books.remove("oldName");
+        books.put(newName, val);
     }
 
 //    private static final Map<String, Book> loadedTests = Collections.synchronizedMap(new HashMap<>());

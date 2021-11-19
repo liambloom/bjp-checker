@@ -64,8 +64,4 @@ public abstract class Book {
     protected boolean supportsResourceLoading() {
         return false;
     }
-
-    public final BookReader getReader() {
-        return new BookReader(this);
-    }
 }
