@@ -3,27 +3,27 @@ package dev.liambloom.checker.ui;
 import dev.liambloom.checker.Book;
 import dev.liambloom.checker.Result;
 import dev.liambloom.checker.TestValidationStatus;
+import dev.liambloom.checker.URLBook;
 import dev.liambloom.util.function.FunctionUtils;
 import javafx.beans.property.*;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 import java.util.Optional;
 
-public class BeanBook {
-    private final Book inner;
+public class BeanBook extends URLBook {
+    private final URLBook inner;
     public final StringProperty name;
-    public final ObjectProperty<Optional<Path>> path;
-    // private final ReadOnlyBooleanWrapper isValidWrapper;
-    // public final ReadOnlyBooleanProperty isValid;
+    public final ObjectProperty<URL> url;
     private final ReadOnlyObjectWrapper<Result<TestValidationStatus>> validationResultWrapper = new ReadOnlyObjectWrapper<>();
     public final ReadOnlyObjectProperty<Result<TestValidationStatus>> validationResult = validationResultWrapper.getReadOnlyProperty();
     private final ReadOnlyBooleanWrapper existsWrapper = new ReadOnlyBooleanWrapper();
     public final ReadOnlyBooleanProperty exists = existsWrapper.getReadOnlyProperty();
 
-    public BeanBook(Book inner) throws IOException {
+    public BeanBook(URLBook inner) {
         this.inner = inner;
         name = new SimpleStringProperty(inner.getName());
         name.addListener((observable, oldValue, newValue) -> {

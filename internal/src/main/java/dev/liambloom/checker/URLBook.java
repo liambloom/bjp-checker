@@ -92,4 +92,8 @@ public class URLBook extends Book {
     public boolean supportsResourceLoading() {
         return true;
     }
+
+    public URL getUrl() {
+        return url;
+    }
 }

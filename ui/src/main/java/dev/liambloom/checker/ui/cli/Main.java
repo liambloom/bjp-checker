@@ -4,6 +4,7 @@ import dev.liambloom.checker.*;
 import dev.liambloom.checker.ui.Books;
 import dev.liambloom.checker.ui.UserErrorException;
 import dev.liambloom.util.StringUtils;
+import dev.liambloom.util.function.FunctionUtils;
 import javafx.application.Application;
 import org.fusesource.jansi.AnsiConsole;
 import org.xml.sax.SAXException;
@@ -12,8 +13,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Function;
 import java.util.prefs.Preferences;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -145,12 +149,12 @@ public class Main {
 
                         Stream<Path> paths = new Glob(globArgs).files();
 
-                        Book book = Books.get(testName);
+                        Book book = getMaybeAnonymousBook(testName);
                         Result<TestStatus>[] result;
                         BookReader reader;
 
-                        do {
-                            reader = new BookReader(book);
+//                        do {
+                            reader = new BookReader(testName, book);
 
                             Map<String, String> checkableNameAbbrMap = new HashMap<>();
                             Set<String> names = new HashSet<>();
@@ -192,8 +196,8 @@ public class Main {
                             }
 
                              result = reader.check(chapter, processedCheckables, paths);
-                        }
-                        while (!reader.validateResults());
+//                        }
+//                        while (!reader.validateResults());
 
                         printResults(result);
                     }
@@ -229,42 +233,38 @@ public class Main {
                         }
                         case "change" -> {
                             assertArgsPresent(args, 2, "name", "new path");
-                            if (Books.get(args[2]) instanceof PathBook book)
+                            if (Books.getBook(args[2]) instanceof PathBook book)
                                 book.setPath(new Glob(args[3]).single());
                             else
                                 throw new UserErrorException("Book `" + args[2] + "' has no path associated with it");
                         }
                         case "list" -> {
                             assertArgsPresent(args, 2);
-                            List<Book> books = Books.getAll().collect(Collectors.toList());
-                            String[][] names = new String[books.size()][2];
+                            String[] names = Books.getAllBookNames();//.collect(Collectors.toList());
+                            String[][] strs = new String[names.length][2];
                             int maxBookNameLength = 0;
-                            for (int i = 0; i < names.length; i++) {
-                                Book book = books.get(i);
-                                String name = book.getName();
+                            for (int i = 0; i < strs.length; i++) {
+                                String name = names[i];
                                 if (name.length() > maxBookNameLength)
                                     maxBookNameLength = name.length();
-                                names[i][0] = name;
-                                names[i][1] = book instanceof PathBook pathBook ? pathBook.getPath().toString() : "";
+                                strs[i][0] = name;
+                                strs[i][1] = Books.getBook(name) instanceof URLBook urlBook ? urlBook.getUrl().toString() : "";
                             }
-                            for (String[] book : names)
+                            for (String[] book : strs)
                                 System.out.printf("%-" + maxBookNameLength + "s  %s%n", book[0], book[1]);
                         }
                         case "validate" -> {
                             if (args.length == 2)
                                 throw new UserErrorException("Missing argument after validate");
-                            try {
-                                printResults((args[2].equals("-a") || args[2].equals("--all")
-                                    ? Arrays.stream(Books.getAll())
-                                    : Arrays.stream(args).skip(2).map(Books::get))
-                                    .map(new BookReader)
-                                    .toArray());
-                            }
-                            catch (UncheckedIOException e) {
-                                throw e.getCause();
-                            }
+                            printResults((args[2].equals("-a") || args[2].equals("--all")
+                                ? Arrays.stream(Books.getAllBookNames())
+                                : Arrays.stream(args).skip(2))
+                                .map(n -> new BookReader(n, Books.getBook(n)))
+                                .map(FunctionUtils.unchecked(BookReader::validateBook))
+                                .toArray(Result[]::new));
                         }
-                        case "get-default" -> System.out.println(prefs.get("selectedTests", CheckArgs.DEFAULT_TEST_NAME));
+                        case "get-default" -> System.out.println(Optional.ofNullable(prefs.get("selectedTests", null))
+                            .orElseThrow(() -> new UserErrorException("No default test found")));
                         case "set-default" -> {
                             assertArgsPresent(args, 2, "name");
                             if (!Books.bookNameExists(args[2]))
@@ -330,4 +330,21 @@ public class Main {
         }
     }
 
+    private static Book getMaybeAnonymousBook(String name) {
+        // This doesn't work beause setting test names
+        try {
+            book = Books.getBook(testName);
+        }
+        catch (NullPointerException e) {
+            try {
+                book = new URLBook(new URL(testName));
+                if (!book.exists())
+                    throw new UserErrorException(e.getMessage(), e);
+                testName = "<anonymous book>";
+            }
+            catch (MalformedURLException e2) {
+                throw new UserErrorException(e.getMessage(), e);
+            }
+        }
+    }
 }

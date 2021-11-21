@@ -16,7 +16,7 @@ public final class Books {
     private Books() {
     }
 
-    public static Book get(String string) {
+    public static Book getBook(String string) {
         String url = books.get(string, null);
         try {
             return new URLBook(new URL(Objects.requireNonNull(url, "Book \"" + string + "\" does not exist")));
@@ -26,17 +26,25 @@ public final class Books {
         }
     }
 
-    public static Book[] getAll() throws BackingStoreException {
-        String[] names = books.keys();
+    public static String[] getAllBookNames() throws BackingStoreException {
+        return books.keys();
+    }
+
+    public static Book[] getAllBooks() throws BackingStoreException {
+        String[] names = getAllBookNames();
         Book[] books = new Book[names.length];
         for (int i = 0; i < books.length; i++)
-            books[i] = get(names[i]);
+            books[i] = getBook(names[i]);
         return books;
     }
 
     public static Optional<String> getDefaultBookName() {
         return Optional.ofNullable(prefs.get("defaultBook", null));
             //.map(Books::getBook);
+    }
+
+    public static Optional<Book> getDefaultBook() {
+        return getDefaultBookName().map(Books::getBook);
     }
 
     public static void add(String s, URL url) {
