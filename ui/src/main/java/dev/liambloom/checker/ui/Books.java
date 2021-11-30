@@ -10,7 +10,7 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 public final class Books {
-    private static final Map<String, Book> loadedBooks = new WeakHashMap<>();
+    private static final Map<String, BeanBook> loadedBooks = new WeakHashMap<>();
     static final Preferences prefs = Preferences.systemNodeForPackage(Books.class);
     static final Preferences prefBooks = prefs.node("books");
 
@@ -20,14 +20,14 @@ public final class Books {
     /**
      * Gets a book, which may or may not be the same instance as returned by other calls.
      *
-     * @param string The name of the book to be retrieved
+     * @param name The name of the book to be retrieved
      * @return The book
      */
-    public static Book getBook(String string) {
-        return loadedBooks.computeIfAbsent(string, key -> {
-            String url = prefBooks.get(string, null);
+    public static BeanBook getBook(String name) {
+        return loadedBooks.computeIfAbsent(name, key -> {
+            String url = prefBooks.get(name, null);
             try {
-                return new URLBook(new URL(Objects.requireNonNull(url, "Book \"" + string + "\" does not exist")));
+                return new BeanBook(name, new URLBook(new URL(Objects.requireNonNull(url, "Book \"" + name + "\" does not exist"))));
             }
             catch (MalformedURLException e) {
                 throw new RuntimeException(e);
@@ -39,9 +39,9 @@ public final class Books {
         return prefBooks.keys();
     }
 
-    public static Book[] getAllBooks() throws BackingStoreException {
+    public static BeanBook[] getAllBooks() throws BackingStoreException {
         String[] names = getAllBookNames();
-        Book[] books = new Book[names.length];
+        BeanBook[] books = new BeanBook[names.length];
         for (int i = 0; i < books.length; i++)
             books[i] = getBook(names[i]);
         return books;
@@ -52,7 +52,7 @@ public final class Books {
             //.map(Books::getBook);
     }
 
-    public static Optional<Book> getDefaultBook() {
+    public static Optional<BeanBook> getDefaultBook() {
         return getDefaultBookName().map(Books::getBook);
     }
 
@@ -69,9 +69,9 @@ public final class Books {
         loadedBooks.put(newValue, loadedBooks.remove(oldValue));
     }
 
-    //static void remove(String s) {
-        prefBooks.remove(s);
-        loadedBooks.remove(s);
+    public static void remove(String name) {
+        prefBooks.remove(name);
+        loadedBooks.remove(name).remove();
     }
 
 //    public static boolean existsNamed(String n) {

@@ -6,6 +6,7 @@ import dev.liambloom.util.function.FunctionUtils;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.*;
+import javafx.fxml.FXML;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,14 +19,22 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.prefs.Preferences;
 
 public class BeanBook {
     public static final long RESULT_VALIDATION_PERIOD = 10_000;
+    private static final AtomicInteger anonCount = new AtomicInteger(0);
     private static final Timer timer = new Timer(true);
-    private final ObjectProperty<URLBook> inner = new SimpleObjectProperty<>();
+    private final AtomicBoolean isRemoved = new AtomicBoolean(false);
+    private final ObjectProperty<URLBook> inner = new SimpleObjectProperty<>() {
+        @Override
+        public URLBook get() {
+            return super.get();
+        }
+    };
     private final ObjectBinding<BookReader> reader = new ObjectBinding<>() {
         { bind(BeanBook.this.inner); }
 
@@ -34,9 +43,9 @@ public class BeanBook {
             return new BookReader(BeanBook.this.inner.get());
         }
     };
-    public final StringProperty name = new SimpleStringProperty();
-    public final ObjectProperty<URL> url = new SimpleObjectProperty<>();
-    public final ObjectBinding<Result<TestValidationStatus>> validationResult = new ObjectBinding<>() {
+    private final StringProperty name = new SimpleStringProperty();
+    private final ObjectProperty<URL> url = new SimpleObjectProperty<>();
+    private final ObjectBinding<Result<TestValidationStatus>> validationResult = new ObjectBinding<>() {
         { bind(BeanBook.this.inner); }
 
         @Override
@@ -50,7 +59,7 @@ public class BeanBook {
             }
         }
     };
-    public final BooleanBinding exists = new BooleanBinding() {
+    private final BooleanBinding exists = new BooleanBinding() {
         { bind(inner); }
 
         @Override
@@ -64,7 +73,18 @@ public class BeanBook {
             }
         }
     };
-    private static final AtomicInteger anonCount = new AtomicInteger(0);
+    private final TimerTask timerTask = new TimerTask() {
+        @Override
+        public void run() {
+            try {
+                if (reader.isValid() && !reader.get().validateResults())
+                    reader.invalidate(); // TODO: Check if this propagates
+            }
+            catch (IOException e) {
+                System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.ERROR, "Error validating results", e);
+            }
+        }
+    };
 
     public BeanBook(URLBook inner) {
         this("<anonymous book #" + anonCount.getAndIncrement() + ">", inner);
@@ -74,18 +94,7 @@ public class BeanBook {
         this.inner.set(inner);
         this.name.set(name);
         this.url.set(inner.getUrl());
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    if (reader.isValid() && !reader.get().validateResults())
-                        reader.invalidate(); // TODO: Check if this propagates
-                }
-                catch (IOException e) {
-                    System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.ERROR, "Error validating results", e);
-                }
-            }
-        }, 0, RESULT_VALIDATION_PERIOD);
+        timer.scheduleAtFixedRate(timerTask, 0, RESULT_VALIDATION_PERIOD);
         this.name.addListener((observable, oldValue, newValue) -> {
             Books.rename(oldValue, newValue);
         });
@@ -96,42 +105,52 @@ public class BeanBook {
     }
 
     public String getName() {
+        removedCheck();
         return name.get();
     }
 
     public void setName(String value) {
+        removedCheck();
         name.set(value);
     }
 
     public StringProperty nameProperty() {
+        removedCheck();
         return name;
     }
 
     public URL getUrl() {
+        removedCheck();
         return url.get();
     }
 
     public void setUrl(URL value) {
+        removedCheck();
         url.set(value);
     }
 
     public ObjectProperty<URL> urlProperty() {
+        removedCheck();
         return url;
     }
 
     public Result<TestValidationStatus> getValidationResult() {
+        removedCheck();
         return validationResult.get();
     }
 
     public ObjectBinding<Result<TestValidationStatus>> validationResultProperty() {
+        removedCheck();
         return validationResult;
     }
 
     public boolean getExists() {
+        removedCheck();
         return exists.get();
     }
 
     public BooleanBinding existsProperty() {
+        removedCheck();
         return exists;
     }
 
@@ -142,6 +161,19 @@ public class BeanBook {
      * @return The {@code Book} used internally by this {@code BeanBook}
      */
     public Book getInnerBook() {
+        removedCheck();
         return inner.get();
+    }
+
+    void remove() {
+        removedCheck();
+        timerTask.cancel();
+        isRemoved.setRelease(true);
+        inner.set(null);
+    }
+
+    private void removedCheck() {
+        if (isRemoved.getAcquire())
+            throw new IllegalStateException("BeanBook " + name + " has been removed");
     }
 }
