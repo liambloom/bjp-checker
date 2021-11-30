@@ -449,7 +449,7 @@ public final class BookReader {
 
     private static native void changeDirectory(String path);
 
-    public boolean validateResults() throws IOException, ClassNotFoundException, SAXException {
+    public boolean validateResults() throws IOException {
         if (isInvalidated)
             return false;
 
@@ -472,7 +472,7 @@ public final class BookReader {
         return !(isInvalidated = !MessageDigest.isEqual(oldDigest.digest(), newDigest.digest()));
     }
 
-    private MessageDigest[] digests(int count) throws IOException, ClassNotFoundException, SAXException {
+    private MessageDigest[] digests(int count) throws IOException {
         MessageDigest[] digests = new MessageDigest[count];
         try {
             for (MessageDigest digest : digests)
@@ -489,7 +489,12 @@ public final class BookReader {
 
         if (tempDir != null) {
             Path newTempDir = Files.createTempDirectory(null);
-            book.loadResources(newTempDir, getResources());
+            try {
+                book.loadResources(newTempDir, getResources());
+            }
+            catch (ClassNotFoundException | SAXException e) {
+                throw new IllegalStateException("getResources() should not throw exception if document is loaded");
+            }
             OutputStream os = OutputStream.nullOutputStream();
             for (MessageDigest digest : digests)
                 os = new DigestOutputStream(os, digest);

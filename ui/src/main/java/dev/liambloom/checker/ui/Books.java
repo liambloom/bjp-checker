@@ -10,24 +10,33 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 public final class Books {
-    private static final Preferences prefs = Preferences.systemNodeForPackage(Books.class);
-    private static final Preferences books = prefs.node("books");
+    private static final Map<String, Book> loadedBooks = new WeakHashMap<>();
+    static final Preferences prefs = Preferences.systemNodeForPackage(Books.class);
+    static final Preferences prefBooks = prefs.node("books");
 
     private Books() {
     }
 
+    /**
+     * Gets a book, which may or may not be the same instance as returned by other calls.
+     *
+     * @param string The name of the book to be retrieved
+     * @return The book
+     */
     public static Book getBook(String string) {
-        String url = books.get(string, null);
-        try {
-            return new URLBook(new URL(Objects.requireNonNull(url, "Book \"" + string + "\" does not exist")));
-        }
-        catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
+        return loadedBooks.computeIfAbsent(string, key -> {
+            String url = prefBooks.get(string, null);
+            try {
+                return new URLBook(new URL(Objects.requireNonNull(url, "Book \"" + string + "\" does not exist")));
+            }
+            catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     public static String[] getAllBookNames() throws BackingStoreException {
-        return books.keys();
+        return prefBooks.keys();
     }
 
     public static Book[] getAllBooks() throws BackingStoreException {
@@ -53,15 +62,21 @@ public final class Books {
         prefs.put(s, url.toString());
     }
 
-    public static void remove(String s) {
-        books.remove(s);
+    static void rename(String oldValue, String newValue) {
+        String val = Objects.requireNonNull(Books.prefBooks.get("oldName", null), "Book \"" + oldValue + "\" doesn't exist");
+        Books.prefBooks.remove("oldName");
+        Books.prefBooks.put(newValue, val);
+        loadedBooks.put(newValue, loadedBooks.remove(oldValue));
     }
 
-    public static void rename(String oldName, String newName) {
-        String val = Objects.requireNonNull(books.get("oldName", null), "Book \"" + oldName + "\" doesn't exist");
-        books.remove("oldName");
-        books.put(newName, val);
+    //static void remove(String s) {
+        prefBooks.remove(s);
+        loadedBooks.remove(s);
     }
+
+//    public static boolean existsNamed(String n) {
+//        return prefBooks.get(n, null) != null;
+//    }
 
 //    private static final Map<String, Book> loadedTests = Collections.synchronizedMap(new HashMap<>());
 //    private static final Map<String, String> LOCAL_TEST_NAMES;
