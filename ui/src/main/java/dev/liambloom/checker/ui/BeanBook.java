@@ -86,11 +86,11 @@ public class BeanBook {
         }
     };
 
-    public BeanBook(URLBook inner) {
+    /*BeanBook(URLBook inner) {
         this("<anonymous book #" + anonCount.getAndIncrement() + ">", inner);
-    }
+    }*/
 
-    public BeanBook(String name, URLBook inner) {
+    BeanBook(String name, URLBook inner) {
         this.inner.set(inner);
         this.name.set(name);
         this.url.set(inner.getUrl());

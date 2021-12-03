@@ -1,6 +1,5 @@
 package dev.liambloom.checker.ui;
 
-import dev.liambloom.checker.Book;
 import dev.liambloom.checker.URLBook;
 
 import java.net.MalformedURLException;
@@ -11,8 +10,7 @@ import java.util.prefs.Preferences;
 
 public final class Books {
     private static final Map<String, BeanBook> loadedBooks = new WeakHashMap<>();
-    static final Preferences prefs = Preferences.systemNodeForPackage(Books.class);
-    static final Preferences prefBooks = prefs.node("books");
+    private static final Preferences prefs = Preferences.userNodeForPackage(Books.class).node("books");
 
     private Books() {
     }
@@ -25,7 +23,7 @@ public final class Books {
      */
     public static BeanBook getBook(String name) {
         return loadedBooks.computeIfAbsent(name, key -> {
-            String url = prefBooks.get(name, null);
+            String url = prefs.get(name, null);
             try {
                 return new BeanBook(name, new URLBook(new URL(Objects.requireNonNull(url, "Book \"" + name + "\" does not exist"))));
             }
@@ -35,8 +33,12 @@ public final class Books {
         });
     }
 
+    public static void getAnonymousBook(URL url) {
+        return new BeanBook("<anonymous book #" + anonCount.getAndIncrement() + ">", new URLBook(url));
+    }
+
     public static String[] getAllBookNames() throws BackingStoreException {
-        return prefBooks.keys();
+        return prefs.keys();
     }
 
     public static BeanBook[] getAllBooks() throws BackingStoreException {
@@ -47,14 +49,23 @@ public final class Books {
         return books;
     }
 
-    public static Optional<String> getDefaultBookName() {
-        return Optional.ofNullable(prefs.get("defaultBook", null));
+    /*public static Optional<String> getDefaultBookName() {
+        return Optional.ofNullable(prefs.get(DEFAULT_BOOK_KEY, null));
             //.map(Books::getBook);
-    }
+    }*/
 
-    public static Optional<BeanBook> getDefaultBook() {
+    /*public static Optional<BeanBook> getDefaultBook() {
         return getDefaultBookName().map(Books::getBook);
     }
+
+    public static void setDefaultBook(String b) {
+        if (b == null)
+            prefs.remove(DEFAULT_BOOK_KEY);
+        else if (prefs.get(b, null) != null)
+            prefs.put(DEFAULT_BOOK_KEY, b);
+        else
+            throw new NullPointerException("Book \"" + b + "\" does not exist");
+    }*/
 
     public static void add(String s, URL url) {
         if (prefs.get(s, null) != null)
@@ -63,14 +74,18 @@ public final class Books {
     }
 
     static void rename(String oldValue, String newValue) {
-        String val = Objects.requireNonNull(Books.prefBooks.get("oldName", null), "Book \"" + oldValue + "\" doesn't exist");
-        Books.prefBooks.remove("oldName");
-        Books.prefBooks.put(newValue, val);
+        if (prefs.get(newValue, null) != null)
+            throw new IllegalArgumentException("Book `" + newValue + "' already exists");
+        String val = Books.prefs.get("oldName", null);
+        if (val == null)
+            return;
+        Books.prefs.remove("oldName");
+        Books.prefs.put(newValue, val);
         loadedBooks.put(newValue, loadedBooks.remove(oldValue));
     }
 
     public static void remove(String name) {
-        prefBooks.remove(name);
+        prefs.remove(name);
         loadedBooks.remove(name).remove();
     }
 

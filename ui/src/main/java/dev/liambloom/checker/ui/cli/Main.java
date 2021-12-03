@@ -1,7 +1,10 @@
 package dev.liambloom.checker.ui.cli;
 
 import dev.liambloom.checker.*;
+import dev.liambloom.checker.internal.Util;
+import dev.liambloom.checker.ui.BeanBook;
 import dev.liambloom.checker.ui.Books;
+import dev.liambloom.checker.ui.Config;
 import dev.liambloom.checker.ui.UserErrorException;
 import dev.liambloom.util.StringUtils;
 import dev.liambloom.util.function.FunctionUtils;
@@ -30,7 +33,6 @@ public class Main {
         try {
 //            Logger.setLogger(new PrintStreamLogger());
             AnsiConsole.systemInstall();
-            Preferences prefs = Preferences.userRoot().node("dev/liambloom/checker");
             /*if (args.length > 1 && (args[1].equals("-h") || args[1].equals("--help"))) {
                 // TODO: handle help better
                 assertLength(args, 2);
@@ -142,8 +144,11 @@ public class Main {
 
                         if (preCheckables.isEmpty())
                             throw new UserErrorException("No exercises or programming projects specified");
-                        if (testName == null)
-                            testName = Books.getDefaultBookName().orElseThrow(() -> new UserErrorException("Either provide book argument (`-b') or set a default book"));//prefs.get("selectedTests", CheckArgs.DEFAULT_TEST_NAME);
+                        if (testName == null) {
+                            testName = Config.get(Config.Property.BOOK);
+                                if (testName == null)
+                                    throw new UserErrorException("Either provide book argument (`-b') or set a default book");
+                        }
 
                         // TODO: Do something to catch other error (like references to non-existant types)
 
@@ -209,7 +214,7 @@ public class Main {
                 // break;
                 case "books" -> {
                     if (args.length == 1)
-                        throw new UserErrorException("Missing argument, expected one of: add, remove, rename, list, validate, get-default, set-default"); // TODO
+                        throw new UserErrorException("Missing argument. See `chk books --help' for help."); // TODO
                     switch (args[1]) {
                         // TODO: handle errors
                         case "add" -> {
@@ -225,30 +230,45 @@ public class Main {
                         case "rename" -> {
                             assertArgsPresent(args, 2, "old name", "new name");
                             try {
-                                Books.rename(args[2], args[3]);
+                                Books.getBook(args[2]).setName(args[3]);
                             }
                             catch (NullPointerException e) {
                                 throw new UserErrorException(e.getMessage(), e);
                             }
                         }
                         case "change" -> {
-                            assertArgsPresent(args, 2, "name", "new path");
-                            if (Books.getBook(args[2]) instanceof PathBook book)
-                                book.setPath(new Glob(args[3]).single());
-                            else
-                                throw new UserErrorException("Book `" + args[2] + "' has no path associated with it");
+                            assertArgsPresent(args, 2, "name", "new URL");
+                            BeanBook book = Books.getBook(args[2]);;
+                            boolean exists;
+                            try {
+                                book.setUrl(new URL(args[3]));
+                                exists = book.getExists();
+                            }
+                            catch (MalformedURLException e) {
+                                exists = false;
+                            }
+                            if (!exists) {
+                                try {
+                                    book.setUrl(new Glob(args[3]).single().toUri().toURL());
+                                }
+                                catch (MalformedURLException e) {
+                                    throw new UserErrorException(e.getMessage(), e);
+                                }
+                                if (!book.getExists())
+                                    throw new UserErrorException("\"" + book.getUrl() + "\"(derived from \"" + args[3] + ") not found");
+                            }
                         }
                         case "list" -> {
                             assertArgsPresent(args, 2);
-                            String[] names = Books.getAllBookNames();//.collect(Collectors.toList());
-                            String[][] strs = new String[names.length][2];
+                            BeanBook[] books = Books.getAllBooks();//.collect(Collectors.toList());
+                            String[][] strs = new String[books.length][2];
                             int maxBookNameLength = 0;
                             for (int i = 0; i < strs.length; i++) {
-                                String name = names[i];
-                                if (name.length() > maxBookNameLength)
-                                    maxBookNameLength = name.length();
-                                strs[i][0] = name;
-                                strs[i][1] = Books.getBook(name) instanceof URLBook urlBook ? urlBook.getUrl().toString() : "";
+                                BeanBook book = books[i];
+                                if (book.getName().length() > maxBookNameLength)
+                                    maxBookNameLength = book.getName().length();
+                                strs[i][0] = book.getName();
+                                strs[i][1] = book.getUrl().toString();
                             }
                             for (String[] book : strs)
                                 System.out.printf("%-" + maxBookNameLength + "s  %s%n", book[0], book[1]);
@@ -259,33 +279,60 @@ public class Main {
                             printResults((args[2].equals("-a") || args[2].equals("--all")
                                 ? Arrays.stream(Books.getAllBookNames())
                                 : Arrays.stream(args).skip(2))
-                                .map(n -> new BookReader(n, Books.getBook(n)))
+                                .map(Books::getBook)
+                                .map(b -> new BookReader(b.getName(), b.getInnerBook()))
                                 .map(FunctionUtils.unchecked(BookReader::validateBook))
                                 .toArray(Result[]::new));
                         }
-                        case "get-default" -> System.out.println(Optional.ofNullable(prefs.get("selectedTests", null))
+                        /*case "get-default" -> System.out.println(Optional.ofNullable(prefs.get("selectedTests", null))
                             .orElseThrow(() -> new UserErrorException("No default test found")));
                         case "set-default" -> {
                             assertArgsPresent(args, 2, "name");
-                            if (!Books.bookNameExists(args[2]))
-                                throw new UserErrorException("Tests \"" + args[2] + "\" not found");
-                            prefs.put("selectedTests", args[2]);
-                        }
+                            try {
+                                Books.setDefaultBook(args[2]);
+                            }
+                            catch (NullPointerException e) {
+                                throw new UserErrorException(e.getMessage(), e);
+                            }
+                        }*/
                         default -> throw new UserErrorException("Command `tests " + args[1] + "' not recognized. See `checker tests --help' for a list of subcommands of `tests'");
                     }
                 }
+                case "config" -> {
+                    if (args.length == 1)
+                        throw new UserErrorException("Missing argument: expected one of: get, set, unset");
+                    if (args.length == 2)
+                        throw new UserErrorException("Missing argument: property");
+                    if (!Config.propertyExists(args[2]))
+                        throw new UserErrorException("Configuration property \"" + args[2] + "\" does not exist");
+                    switch (args[1]) {
+                        case "get" -> {
+                            assertArgsPresent(args, 3);
+                            System.out.println(Config.get(args[2]));
+                        }
+                        case "set" -> {
+                            assertArgsPresent(args, 3, "value");
+                            Config.set(args[2], args[3]);
+                        }
+                        case "unset" -> {
+                            assertArgsPresent(args, 3);
+                            Config.unset(args[2]);
+                        }
+                        default -> throw new UserErrorException("Command `config " + args[1] + "' not recognized. See `checker config --help; for a list of subcommands.");
+                    }
+                }
                 case "gui" -> Application.launch(dev.liambloom.checker.ui.gui.Main.class, Arrays.copyOfRange(args, 1, args.length));
-                default -> throw new UserErrorException("Command `" + args[0] + "' not recognized. See `checker --help' for a list of commands.");
+                default -> throw new UserErrorException("Command `" + args[0] + "' not recognized. See `checker --help' for a list of subcommands.");
             }
             //}
         }
         catch (UserErrorException e) {
-            Logger.logger.log(LogKind.ERROR, e.getMessage());
+            System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.ERROR, e.getMessage());
             System.exit(1);
             //e.printStackTrace();
         }
         catch (Throwable e) {
-            Logger.logger.log(LogKind.ERROR, "An error was encountered internally. Check logs for more information");
+            System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.ERROR, "An error was encountered internally.");
             //e.printStackTrace();
             /*try {
                 Logger.createLogFile(e);
@@ -319,18 +366,12 @@ public class Main {
     }
 
     public static void printResults(Result<?>[] s) throws IOException {
-        try {
-            for (Result<?> r : s) {
-                System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), StringUtils.convertCase(r.status().toString(), StringUtils.Case.SPACE));
-                r.console().ifPresent((ConsumerThrowsIOException<ByteArrayOutputStream>) (c -> c.writeTo(System.out)));
-            }
-        }
-        catch (UncheckedIOException e) {
-            throw e.getCause();
-        }
+        for (Result<?> r : s)
+            System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), StringUtils.convertCase(r.status().toString(), StringUtils.Case.SPACE));
+
     }
 
-    private static Book getMaybeAnonymousBook(String name) {
+    /*private static Book getMaybeAnonymousBook(String name) {
         // This doesn't work beause setting test names
         try {
             book = Books.getBook(testName);
@@ -346,5 +387,5 @@ public class Main {
                 throw new UserErrorException(e.getMessage(), e);
             }
         }
-    }
+    }*/
 }
