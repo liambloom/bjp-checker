@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
@@ -154,12 +155,12 @@ public class Main {
 
                         Stream<Path> paths = new Glob(globArgs).files();
 
-                        Book book = getMaybeAnonymousBook(testName);
+                        BeanBook book = getMaybeAnonymousBook(testName);
                         Result<TestStatus>[] result;
                         BookReader reader;
 
 //                        do {
-                            reader = new BookReader(testName, book);
+                            reader = new BookReader(testName, book.getInnerBook());
 
                             Map<String, String> checkableNameAbbrMap = new HashMap<>();
                             Set<String> names = new HashSet<>();
@@ -238,24 +239,31 @@ public class Main {
                         }
                         case "change" -> {
                             assertArgsPresent(args, 2, "name", "new URL");
-                            BeanBook book = Books.getBook(args[2]);;
-                            boolean exists;
+                            BeanBook book;
                             try {
-                                book.setUrl(new URL(args[3]));
-                                exists = book.getExists();
+                                book = Books.getBook(args[2]);
+                            }
+                            catch (NullPointerException e) {
+                                throw new UserErrorException(e.getMessage(), e);
+                            }
+                            URL before = book.getUrl();
+                            boolean exists = false;
+                            try {
+                                URL url = new URL(args[3]);
+                                book.setUrl(url);
+                                if (!book.getExists())
+                                    System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.WARNING, "\"" + url + "\" does not exist");
                             }
                             catch (MalformedURLException e) {
-                                exists = false;
-                            }
-                            if (!exists) {
                                 try {
-                                    book.setUrl(new Glob(args[3]).single().toUri().toURL());
+                                    Path path = new Glob(args[3]).single();
+                                    if (!Files.exists(path))
+                                        System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.WARNING, "\"" + path + "\" does not exist");
+                                    book.setUrl(path.toUri().toURL());
                                 }
-                                catch (MalformedURLException e) {
+                                catch (MalformedURLException e2) {
                                     throw new UserErrorException(e.getMessage(), e);
                                 }
-                                if (!book.getExists())
-                                    throw new UserErrorException("\"" + book.getUrl() + "\"(derived from \"" + args[3] + ") not found");
                             }
                         }
                         case "list" -> {
@@ -371,21 +379,19 @@ public class Main {
 
     }
 
-    /*private static Book getMaybeAnonymousBook(String name) {
-        // This doesn't work beause setting test names
+    private static BeanBook getMaybeAnonymousBook(String name) throws IOException {
         try {
-            book = Books.getBook(testName);
+            return Books.getBook(name);
         }
-        catch (NullPointerException e) {
-            try {
-                book = new URLBook(new URL(testName));
-                if (!book.exists())
-                    throw new UserErrorException(e.getMessage(), e);
-                testName = "<anonymous book>";
-            }
-            catch (MalformedURLException e2) {
-                throw new UserErrorException(e.getMessage(), e);
-            }
+        catch (NullPointerException ignored) { }
+        try {
+            return Books.getAnonymousBook(new URL(name));
         }
-    }*/
+        catch (MalformedURLException ignored) { }
+        try {
+            return Books.getAnonymousBook(new Glob(name).single().toUri().toURL());
+        }
+        catch (MalformedURLException ignored) { }
+        throw new UserErrorException("Book \"" + name + "\" does not exist.");
+    }
 }

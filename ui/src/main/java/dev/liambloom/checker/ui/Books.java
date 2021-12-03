@@ -5,12 +5,14 @@ import dev.liambloom.checker.URLBook;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 public final class Books {
     private static final Map<String, BeanBook> loadedBooks = new WeakHashMap<>();
     private static final Preferences prefs = Preferences.userNodeForPackage(Books.class).node("books");
+    private static final AtomicInteger anonCount = new AtomicInteger(1);
 
     private Books() {
     }
@@ -20,6 +22,7 @@ public final class Books {
      *
      * @param name The name of the book to be retrieved
      * @return The book
+     * @throws NullPointerException If the book does not exist
      */
     public static BeanBook getBook(String name) {
         return loadedBooks.computeIfAbsent(name, key -> {
@@ -33,7 +36,7 @@ public final class Books {
         });
     }
 
-    public static void getAnonymousBook(URL url) {
+    public static BeanBook getAnonymousBook(URL url) {
         return new BeanBook("<anonymous book #" + anonCount.getAndIncrement() + ">", new URLBook(url));
     }
 
@@ -82,6 +85,10 @@ public final class Books {
         Books.prefs.remove("oldName");
         Books.prefs.put(newValue, val);
         loadedBooks.put(newValue, loadedBooks.remove(oldValue));
+    }
+
+    static void move(String name, URL target) {
+
     }
 
     public static void remove(String name) {
