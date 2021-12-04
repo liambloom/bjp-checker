@@ -18,7 +18,10 @@ public final class Books {
     }
 
     /**
-     * Gets a book, which may or may not be the same instance as returned by other calls.
+     * Gets a book. No more than 1 instance of a particular book can exist at once, if
+     * repeated calls are made for the same book, the same instance may be returned. If
+     * a strong pointer is not kept to the book, and it is cleaned up by the garbage
+     * collector, this method may construct a new instance.
      *
      * @param name The name of the book to be retrieved
      * @return The book

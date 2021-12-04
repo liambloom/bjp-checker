@@ -24,6 +24,7 @@ public class Glob {
 
     private static final Pattern pathSeparator = Pattern.compile(Pattern.quote(File.pathSeparator));
 
+    @SuppressWarnings("RedundantThrows")
     public Glob(Collection<String> s) throws IOException {
         if (s.size() == 0)
             throw new UserErrorException("No glob found. For more information, run `check glob --help'");
@@ -121,18 +122,13 @@ public class Glob {
                     return files(base.getParent(), i + 1);
                 case "**":
                     if (segments.length > i + 1) {
-                        try {
-                            return Stream.concat(
-                                files(base, i + 1),
-                                Files.list(base)
-                                    .map(FunctionUtils.unchecked((FunctionThrowsException<Path, Path>) Path::toRealPath))
-                                    .filter(Files::isDirectory)
-                                    .flatMap(FunctionUtils.unchecked((FunctionThrowsException<Path, Stream<Path>>) (dir -> files(dir, i))))
-                            );
-                        }
-                        catch (UncheckedIOException e) {
-                            throw e.getCause();
-                        }
+                        return Stream.concat(
+                            files(base, i + 1),
+                            Files.list(base)
+                                .map(FunctionUtils.unchecked((FunctionThrowsException<Path, Path>) Path::toRealPath))
+                                .filter(Files::isDirectory)
+                                .flatMap(FunctionUtils.unchecked((FunctionThrowsException<Path, Stream<Path>>) (dir -> files(dir, i))))
+                        );
                     }
                     else
                         return files(base, i + 1);
@@ -206,23 +202,19 @@ public class Glob {
                                 return false;
                         });
 
-                    try {
-                        if (i + 1 == segments.length) {
-                            r = r.flatMap(FunctionUtils.unchecked((FunctionThrowsException<Path, Stream<Path>>) (p -> {
-                                if (Files.isDirectory(p))
-                                    return files(p, i + 1);
-                                else
-                                    return Stream.of(p);
-                            })));
-                        }
-                        else
-                            r = r
-                                .filter(Files::isDirectory)
-                                .flatMap(FunctionUtils.unchecked((FunctionThrowsException<Path, Stream<Path>>) (dir -> files(dir, i + 1))));
+                    if (i + 1 == segments.length) {
+                        r = r.flatMap(FunctionUtils.unchecked((FunctionThrowsException<Path, Stream<Path>>) (p -> {
+                            if (Files.isDirectory(p))
+                                return files(p, i + 1);
+                            else
+                                return Stream.of(p);
+                        })));
                     }
-                    catch (UncheckedIOException e) {
-                        throw e.getCause();
-                    }
+                    else
+                        r = r
+                            .filter(Files::isDirectory)
+                            .flatMap(FunctionUtils.unchecked((FunctionThrowsException<Path, Stream<Path>>) (dir -> files(dir, i + 1))));
+
 
                     return r;
             }
@@ -250,19 +242,15 @@ public class Glob {
         }*/
     }
 
+    @SuppressWarnings("RedundantThrows")
     public Stream<Path> files() throws IOException {
-        try {
-            return Arrays.stream(pieces)
-                .unordered()
-                .parallel()
-                .map(FunctionUtils.unchecked((FunctionThrowsException<Piece, List<Path>>) Piece::files))
-                .flatMap(List::stream)
-                .distinct()
-                .sorted();
-        }
-        catch (UncheckedIOException e) {
-            throw e.getCause();
-        }
+        return Arrays.stream(pieces)
+            .unordered()
+            .parallel()
+            .map(FunctionUtils.unchecked((FunctionThrowsException<Piece, List<Path>>) Piece::files))
+            .flatMap(List::stream)
+            .distinct()
+            .sorted();
     }
 
     public Path single() throws IOException {

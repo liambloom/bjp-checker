@@ -30,7 +30,7 @@ public class URLBook extends Book {
     @Override
     public boolean exists() throws IOException {
         try {
-            getInputStream();
+            url.openConnection().connect();
             return true;
         }
         catch (FileNotFoundException e) {

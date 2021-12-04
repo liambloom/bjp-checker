@@ -12,17 +12,14 @@ import javafx.application.Application;
 import org.fusesource.jansi.AnsiConsole;
 import org.xml.sax.SAXException;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.function.Function;
-import java.util.prefs.Preferences;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -221,7 +218,7 @@ public class Main {
                         case "add" -> {
                             assertArgsPresent(args, 2, "name", "path");
                             try {
-                                Books.add(args[2], new Glob(args[3]).single().toUri().toURL());
+                                Books.add(args[2], resolveAnonymousBook(args[3]));
                             }
                             catch (IllegalArgumentException e) {
                                 throw new UserErrorException(e);
@@ -237,7 +234,7 @@ public class Main {
                                 throw new UserErrorException(e.getMessage(), e);
                             }
                         }
-                        case "change" -> {
+                        case "move" -> {
                             assertArgsPresent(args, 2, "name", "new URL");
                             BeanBook book;
                             try {
@@ -246,25 +243,7 @@ public class Main {
                             catch (NullPointerException e) {
                                 throw new UserErrorException(e.getMessage(), e);
                             }
-                            URL before = book.getUrl();
-                            boolean exists = false;
-                            try {
-                                URL url = new URL(args[3]);
-                                book.setUrl(url);
-                                if (!book.getExists())
-                                    System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.WARNING, "\"" + url + "\" does not exist");
-                            }
-                            catch (MalformedURLException e) {
-                                try {
-                                    Path path = new Glob(args[3]).single();
-                                    if (!Files.exists(path))
-                                        System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.WARNING, "\"" + path + "\" does not exist");
-                                    book.setUrl(path.toUri().toURL());
-                                }
-                                catch (MalformedURLException e2) {
-                                    throw new UserErrorException(e.getMessage(), e);
-                                }
-                            }
+                            book.setUrl(resolveAnonymousBook(args[3]));
                         }
                         case "list" -> {
                             assertArgsPresent(args, 2);
@@ -376,8 +355,23 @@ public class Main {
     public static void printResults(Result<?>[] s) throws IOException {
         for (Result<?> r : s)
             System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), StringUtils.convertCase(r.status().toString(), StringUtils.Case.SPACE));
-
+        System.out.println();
+        System.out.println();
+        for (Result<?> r : s) {
+            if (r.consoleOutput().isEmpty() && r.logs().isEmpty())
+                continue;
+            System.out.println(r.name());
+            r.logs().ifPresent(l -> {
+                System.out.println("  ");
+                throw new NotYetImplementedError("Detailed result printing");
+            });
+            r.consoleOutput().ifPresent(c -> {
+                throw new NotYetImplementedError("Detailed result printing");
+            });
+        }
     }
+
+//    private static void BeanBook
 
     private static BeanBook getMaybeAnonymousBook(String name) throws IOException {
         try {
@@ -385,13 +379,105 @@ public class Main {
         }
         catch (NullPointerException ignored) { }
         try {
-            return Books.getAnonymousBook(new URL(name));
+            return Books.getAnonymousBook(__resolveAnonymousBook(name));
         }
-        catch (MalformedURLException ignored) { }
+        catch (IllegalArgumentException e) {
+            System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.ERROR, "Unable to find saved book " + name);
+            System.exit(1);
+            return null;
+        }
+    }
+
+    private static URL resolveAnonymousBook(String src) throws IOException {
         try {
-            return Books.getAnonymousBook(new Glob(name).single().toUri().toURL());
+            return __resolveAnonymousBook(src);
         }
-        catch (MalformedURLException ignored) { }
-        throw new UserErrorException("Book \"" + name + "\" does not exist.");
+        catch (IllegalArgumentException e) {
+            System.exit(1);
+            return null;
+        }
+    }
+
+    private static URL __resolveAnonymousBook(String src) throws IOException {
+        // Get URL
+        URL url;
+        MalformedURLException urlError = null;
+        try {
+            url = new URL(src);
+        }
+        catch (MalformedURLException e) {
+            url = null;
+            urlError = e;
+        }
+
+        // Check if URL exists
+        boolean urlExists;
+        if (url == null)
+            urlExists = false;
+        else {
+            try {
+                url.openConnection().connect();
+                urlExists = true;
+            }
+            catch (FileNotFoundException e) {
+                urlExists = false;
+            }
+        }
+
+        // Return URL if it exists
+        if (urlExists)
+            return url;
+
+        // Get path
+        Path path;
+        InvalidPathException pathError = null;
+        try {
+            path = Path.of(src);
+        }
+        catch (InvalidPathException e) {
+            path = null;
+            pathError = e;
+        }
+
+        // Check if path exists
+        boolean pathExists = path == null ? pathExists = false : Files.exists(path, LinkOption.NOFOLLOW_LINKS);
+
+        // Return path if it exists
+        if (pathExists)
+            return path.toUri().toURL();
+
+        // Get path from glob (guaranteed to exist if not null)
+        Path globPath;
+        UserErrorException globPathError = null;
+        try {
+            globPath = new Glob(src).single();
+        }
+        catch (UserErrorException e) {
+            globPath = null;
+            globPathError = e;
+        }
+
+        // Return path from glob if it exists
+        if (globPath != null)
+            return globPath.toUri().toURL();
+
+        System.Logger logger = System.getLogger(Util.generateLoggerName());
+
+        // Return URL if not null & warn
+        if (url != null) {
+            logger.log(System.Logger.Level.WARNING, "URL \"" + url + "\" does not exist");
+            return url;
+        }
+
+        // Return path if not null & warn
+        if (path != null) {
+            logger.log(System.Logger.Level.WARNING, "Path \"" + path + "\" does not exist");
+            return path.toUri().toURL();
+        }
+
+        logger.log(System.Logger.Level.ERROR, "Unable to parse \"" + src + "\" as URL", urlError);
+        logger.log(System.Logger.Level.ERROR, "Unable to parse \"" + src + "\" as path", pathError);
+        logger.log(System.Logger.Level.ERROR, "Unable to parse \"" + src + "\" as glob", globPathError);
+        throw new IllegalArgumentException("Unable to parse \"" + src + "\" as URL, path, or glob");
     }
 }
