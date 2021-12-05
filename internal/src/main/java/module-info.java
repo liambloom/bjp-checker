@@ -6,7 +6,7 @@ module dev.liambloom.checker.internal {
     requires dev.liambloom.util.function;
     requires dev.liambloom.util.base;
 //    requires org.fusesource.jansi;
-    opens tests;
+//    opens tests;
     exports dev.liambloom.checker;
     exports dev.liambloom.checker.internal to dev.liambloom.checker.ui;
 }

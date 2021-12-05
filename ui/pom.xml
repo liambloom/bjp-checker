@@ -75,9 +75,17 @@
           <execution>
             <id>cli</id>
             <configuration>
-              <mainClass>dev.liambloom.checker.ui.cli.Main</mainClass>
-              <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                <executable>java</executable>
+                <arguments>
+                    <argument>-p</argument>
+                    <modulepath/>
+                    <argument>-m</argument>
+                    <argument>dev.liambloom.checker.ui/dev.liambloom.checker.ui.cli.Main</argument>
+                    <arguments>${fooArgs}</arguments>
+                </arguments>
             </configuration>
+                <!--              <mainClass>dev.liambloom.checker.ui.cli.Main</mainClass>
+                <cleanupDaemonThreads>false</cleanupDaemonThreads> -->
           </execution>
         </executions>
       </plugin>
