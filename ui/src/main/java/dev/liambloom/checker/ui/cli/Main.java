@@ -2,10 +2,7 @@ package dev.liambloom.checker.ui.cli;
 
 import dev.liambloom.checker.*;
 import dev.liambloom.checker.internal.Util;
-import dev.liambloom.checker.ui.BeanBook;
-import dev.liambloom.checker.ui.Books;
-import dev.liambloom.checker.ui.Config;
-import dev.liambloom.checker.ui.UserErrorException;
+import dev.liambloom.checker.ui.*;
 import dev.liambloom.util.StringUtils;
 import dev.liambloom.util.function.FunctionUtils;
 import javafx.application.Application;
@@ -28,6 +25,30 @@ public class Main {
     private static final Pattern RANGED_NUM = Pattern.compile("(?:\\d+(?:-\\d+)?(?:,|$))+");
 
     public static void main(String[] args) {
+        System.out.printf("System class loader: %s", ClassLoader.getSystemClassLoader());
+        System.out.printf("Main classloader: %s%n", Main.class.getClassLoader());
+        try {
+            ClassLoader.getSystemClassLoader().loadClass(CheckerUILoggerFinder.class.getName());
+        }
+        catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        var loggerFinders = ServiceLoader.load(System.LoggerFinder.class, ClassLoader.getSystemClassLoader()).stream().toArray(ServiceLoader.Provider[]::new);
+        System.out.printf("%d logger finders%n", loggerFinders.length);
+        for (ServiceLoader.Provider<System.LoggerFinder> f : loggerFinders) {
+            System.out.printf("Provider: %s%n", f);
+            var loggerFinder = f.get();
+            System.out.printf("Finder: %s%n", loggerFinder);
+            var logger = loggerFinder.getLogger("foo", Main.class.getModule());
+            System.out.printf("Loader: %s%n", loggerFinder.getClass().getClassLoader());
+            System.out.printf("Logger: %s%n", logger);
+            logger.log(System.Logger.Level.INFO, "foo");
+        }
+        System.out.println();
+        var l2 = System.getLogger("foo");
+        System.out.println(l2);
+        l2.log(System.Logger.Level.INFO, "bar");
+        CheckerUILoggerFinder.test();
         try {
 //            Logger.setLogger(new PrintStreamLogger());
             AnsiConsole.systemInstall();
@@ -355,20 +376,21 @@ public class Main {
     public static void printResults(Result<?>[] s) throws IOException {
         for (Result<?> r : s)
             System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), StringUtils.convertCase(r.status().toString(), StringUtils.Case.SPACE));
-        System.out.println();
-        System.out.println();
-        for (Result<?> r : s) {
-            if (r.consoleOutput().isEmpty() && r.logs().isEmpty())
-                continue;
-            System.out.println(r.name());
-            r.logs().ifPresent(l -> {
-                System.out.println("  ");
-                throw new NotYetImplementedError("Detailed result printing");
-            });
-            r.consoleOutput().ifPresent(c -> {
-                throw new NotYetImplementedError("Detailed result printing");
-            });
-        }
+        System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.WARNING, "Detailed result printing not yet implemented");
+//        System.out.println();
+//        System.out.println();
+//        for (Result<?> r : s) {
+//            if (r.consoleOutput().isEmpty() && r.logs().isEmpty())
+//                continue;
+//            System.out.println(r.name());
+//            r.logs().ifPresent(l -> {
+//                System.out.println("  ");
+//                throw new NotYetImplementedError("Detailed result printing");
+//            });
+//            r.consoleOutput().ifPresent(c -> {
+//                throw new NotYetImplementedError("Detailed result printing");
+//            });
+//        }
     }
 
 //    private static void BeanBook

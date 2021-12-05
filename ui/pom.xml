@@ -28,7 +28,7 @@
     <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-fxml</artifactId>
-      <version>17</version>
+      <version>17.0.0.1</version>
     </dependency>
     <dependency>
       <groupId>org.fusesource.jansi</groupId>
@@ -39,7 +39,12 @@
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-graphics</artifactId>
     </dependency>
-<!--    <dependency>-->
+    <dependency>
+      <groupId>com.google.auto.service</groupId>
+      <artifactId>auto-service-annotations</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <!--    <dependency>-->
 <!--      <groupId>net.harawata</groupId>-->
 <!--      <artifactId>appdirs</artifactId>-->
 <!--      <version>1.2.1</version>-->
@@ -48,6 +53,14 @@
 
   <build>
     <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>**/dev/liambloom/checker/ui/gui/*</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>

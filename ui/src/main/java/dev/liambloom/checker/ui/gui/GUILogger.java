@@ -4,7 +4,6 @@ import dev.liambloom.util.StringUtils;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 
-import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ResourceBundle;
