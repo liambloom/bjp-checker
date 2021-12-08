@@ -1,5 +1,6 @@
 package dev.liambloom.checker.ui;
 
+import dev.liambloom.checker.NotYetImplementedError;
 import dev.liambloom.checker.URLBook;
 
 import java.net.MalformedURLException;
@@ -91,12 +92,14 @@ public final class Books {
     }
 
     static void move(String name, URL target) {
-
+        throw new NotYetImplementedError();
     }
 
     public static void remove(String name) {
+        if (prefs.get(name, null) == null)
+            throw new IllegalArgumentException("Book \"" + name + "\" doesn't exist");
         prefs.remove(name);
-        loadedBooks.remove(name).remove();
+        Optional.ofNullable(loadedBooks.remove(name)).ifPresent(BeanBook::remove);
     }
 
 //    public static boolean existsNamed(String n) {

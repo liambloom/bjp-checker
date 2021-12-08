@@ -11,6 +11,7 @@ import org.xml.sax.SAXException;
 
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -25,30 +26,6 @@ public class Main {
     private static final Pattern RANGED_NUM = Pattern.compile("(?:\\d+(?:-\\d+)?(?:,|$))+");
 
     public static void main(String[] args) {
-        System.out.printf("System class loader: %s", ClassLoader.getSystemClassLoader());
-        System.out.printf("Main classloader: %s%n", Main.class.getClassLoader());
-        try {
-            ClassLoader.getSystemClassLoader().loadClass(CheckerUILoggerFinder.class.getName());
-        }
-        catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        var loggerFinders = ServiceLoader.load(System.LoggerFinder.class, ClassLoader.getSystemClassLoader()).stream().toArray(ServiceLoader.Provider[]::new);
-        System.out.printf("%d logger finders%n", loggerFinders.length);
-        for (ServiceLoader.Provider<System.LoggerFinder> f : loggerFinders) {
-            System.out.printf("Provider: %s%n", f);
-            var loggerFinder = f.get();
-            System.out.printf("Finder: %s%n", loggerFinder);
-            var logger = loggerFinder.getLogger("foo", Main.class.getModule());
-            System.out.printf("Loader: %s%n", loggerFinder.getClass().getClassLoader());
-            System.out.printf("Logger: %s%n", logger);
-            logger.log(System.Logger.Level.INFO, "foo");
-        }
-        System.out.println();
-        var l2 = System.getLogger("foo");
-        System.out.println(l2);
-        l2.log(System.Logger.Level.INFO, "bar");
-        CheckerUILoggerFinder.test();
         try {
 //            Logger.setLogger(new PrintStreamLogger());
             AnsiConsole.systemInstall();
@@ -242,10 +219,18 @@ public class Main {
                                 Books.add(args[2], resolveAnonymousBook(args[3]));
                             }
                             catch (IllegalArgumentException e) {
-                                throw new UserErrorException(e);
+                                throw new UserErrorException(e.getMessage(), e);
                             }
                         }
-                        case "remove" -> Books.remove(args[2]);
+                        case "remove" -> {
+                            assertArgsPresent(args, 2, "name");
+                            try {
+                                Books.remove(args[2]);
+                            }
+                            catch (IllegalArgumentException e) {
+                                throw new UserErrorException(e.getMessage(), e);
+                            }
+                        }
                         case "rename" -> {
                             assertArgsPresent(args, 2, "old name", "new name");
                             try {
@@ -340,7 +325,12 @@ public class Main {
             //e.printStackTrace();
         }
         catch (Throwable e) {
-            System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.ERROR, "An error was encountered internally.");
+            String msg = "An error was encountered internally";
+            if (!CheckerUILoggerFinder.DEBUG)
+                msg += " Set CHECKER_DEBUG=1 for details.";
+            System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.ERROR, msg);
+            if (CheckerUILoggerFinder.DEBUG)
+                e.printStackTrace();
             //e.printStackTrace();
             /*try {
                 Logger.createLogFile(e);
@@ -423,11 +413,12 @@ public class Main {
     private static URL __resolveAnonymousBook(String src) throws IOException {
         // Get URL
         URL url;
-        MalformedURLException urlError = null;
+        Exception urlError = null;
         try {
-            url = new URL(src);
+            // Should this be originally constructed as a URI?
+            url = new URL(src).toURI().normalize().toURL();
         }
-        catch (MalformedURLException e) {
+        catch (MalformedURLException | URISyntaxException e) {
             url = null;
             urlError = e;
         }
@@ -446,6 +437,11 @@ public class Main {
             }
         }
 
+        System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "URL " + (url == null ? "is null" : "is not null"));
+        System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "URL " + (urlExists ? "exists" : "doesn't exist"));
+        if (url != null)
+            System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "url = " + url);
+
         // Return URL if it exists
         if (urlExists)
             return url;
@@ -463,10 +459,14 @@ public class Main {
 
         // Check if path exists
         boolean pathExists = path == null ? pathExists = false : Files.exists(path, LinkOption.NOFOLLOW_LINKS);
+//        System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Path " + (path == null ? "is null" : "is not null"));
+//        System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Path " + (pathExists ? "exists" : "doesn't exist"));
+//        if (path != null)
+//            System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Path = " + path);
 
         // Return path if it exists
         if (pathExists)
-            return path.toUri().toURL();
+            return path.toUri().normalize().toURL();
 
         // Get path from glob (guaranteed to exist if not null)
         Path globPath;
@@ -478,6 +478,9 @@ public class Main {
             globPath = null;
             globPathError = e;
         }
+
+
+//        System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.DEBUG, "Glob " + (globPath == null ? "is null" : "is not null"));
 
         // Return path from glob if it exists
         if (globPath != null)

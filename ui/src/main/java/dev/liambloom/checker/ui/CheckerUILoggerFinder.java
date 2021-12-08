@@ -9,16 +9,10 @@ import dev.liambloom.checker.ui.cli.PrintStreamLogger;
 //  so it chooses to use that logger.
 @AutoService(System.LoggerFinder.class)
 public class CheckerUILoggerFinder extends System.LoggerFinder {
-    private static final boolean DEBUG = "1".equals(System.getenv("CHECKER_DEBUG"));
+    public static final boolean DEBUG = "1".equals(System.getenv("CHECKER_DEBUG"));
 
     @Override
     public System.Logger getLogger(String name, Module module) {
         return new PrintStreamLogger(name, DEBUG, System.err);
-    }
-
-    public static void test() {
-        var logger = System.getLogger("fjklds;");
-        System.out.println(logger);
-        logger.log(System.Logger.Level.INFO, "wtf?");
     }
 }

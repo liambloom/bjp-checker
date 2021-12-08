@@ -74,16 +74,24 @@ public final class BookReader {
         dbf.setNamespaceAware(true);
 
         boolean loadedNativeTemp;
+        Path tempDir = null;
         try {
-            System.loadLibrary("native");
+            tempDir = Files.createTempDirectory(null);
+            Path tempFile = tempDir.resolve(System.mapLibraryName("native"));
+            Files.copy(BookReader.class.getResourceAsStream("native/" + System.getProperty("os.arch") + "/" + System.mapLibraryName("native")), tempFile);
+            System.load(tempFile.toAbsolutePath().toString());
             loadedNativeTemp = true;
         }
-        catch (UnsatisfiedLinkError e) {
+        catch (UnsatisfiedLinkError | IOException e) {
             loadedNativeTemp = false;
             System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.WARNING,
                 "Failed to load native library for " + System.getProperty("os.name")
                     + " on " + System.getProperty("os.arch"),
                 e);
+        }
+        finally {
+            if (tempDir != null)
+                Files.deleteIfExists(tempDir);
         }
         loadedNative = loadedNativeTemp;
     }
