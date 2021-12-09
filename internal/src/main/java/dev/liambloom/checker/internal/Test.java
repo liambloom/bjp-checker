@@ -263,7 +263,7 @@ public interface Test {
                     args[j] = argConditions[j].getPre();
                 Object actualReturn = invoke.invoke(args);
                 TestStatus status = TestStatus.OK;
-                ReLogger logger = new ReLogger(Util.generateLoggerName());
+                ReLogger logger = new ReLogger(this);
                 boolean consoleInLogger;
                 List<Result<? extends TestStatus>> subResults = new ArrayList<>();
                 if (expectedReturns != null) {

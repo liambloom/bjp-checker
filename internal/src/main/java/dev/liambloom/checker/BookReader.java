@@ -78,20 +78,25 @@ public final class BookReader {
         try {
             tempDir = Files.createTempDirectory(null);
             Path tempFile = tempDir.resolve(System.mapLibraryName("native"));
-            Files.copy(BookReader.class.getResourceAsStream("native/" + System.getProperty("os.arch") + "/" + System.mapLibraryName("native")), tempFile);
+            Files.copy(Objects.requireNonNull(BookReader.class.getResourceAsStream("native/"
+                + System.getProperty("os.arch") + "/"
+                + System.mapLibraryName("native"))), tempFile);
             System.load(tempFile.toAbsolutePath().toString());
             loadedNativeTemp = true;
         }
-        catch (UnsatisfiedLinkError | IOException e) {
+        catch (UnsatisfiedLinkError | IOException | NullPointerException e) {
             loadedNativeTemp = false;
-            System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.WARNING,
+            System.getLogger(BookReader.class.getName()).log(System.Logger.Level.WARNING,
                 "Failed to load native library for " + System.getProperty("os.name")
                     + " on " + System.getProperty("os.arch"),
                 e);
         }
         finally {
-            if (tempDir != null)
-                Files.deleteIfExists(tempDir);
+            try {
+                if (tempDir != null)
+                    Files.deleteIfExists(tempDir);
+            }
+            catch (IOException ignored) { }
         }
         loadedNative = loadedNativeTemp;
     }
@@ -128,7 +133,7 @@ public final class BookReader {
                 removeTempDir();
             }
             catch (IOException e) {
-                System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.ERROR, "Error removing temp dir", e);
+                System.getLogger(BookReader.class.getName()).log(System.Logger.Level.ERROR, "Error removing temp dir", e);
             }
         }));
     }
