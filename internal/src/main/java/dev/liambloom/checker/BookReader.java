@@ -23,10 +23,8 @@ import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.security.DigestInputStream;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
@@ -35,6 +33,8 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,7 +58,9 @@ public final class BookReader {
     private static final Thread dirResetter = new Thread(BookReader::resetDir);
     private static final XPathFactory xpf = XPathFactory.newInstance();
     private static final DocumentBuilderFactory dbf;
-    private static final boolean loadedNative;
+    private static final Lock nativeLoaderLock = new ReentrantLock();
+    private static boolean triedLoadNative;
+    private static boolean loadedNativeSuccess;
 
     static {
         dbf = DocumentBuilderFactory.newInstance();
@@ -72,35 +74,9 @@ public final class BookReader {
             e.printStackTrace();
         }
         dbf.setNamespaceAware(true);
-
-        boolean loadedNativeTemp;
-        Path tempDir = null;
-        try {
-            tempDir = Files.createTempDirectory(null);
-            Path tempFile = tempDir.resolve(System.mapLibraryName("native"));
-            Files.copy(Objects.requireNonNull(BookReader.class.getResourceAsStream("native/"
-                + System.getProperty("os.arch") + "/"
-                + System.mapLibraryName("native"))), tempFile);
-            System.load(tempFile.toAbsolutePath().toString());
-            loadedNativeTemp = true;
-        }
-        catch (UnsatisfiedLinkError | IOException | NullPointerException e) {
-            loadedNativeTemp = false;
-            System.getLogger(BookReader.class.getName()).log(System.Logger.Level.WARNING,
-                "Failed to load native library for " + System.getProperty("os.name")
-                    + " on " + System.getProperty("os.arch"),
-                e);
-        }
-        finally {
-            try {
-                if (tempDir != null)
-                    Files.deleteIfExists(tempDir);
-            }
-            catch (IOException ignored) { }
-        }
-        loadedNative = loadedNativeTemp;
     }
 
+    private final System.Logger logger = System.getLogger(Long.toString(System.identityHashCode(this)));
     private final XPath xpath = xpf.newXPath();
     private final Book book;
     private final String name;
@@ -139,11 +115,16 @@ public final class BookReader {
     }
 
     private void parseAndValidateDocument() throws IOException, SAXException, ClassNotFoundException {
-        if (document != null)
+        logger.log(System.Logger.Level.TRACE, "Parsing & validating document");
+        if (document != null) {
+            logger.log(System.Logger.Level.TRACE, "Document already parsed");
             return;
+        }
         Document document;
         if (documentParseException == null) {
+            logger.log(System.Logger.Level.TRACE, "Parsing document");
             if (!book.exists()) {
+                logger.log(System.Logger.Level.TRACE, "Book does not exist");
                 result = new Result<>(name, TestValidationStatus.NOT_FOUND);
                 throw (IllegalStateException) (documentParseException = new IllegalStateException("Book " + book + " does not exist"));
             }
@@ -153,15 +134,24 @@ public final class BookReader {
                 db = dbf.newDocumentBuilder();
             }
             catch (ParserConfigurationException e) {
+                logger.log(System.Logger.Level.ERROR, "Failure to create document builder", e);
                 throw new RuntimeException(e);
             }
+            logger.log(System.Logger.Level.TRACE, "Document builder obtained");
             db.setErrorHandler(handler);
             try {
                 document = db.parse(new DigestInputStream(book.getInputStream(), digest));
+                logger.log(System.Logger.Level.TRACE, "Successfully parsed document");
             }
             catch (SAXException e) {
+                logger.log(System.Logger.Level.TRACE, "Error parsing document");
                 result = new Result<>(name, TestValidationStatus.INVALID, handler.getLogs());
                 documentParseException = e;
+                throw e;
+            }
+            catch (Throwable e) {
+                logger.log(System.Logger.Level.TRACE, "Non-sax error parsing document", e);
+                e.printStackTrace();
                 throw e;
             }
             // I'd like to wrap exceptions in SAXParseException, but I have no way to get the line/column number
@@ -217,9 +207,12 @@ public final class BookReader {
                     })
             )
                 .flatMap(Function.identity());
+
             typeErrors.forEach(e -> handler.log(System.Logger.Level.ERROR, e));
-            Optional<Exception> oe = typeErrors.findAny();
-            oe.ifPresent(e -> documentParseException = e);
+            typeErrors.findAny().ifPresentOrElse(e -> {
+                logger.log(System.Logger.Level.TRACE, "Type errors present");
+                documentParseException = e;
+            }, () -> logger.log(System.Logger.Level.TRACE, "No type errors present"));
 
             if (!book.supportsResourceLoading()
                 && (document.getElementsByTagName("File").getLength() > 0 || document.getElementsByTagName("Path").getLength() > 0)) {
@@ -236,8 +229,10 @@ public final class BookReader {
             else
                 result = new Result<>(name, TestValidationStatus.INVALID, handler.getLogs());
         }
-        else
+        else {
+            logger.log(System.Logger.Level.TRACE, "A previous attempt to parse the document failed");
             document = null;
+        }
 
         if (documentParseException == null)
             this.document = document;
@@ -266,8 +261,11 @@ public final class BookReader {
         try {
             parseAndValidateDocument();
         }
-        catch (ClassNotFoundException | SAXException | RuntimeException ignored) {
-
+        catch (ClassNotFoundException | SAXException ignored) { }
+        catch (RuntimeException e) {
+            if (e.getClass().equals(RuntimeException.class) && e.getCause() instanceof ParserConfigurationException)
+                throw e;
+            logger.log(System.Logger.Level.DEBUG, "Parse & Validate ended with runtime exception", e);
         }
         return result;
     }
@@ -456,7 +454,45 @@ public final class BookReader {
     }
 
     private static void changeDirectory(Path path) {
-        if (loadedNative)
+        nativeLoaderLock.lock();
+        try {
+            if (!triedLoadNative) {
+                Path tempDir = null;
+                Path tempFile = null;
+                try {
+                    tempDir = Files.createTempDirectory(null);
+                    tempFile = tempDir.resolve(System.mapLibraryName("native"));
+                    Files.copy(Objects.requireNonNull(BookReader.class.getResourceAsStream("native/"
+                        + System.getProperty("os.arch") + "/"
+                        + System.mapLibraryName("native"))), tempFile);
+                    System.load(tempFile.toAbsolutePath().toString());
+                    loadedNativeSuccess = true;
+                }
+                catch (UnsatisfiedLinkError | IOException | NullPointerException e) {
+                    loadedNativeSuccess = false;
+                    System.getLogger(BookReader.class.getName()).log(System.Logger.Level.WARNING,
+                        "Failed to load native library for " + System.getProperty("os.name")
+                            + " on " + System.getProperty("os.arch"),
+                        e);
+                }
+                finally {
+                    try {
+                        if (tempFile != null)
+                            Files.deleteIfExists(tempFile);
+                        if (tempDir != null)
+                            Files.deleteIfExists(tempDir);
+                    }
+                    catch (IOException e) {
+                        System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.DEBUG, "Error deleting temp file for native library", e);
+                    }
+                }
+            }
+        }
+        finally {
+            triedLoadNative = true;
+            nativeLoaderLock.unlock();
+        }
+        if (loadedNativeSuccess)
             changeDirectory(path.toString());
     }
 

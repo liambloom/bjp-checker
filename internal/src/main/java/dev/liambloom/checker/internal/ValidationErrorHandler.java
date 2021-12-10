@@ -24,7 +24,7 @@ public class ValidationErrorHandler implements ErrorHandler {
 
     private void log(System.Logger.Level level, String prepend, Throwable e) {
         maxErrorKind = max.apply(maxErrorKind, level);
-        logger.log(level, Optional.of(prepend).orElse("")
+        logger.log(level, Optional.ofNullable(prepend).orElse("")
             + (e instanceof SAXParseException spe ? getMessage(spe) : getMessage(e)));
     }
 
