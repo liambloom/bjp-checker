@@ -66,8 +66,8 @@
     </xs:complexType>
 
     <xs:complexType name="annotationDef">
-        <xs:attribute name="name" type="nonEmptyString" />
-        <xs:attribute name="annotation" type="className" />
+        <xs:attribute name="name" type="nonEmptyString" use="required" />
+        <xs:attribute name="annotation" type="className" use="required" />
     </xs:complexType>
 
     <xs:complexType name="rsc">

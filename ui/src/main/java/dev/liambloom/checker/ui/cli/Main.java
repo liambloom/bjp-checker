@@ -6,6 +6,9 @@ import dev.liambloom.checker.ui.*;
 import dev.liambloom.util.StringUtils;
 import dev.liambloom.util.function.FunctionUtils;
 import javafx.application.Application;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import org.fusesource.jansi.AnsiConsole;
 import org.xml.sax.SAXException;
 
@@ -26,6 +29,14 @@ public class Main {
     private static final Pattern RANGED_NUM = Pattern.compile("(?:\\d+(?:-\\d+)?(?:,|$))+");
 
     public static void main(String[] args) {
+        StringProperty s = new SimpleStringProperty();
+        BeanBook book = Books.getBook(args[2]);
+        book.name.bind(s);
+        s.set(args[3]);
+        System.out.println(book.getName());
+    }
+
+    public static void _main(String[] args) {
         try {
 //            Logger.setLogger(new PrintStreamLogger());
             AnsiConsole.systemInstall();
@@ -233,11 +244,17 @@ public class Main {
                         }
                         case "rename" -> {
                             assertArgsPresent(args, 2, "old name", "new name");
+                            System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Bar");
                             try {
                                 Books.getBook(args[2]).setName(args[3]);
                             }
-                            catch (NullPointerException e) {
+                            catch (NullPointerException | java.lang.IllegalArgumentException e) {
+                                System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Caught exception when renaming");
                                 throw new UserErrorException(e.getMessage(), e);
+                            }
+                            catch (Throwable e) {
+                                System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Unexpected exception of type %s thrown when renaming", e.getClass().getName());
+                                throw e;
                             }
                         }
                         case "move" -> {
@@ -366,7 +383,7 @@ public class Main {
     public static void printResults(Result<?>[] s) throws IOException {
         for (Result<?> r : s)
             System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), StringUtils.convertCase(r.status().toString(), StringUtils.Case.SPACE));
-        System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.WARNING, "Detailed result printing not yet implemented");
+        System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.INFO, "Detailed result printing coming soon!");
 //        System.out.println();
 //        System.out.println();
 //        for (Result<?> r : s) {
@@ -458,7 +475,7 @@ public class Main {
         }
 
         // Check if path exists
-        boolean pathExists = path == null ? pathExists = false : Files.exists(path, LinkOption.NOFOLLOW_LINKS);
+        boolean pathExists = path != null && Files.exists(path, LinkOption.NOFOLLOW_LINKS);
 //        System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Path " + (path == null ? "is null" : "is not null"));
 //        System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Path " + (pathExists ? "exists" : "doesn't exist"));
 //        if (path != null)
@@ -500,9 +517,9 @@ public class Main {
             return path.toUri().toURL();
         }
 
-        logger.log(System.Logger.Level.ERROR, "Unable to parse \"" + src + "\" as URL", urlError);
-        logger.log(System.Logger.Level.ERROR, "Unable to parse \"" + src + "\" as path", pathError);
-        logger.log(System.Logger.Level.ERROR, "Unable to parse \"" + src + "\" as glob", globPathError);
+        logger.log(System.Logger.Level.ERROR, "Unable to parse \"" + src + "\" as URL: " + urlError.getMessage());
+        logger.log(System.Logger.Level.ERROR, "Unable to parse \"" + src + "\" as path: " + pathError.getMessage());
+        logger.log(System.Logger.Level.ERROR, "Unable to parse \"" + src + "\" as glob: " + globPathError.getMessage());
         throw new IllegalArgumentException("Unable to parse \"" + src + "\" as URL, path, or glob");
     }
 }

@@ -42,8 +42,34 @@ public class BeanBook {
             return new BookReader(BeanBook.this.inner.get());
         }
     };
-    public final StringProperty name = new SimpleStringProperty();
-    public final ObjectProperty<URL> url = new SimpleObjectProperty<>();
+    public final StringProperty name = new StringPropertyBase() {
+        @Override
+        public Object getBean() {
+            return null;
+        }
+
+        @Override
+        public String getName() {
+            return "";
+        }
+
+        @Override
+        public void set(String newValue) {
+            String oldValue = get();
+            if (Books.prefs.get(newValue, null) != null)
+                throw new IllegalArgumentException("Book `" + newValue + "' already exists");
+            String val = Books.prefs.get(oldValue, null);
+            if (val == null){
+                System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.TRACE, "\"%s\" doesn't exist", oldValue);
+                return;
+            }
+            super.set(newValue);
+            Books.prefs.remove(oldValue);
+            Books.prefs.put(newValue, val);
+            Books.loadedBooks.put(newValue, Books.loadedBooks.remove(oldValue));
+        }
+    };
+    public final ObjectProperty<URL> url = new <>();
     public final ObjectBinding<Result<TestValidationStatus>> validationResult = new ObjectBinding<>() {
         { bind(BeanBook.this.inner); }
 
@@ -95,7 +121,8 @@ public class BeanBook {
         this.url.set(inner.getUrl());
         timer.scheduleAtFixedRate(timerTask, 0, RESULT_VALIDATION_PERIOD);
         this.name.addListener((observable, oldValue, newValue) -> {
-            Books.rename(oldValue, newValue);
+            System.getLogger(Long.toString(System.identityHashCode(BeanBook.this))).log(System.Logger.Level.TRACE, "Renaming \"%s\" -> \"%s\"", oldValue, newValue);
+
         });
         this.url.addListener(((observable, oldValue, newValue) -> {
             Books.move(name, newValue);

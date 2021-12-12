@@ -36,7 +36,8 @@ public class PrintStreamLogger implements System.Logger {
 
     @Override
     public void log(Level level, ResourceBundle bundle, String msg, Object... params) {
-        out.printf("\u001b[" + color(level).ansi() + "m[" + level.name().toLowerCase(Locale.ROOT) + "]\u001b[0m "  + String.join(" ".repeat(level.name().length() + 2), msg.split("\\R")) + "%n", params);
+        if (isLoggable(level))
+            out.printf("\u001b[" + color(level).ansi() + "m[" + level.name().toLowerCase(Locale.ROOT) + "]\u001b[0m "  + String.join(" ".repeat(level.name().length() + 2), msg.split("\\R")) + "%n", params);
     }
 
     private Color color(Level level) {

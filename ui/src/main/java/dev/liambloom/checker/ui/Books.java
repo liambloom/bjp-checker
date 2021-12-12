@@ -2,6 +2,7 @@ package dev.liambloom.checker.ui;
 
 import dev.liambloom.checker.NotYetImplementedError;
 import dev.liambloom.checker.URLBook;
+import dev.liambloom.checker.internal.Util;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -11,8 +12,8 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 public final class Books {
-    private static final Map<String, BeanBook> loadedBooks = new WeakHashMap<>();
-    private static final Preferences prefs = Preferences.userNodeForPackage(Books.class).node("books");
+    static final Map<String, BeanBook> loadedBooks = new WeakHashMap<>();
+    static final Preferences prefs = Preferences.userNodeForPackage(Books.class).node("books");
     private static final AtomicInteger anonCount = new AtomicInteger(1);
 
     private Books() {
@@ -81,18 +82,13 @@ public final class Books {
     }
 
     static void rename(String oldValue, String newValue) {
-        if (prefs.get(newValue, null) != null)
-            throw new IllegalArgumentException("Book `" + newValue + "' already exists");
-        String val = Books.prefs.get("oldName", null);
-        if (val == null)
-            return;
-        Books.prefs.remove("oldName");
-        Books.prefs.put(newValue, val);
-        loadedBooks.put(newValue, loadedBooks.remove(oldValue));
+        System.Logger logger = System.getLogger(Util.generateLoggerName());
+        logger.log(System.Logger.Level.TRACE, "Renaming in prefs \"%s\" -> \"%s\"", oldValue, newValue);
+
     }
 
     static void move(String name, URL target) {
-        throw new NotYetImplementedError();
+        prefs.put(name, target.toString());
     }
 
     public static void remove(String name) {
