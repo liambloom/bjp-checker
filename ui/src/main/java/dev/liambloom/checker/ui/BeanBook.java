@@ -56,6 +56,10 @@ public class BeanBook {
         @Override
         public void set(String newValue) {
             String oldValue = get();
+            if (oldValue == null){
+                super.set(newValue);
+                return;
+            }
             if (Books.prefs.get(newValue, null) != null)
                 throw new IllegalArgumentException("Book `" + newValue + "' already exists");
             String val = Books.prefs.get(oldValue, null);
@@ -69,7 +73,7 @@ public class BeanBook {
             Books.loadedBooks.put(newValue, Books.loadedBooks.remove(oldValue));
         }
     };
-    public final ObjectProperty<URL> url = new <>();
+    public final ObjectProperty<URL> url = new SimpleObjectProperty<>();
     public final ObjectBinding<Result<TestValidationStatus>> validationResult = new ObjectBinding<>() {
         { bind(BeanBook.this.inner); }
 
@@ -120,12 +124,8 @@ public class BeanBook {
         this.name.set(name);
         this.url.set(inner.getUrl());
         timer.scheduleAtFixedRate(timerTask, 0, RESULT_VALIDATION_PERIOD);
-        this.name.addListener((observable, oldValue, newValue) -> {
-            System.getLogger(Long.toString(System.identityHashCode(BeanBook.this))).log(System.Logger.Level.TRACE, "Renaming \"%s\" -> \"%s\"", oldValue, newValue);
-
-        });
         this.url.addListener(((observable, oldValue, newValue) -> {
-            Books.move(name, newValue);
+            Books.prefs.put(name, newValue.toString());
             this.inner.set(new URLBook(newValue));
         }));
     }

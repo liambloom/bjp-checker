@@ -12,9 +12,9 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 public final class Books {
+    private static final AtomicInteger anonCount = new AtomicInteger(1);
     static final Map<String, BeanBook> loadedBooks = new WeakHashMap<>();
     static final Preferences prefs = Preferences.userNodeForPackage(Books.class).node("books");
-    private static final AtomicInteger anonCount = new AtomicInteger(1);
 
     private Books() {
     }
@@ -79,16 +79,6 @@ public final class Books {
         if (prefs.get(s, null) != null)
             throw new IllegalArgumentException("Book `" + s + "' already exists");
         prefs.put(s, url.toString());
-    }
-
-    static void rename(String oldValue, String newValue) {
-        System.Logger logger = System.getLogger(Util.generateLoggerName());
-        logger.log(System.Logger.Level.TRACE, "Renaming in prefs \"%s\" -> \"%s\"", oldValue, newValue);
-
-    }
-
-    static void move(String name, URL target) {
-        prefs.put(name, target.toString());
     }
 
     public static void remove(String name) {

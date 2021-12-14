@@ -28,15 +28,15 @@ import java.util.stream.Stream;
 public class Main {
     private static final Pattern RANGED_NUM = Pattern.compile("(?:\\d+(?:-\\d+)?(?:,|$))+");
 
-    public static void main(String[] args) {
-        StringProperty s = new SimpleStringProperty();
-        BeanBook book = Books.getBook(args[2]);
-        book.name.bind(s);
-        s.set(args[3]);
-        System.out.println(book.getName());
-    }
+//    public static void main(String[] args) {
+//        StringProperty s = new SimpleStringProperty();
+//        BeanBook book = Books.getBook(args[2]);
+//        book.name.bind(s);
+//        s.set(args[3]);
+//        System.out.println(book.getName());
+//    }
 
-    public static void _main(String[] args) {
+    public static void main(String[] args) {
         try {
 //            Logger.setLogger(new PrintStreamLogger());
             AnsiConsole.systemInstall();
@@ -244,7 +244,6 @@ public class Main {
                         }
                         case "rename" -> {
                             assertArgsPresent(args, 2, "old name", "new name");
-                            System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Bar");
                             try {
                                 Books.getBook(args[2]).setName(args[3]);
                             }
