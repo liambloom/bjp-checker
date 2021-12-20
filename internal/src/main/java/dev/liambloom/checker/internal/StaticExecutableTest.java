@@ -3,18 +3,25 @@ package dev.liambloom.checker.internal;
 import dev.liambloom.checker.ReLogger;
 import dev.liambloom.checker.Result;
 import dev.liambloom.checker.TestStatus;
+import dev.liambloom.util.StringUtils;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 import java.io.*;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Executable;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class StaticExecutableTest implements Test {
     private final String name;
@@ -28,8 +35,9 @@ public class StaticExecutableTest implements Test {
     private final PrePost[] argConditions;
     private final Post expectedReturns;
     private final Class<? extends Throwable> expectedThrows;
+    private final AtomicBoolean hasRun = new AtomicBoolean(false);
 
-    public StaticExecutableTest(String name, Executable executable, ExecutableInvocation invoke, Targets targets, Node test) {
+    public StaticExecutableTest(String name, ExecutableInvocation invoke, Targets targets, Node test) {
         this.name = name;
 //        this.executable = executable;
         this.invoke = invoke;
@@ -94,8 +102,100 @@ public class StaticExecutableTest implements Test {
         // TODO: Re-load classes to allow them to write to files in writesTo
     }
 
+    public static Stream<Test> stream(String name, Executable executable, ExecutableInvocation invoke, Targets targets, Node node) {
+        if (!executable.canAccess(null) && !executable.trySetAccessible()) {
+            ReLogger logger = new ReLogger(Test.class.getName());
+            logger.log(System.Logger.Level.ERROR, "Bad Header: %s %s %s is not accessible",
+                StringUtils.convertCase(Util.getAccessibilityModifierName(executable), StringUtils.Case.SENTENCE),
+                executable.getClass().getSimpleName().toLowerCase(Locale.ENGLISH),
+                Util.executableToString(executable));
+            return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, logger)));
+        }
+        XPath xpath = Util.getXPathPool().get();
+        NodeList expectedParamNodes;
+        try {
+            expectedParamNodes = (NodeList) xpath.evaluate("parameters/parameter", node, XPathConstants.NODESET);
+        }
+        catch (XPathExpressionException e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            Util.getXPathPool().offer(xpath);
+        }
+        Class<?>[] params = MethodType.methodType(void.class, executable.getParameterTypes()).wrap().parameterArray();
+        Class<?>[] expectedParams = MethodType.methodType(void.class, Util.streamNodeList(expectedParamNodes)
+            .map(Node::getTextContent)
+            .map(String::trim)
+            .map(n -> {
+                try {
+                    return Util.loadClass(new ClassLoader() {
+                        @Override
+                        protected Class<?> findClass(String name) throws ClassNotFoundException {
+                            if (name.equals("this"))
+                                return executable.getDeclaringClass();
+                            else
+                                throw new ClassNotFoundException(name);
+                        }
+                    }, n);
+                }
+                catch (ClassNotFoundException e) {
+                    throw new IllegalArgumentException("Invalid document passed into Test.streamFromStaticExecutable", e);
+                }
+            })
+            .collect(Collectors.toList())
+        )
+            .wrap()
+            .parameterArray();
+        boolean isCorrectParams = false;
+        boolean usesVarArgs = false;
+        if (params.length == expectedParams.length || executable.isVarArgs() && expectedParams.length >= params.length - 1) {
+            for (int i = 0; i < expectedParams.length; i++) {
+                if (!(isCorrectParams = i < params.length && params[i].isAssignableFrom(expectedParams[i])
+                    && (!executable.isVarArgs() || i != params.length - 1 || params.length == expectedParams.length)
+                    || (usesVarArgs = executable.isVarArgs() && i >= params.length - 1 && params[params.length - 1].getComponentType().isAssignableFrom(expectedParams[i]))))
+                    break;
+            }
+        }
+
+        if (isCorrectParams) {
+            NodeList tests;
+            try {
+                tests = (NodeList) xpath.evaluate("test", node, XPathConstants.NODESET);
+            }
+            catch (XPathExpressionException e) {
+                throw new RuntimeException(e);
+            }
+            ExecutableInvocation invokeWrapper;
+            if (usesVarArgs) {
+                final int nonVarArgCount = params.length - 1;
+                invokeWrapper = args -> {
+                    Object[] newArgs = Arrays.copyOfRange(args, 0, nonVarArgCount + 1);
+                    newArgs[nonVarArgCount] = new Object[args.length - nonVarArgCount];
+                    System.arraycopy(args, nonVarArgCount + 1, newArgs[nonVarArgCount], 0, args.length - nonVarArgCount);
+                    return invoke.invoke(newArgs);
+                };
+            }
+            else
+                invokeWrapper = invoke;
+            return IntStream.range(0, tests.getLength())
+                .mapToObj(i -> new StaticExecutableTest("Test " + i, invokeWrapper, targets, tests.item(i)));
+        }
+        else {
+            ReLogger logger = new ReLogger(Util.generateLoggerName());
+            logger.log(System.Logger.Level.INFO, "%s %s was detected, but did not have the expected parameters (%s)",
+                executable.getClass().getSimpleName(),
+                Util.executableToString(executable),
+                Util.streamNodeList(expectedParamNodes)
+                    .map(Node::getTextContent)
+                    .collect(Collectors.joining(", ")));
+            return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.INCOMPLETE, logger)));
+        }
+    }
+
     @Override
     public Future<Result<TestStatus>> start() {
+        if (hasRun.getAndSet(true))
+            throw new IllegalStateException("Test has already been run");
         return executor.submit(() -> {
             testLock.readLock().lock();
             try {

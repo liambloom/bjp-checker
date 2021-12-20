@@ -49,10 +49,10 @@
                     <xs:field xpath="@num" />
                 </xs:unique>
 
-                <xs:keyref name="sectionTypeRef" refer="sectionTypeKey">
-                    <xs:selector xpath="." />
-                    <xs:field xpath="@type" />
-                </xs:keyref>
+<!--                <xs:keyref name="sectionTypeRef" refer="sectionTypeKey">-->
+<!--                    <xs:selector xpath="." />-->
+<!--                    <xs:field xpath="@type" />-->
+<!--                </xs:keyref>-->
             </xs:element>
         </xs:sequence>
     </xs:complexType>
@@ -61,6 +61,7 @@
         <xs:sequence>
             <xs:element name="sectionType" type="annotationDef" />
             <xs:element name="checkableType" maxOccurs="unbounded" type="annotationDef" />
+            <xs:element name="annotationClassPath" type="classPath" />
             <xs:element name="rsc" minOccurs="0" maxOccurs="unbounded" type="rsc" />
         </xs:sequence>
     </xs:complexType>
@@ -68,6 +69,13 @@
     <xs:complexType name="annotationDef">
         <xs:attribute name="name" type="nonEmptyString" use="required" />
         <xs:attribute name="annotation" type="className" use="required" />
+    </xs:complexType>
+
+
+    <xs:complexType name="classPath">
+        <xs:sequence>
+            <xs:element name="include" type="xs:anyURI" maxOccurs="unbounded" />
+        </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="rsc">

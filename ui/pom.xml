@@ -77,27 +77,22 @@
             </configuration>
           </execution>
           <execution>
-            <id>gui</id>
+            <id>get-module-path-unix</id>
             <configuration>
-              <mainClass>dev.liambloom.checker.ui.gui.Main</mainClass>
-              <cleanupDaemonThreads>false</cleanupDaemonThreads>
+              <executable>sh</executable>
+              <arguments>
+                <argument>-c</argument>
+                <argument>echo $0</argument>
+                <modulepath />
+              </arguments>
             </configuration>
           </execution>
           <execution>
-            <id>cli</id>
-            <configuration>
-              <executable>java</executable>
-              <longModulepath>false</longModulepath>
-              <arguments>
-                <argument>-p</argument>
-                <modulepath/>
-                <argument>-m</argument>
-                <argument>dev.liambloom.checker.ui/dev.liambloom.checker.ui.cli.Main</argument>
-                <arguments>${fooArgs}</arguments>
-              </arguments>
+            <id>gui</id>
+              <configuration>
+                <mainClass>dev.liambloom.checker.ui.gui.Main</mainClass>
+                <cleanupDaemonThreads>false</cleanupDaemonThreads>
             </configuration>
-                <!--              <mainClass>dev.liambloom.checker.ui.cli.Main</mainClass>
-                <cleanupDaemonThreads>false</cleanupDaemonThreads> -->
           </execution>
         </executions>
       </plugin>
