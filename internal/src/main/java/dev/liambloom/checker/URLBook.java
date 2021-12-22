@@ -88,6 +88,10 @@ public class URLBook extends Book {
         return destination.resolve(baseURI.toString());
     }
 
+    public URI getResourceBaseURI() throws URISyntaxException {
+        return url.toURI();
+    }
+
     @Override
     public boolean supportsResourceLoading() {
         return true;

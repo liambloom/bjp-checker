@@ -1,7 +1,10 @@
-package dev.liambloom.checker.internal;
+package dev.liambloom.checker;
 
 import dev.liambloom.checker.Result;
 import dev.liambloom.checker.TestStatus;
+import dev.liambloom.checker.internal.Targets;
+import dev.liambloom.checker.internal.Test;
+import dev.liambloom.checker.internal.Util;
 import dev.liambloom.util.function.FunctionUtils;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -17,11 +20,11 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public class CheckerTargetGroup<T extends Annotation> {
+class CheckerTargetGroup<T extends Annotation> {
     private final Targets[] targets;
-    private final CheckableType<T> checkableType;
+    private final BookReader.CheckableType<T> checkableType;
 
-    public CheckerTargetGroup(CheckableType<T> checkableType, boolean[] initWhich) {
+    public CheckerTargetGroup(BookReader.CheckableType<T> checkableType, boolean[] initWhich) {
         targets = new Targets[initWhich.length];
         for (int i = 0; i < initWhich.length; i++) {
             if (initWhich[i])

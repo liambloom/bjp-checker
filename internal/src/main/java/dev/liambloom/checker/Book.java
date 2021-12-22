@@ -2,6 +2,8 @@ package dev.liambloom.checker;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
@@ -23,6 +25,8 @@ public abstract class Book {
      * @throws IOException If an i/o error occurs
      */
     public abstract boolean exists() throws IOException;
+
+    public abstract URI getResourceBaseURI() throws URISyntaxException;
 
     /**
      * Loads all the resources required by a book. The list of resources is passed in by a
@@ -59,7 +63,7 @@ public abstract class Book {
      * Used to check if this book supports path resolution.
      * 
      * @return {@code true} if this book supports path resolution, {@code false} otherwise
-     * @see #loadResources(Path, Stream)
+     * @see #loadResources(Path, String[])
      */
     protected boolean supportsResourceLoading() {
         return false;
