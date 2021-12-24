@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -185,6 +186,7 @@ public final class BookReader {
                         checkableTypeErrors.add(e);
                     }
                 }
+
                 Stream<Exception> typeErrors = Stream.of(
                     Stream.of(
                         elementOfType("parameter")
@@ -233,7 +235,10 @@ public final class BookReader {
                         }),
                     checkableTypeErrors.build()
                 )
-                    .flatMap(Function.identity());
+                    .flatMap(Function.<Stream<? extends Exception>>identity())
+                    .filter(Objects::nonNull);
+
+//                typeErrors = typeErrors
 
                 List<Exception> typeErrorsList = typeErrors.collect(Collectors.toList());
                 for (Exception e : typeErrorsList)

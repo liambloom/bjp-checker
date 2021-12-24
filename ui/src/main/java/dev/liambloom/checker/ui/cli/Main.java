@@ -310,7 +310,7 @@ public class Main {
                                 throw new UserErrorException(e.getMessage(), e);
                             }
                         }*/
-                        default -> throw new UserErrorException("Command `tests " + args[1] + "' not recognized. See `checker tests --help' for a list of subcommands of `tests'");
+                        default -> throw new UserErrorException("Command `books " + args[1] + "' not recognized. See `checker tests --help' for a list of subcommands of `books'");
                     }
                 }
                 case "config" -> {
