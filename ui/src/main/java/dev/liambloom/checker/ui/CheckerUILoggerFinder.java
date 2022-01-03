@@ -25,7 +25,7 @@ public class CheckerUILoggerFinder extends System.LoggerFinder {
 
     public static void setDebugConfigString(String s) {
         resetDebugConfig();
-        boolean putValue;
+        boolean putValue = false;
         for (int i = 0; i <  s.length(); i++) {
             switch (s.charAt(i)) {
                 case '+' -> putValue = true;
@@ -33,17 +33,16 @@ public class CheckerUILoggerFinder extends System.LoggerFinder {
                 default -> {
                     if (i == 0)
                         throw new IllegalArgumentException("Debug config string must begin with '+' or '-'");
-                    continue;
+                    debugConfig.put(switch (s.charAt(i)) {
+                        case 'e' -> System.Logger.Level.ERROR;
+                        case 'w' -> System.Logger.Level.WARNING;
+                        case 'i' -> System.Logger.Level.INFO;
+                        case 'd' -> System.Logger.Level.DEBUG;
+                        case 't' -> System.Logger.Level.TRACE;
+                        default -> throw new IllegalArgumentException("Unknown debug level: '" + s.charAt(i) + '\'');
+                    }, putValue);
                 }
             }
-            debugConfig.put(switch (s.charAt(i)) {
-                case 'e' -> System.Logger.Level.ERROR;
-                case 'w' -> System.Logger.Level.WARNING;
-                case 'i' -> System.Logger.Level.INFO;
-                case 'd' -> System.Logger.Level.DEBUG;
-                case 't' -> System.Logger.Level.TRACE;
-                default -> throw new IllegalArgumentException("Unknown debug level: '" + s.charAt(i) + '\'');
-            }, putValue);
         }
     }
 

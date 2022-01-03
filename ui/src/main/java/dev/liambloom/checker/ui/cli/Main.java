@@ -58,7 +58,7 @@ public class Main {
                     }
                     String[] newArgs = new String[args.length - 1];
                     System.arraycopy(args, 0, newArgs, 0, i);
-                    System.arraycopy(args, i + 1, newArgs, i, args.length - i);
+                    System.arraycopy(args, i + 1, newArgs, i, newArgs.length - i);
                     args = newArgs;
                     break;
                 }
