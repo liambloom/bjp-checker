@@ -47,6 +47,23 @@ public class Main {
                 printHelp(args[0]);
             }
             else {*/
+
+            for (int i = 0; i < args.length; i++) {
+                if (args[i].startsWith("-d:") || args[i].startsWith("--debug:")) {
+                    try {
+                        CheckerUILoggerFinder.setDebugConfigString(args[i].split(":", 2)[1]);
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw new UserErrorException(e.getMessage(), e);
+                    }
+                    String[] newArgs = new String[args.length - 1];
+                    System.arraycopy(args, 0, newArgs, 0, i);
+                    System.arraycopy(args, i + 1, newArgs, i, args.length - i);
+                    args = newArgs;
+                    break;
+                }
+            }
+
             if (args.length == 0)
                 args = new String[]{ "-h" };
 
@@ -347,12 +364,8 @@ public class Main {
             //e.printStackTrace();
         }
         catch (Throwable e) {
-            String msg = "An error was encountered internally";
-            if (!CheckerUILoggerFinder.DEBUG)
-                msg += " Set CHECKER_DEBUG=1 for details.";
-            System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.ERROR, msg);
-            if (CheckerUILoggerFinder.DEBUG)
-                e.printStackTrace();
+            System.getLogger(Main.class.getName()).log(System.Logger.Level.ERROR, "An error was encountered internally");
+            System.getLogger(Main.class.getName()).log(System.Logger.Level.TRACE, "", e);
             //e.printStackTrace();
             /*try {
                 Logger.createLogFile(e);

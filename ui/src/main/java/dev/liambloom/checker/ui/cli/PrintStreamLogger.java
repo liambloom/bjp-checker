@@ -5,17 +5,18 @@ import org.fusesource.jansi.AnsiConsole;
 
 import java.io.PrintStream;
 import java.util.Locale;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 public class PrintStreamLogger implements System.Logger {
     private final String name;
-    private final boolean debug;
+    private final Map<Level, Boolean> config;
     private final PrintStream out;
 
-    public PrintStreamLogger(String name, boolean debug, PrintStream out) {
+    public PrintStreamLogger(String name, Map<Level, Boolean> config, PrintStream out) {
         AnsiConsole.systemInstall();
         this.name = name;
-        this.debug = debug;
+        this.config = config;
         this.out = out;
     }
 
@@ -26,7 +27,7 @@ public class PrintStreamLogger implements System.Logger {
 
     @Override
     public boolean isLoggable(Level level) {
-        return debug || System.Logger.Level.INFO.compareTo(level) <= 0;
+        return config.get(level);
     }
 
     @Override
