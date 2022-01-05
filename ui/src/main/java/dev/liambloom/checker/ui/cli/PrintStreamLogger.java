@@ -3,6 +3,7 @@ package dev.liambloom.checker.ui.cli;
 import dev.liambloom.checker.Color;
 import org.fusesource.jansi.AnsiConsole;
 
+import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Locale;
 import java.util.Map;
@@ -27,18 +28,26 @@ public class PrintStreamLogger implements System.Logger {
 
     @Override
     public boolean isLoggable(Level level) {
-        return config.get(level);
+        return config.getOrDefault(level, false);
     }
 
     @Override
     public void log(Level level, ResourceBundle bundle, String msg, Throwable throwable) {
-        log(level, bundle, msg + "%n%s", (Object) throwable);
+        String throwableMessage;
+        if (isLoggable(Level.TRACE)) {
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            throwable.printStackTrace(new PrintStream(os));
+            throwableMessage = os.toString();
+        }
+        else
+            throwableMessage = throwable.getMessage();
+        log(level, bundle, msg + ": " + throwableMessage);
     }
 
     @Override
     public void log(Level level, ResourceBundle bundle, String msg, Object... params) {
         if (isLoggable(level))
-            out.printf("\u001b[" + color(level).ansi() + "m[" + level.name().toLowerCase(Locale.ROOT) + "]\u001b[0m "  + String.join(" ".repeat(level.name().length() + 2), msg.split("\\R")) + "%n", params);
+            out.printf("\u001b[" + color(level).ansi() + "m[" + level.name().toLowerCase(Locale.ROOT) + "]\u001b[0m "  + String.join(System.lineSeparator() + " ".repeat(level.name().length() + 2), msg.split("\\R")) + "%n", params);
     }
 
     private Color color(Level level) {

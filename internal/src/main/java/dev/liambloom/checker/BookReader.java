@@ -166,6 +166,7 @@ public final class BookReader {
                     URI bookUri = book.getResourceBaseURI();
                     classLoader = new URLClassLoader((Util.streamNodeList((NodeList) xpath
                         .evaluate("/book/meta/classPath/include", document, XPathConstants.NODESET))
+                        .filter(Element.class::isInstance)
                         .map(Element.class::cast)
                         .map(Element::getTextContent)
                         .map(bookUri::resolve))
@@ -301,6 +302,7 @@ public final class BookReader {
         return Arrays.stream(types)
             .map(document::getElementsByTagName)
             .flatMap(Util::streamNodeList)
+            .filter(Element.class::isInstance)
             .map(Element.class::cast);
     }
 
@@ -398,6 +400,7 @@ public final class BookReader {
         }
 
         Element[] meta = Util.streamNodeList(metadataNodes)
+            .filter(Element.class::isInstance)
             .map(Element.class::cast)
             .toArray(Element[]::new);
         Class<? extends Annotation> sectionAnnotation = getSectionType().annotation();

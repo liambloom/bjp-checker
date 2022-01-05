@@ -52,6 +52,7 @@ public class StaticExecutableTest implements Test {
             throw new IllegalArgumentException("Element <this> invalid in top level method");
         argConditions = ((Element) children.item(i)).getTagName().equals("arguments")
             ? Util.streamNodeList(children.item(i++).getChildNodes())
+            .filter(Element.class::isInstance)
             .map(Element.class::cast)
             .map(PrePost::new)
             .toArray(PrePost[]::new)
@@ -72,6 +73,7 @@ public class StaticExecutableTest implements Test {
         else {
             expectedThrows = null;
             expectedReturns = Optional.ofNullable(children.item(i))
+                .filter(Element.class::isInstance)
                 .map(Element.class::cast)
                 .filter(n -> n.getTagName().equals("returns"))
                 .map(Post::new)
@@ -79,6 +81,7 @@ public class StaticExecutableTest implements Test {
             if (expectedReturns != null)
                 i++;
             String rawExpectedPrints = Optional.ofNullable(children.item(i))
+                .filter(Element.class::isInstance)
                 .map(Element.class::cast)
                 .filter(n -> n.getTagName().equals("prints"))
                 .map(Element::getTextContent)
@@ -92,6 +95,7 @@ public class StaticExecutableTest implements Test {
             }
             writesTo = IntStream.range(i, children.getLength())
                 .mapToObj(children::item)
+                .filter(Element.class::isInstance)
                 .map(Element.class::cast)
                 .collect(Collectors.toMap(
                     e -> Path.of(e.getAttribute("href")),

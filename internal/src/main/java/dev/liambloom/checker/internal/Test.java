@@ -36,7 +36,9 @@ public interface Test {
     }
 
     static Test multiTest(String name, Targets targets, Node testGroup) {
+        System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.TRACE, "MultiTest %s with targets %s", name, targets);
         Stream<Test> subTests = Util.streamNodeList(testGroup.getChildNodes())
+            .filter(Element.class::isInstance)
             .map(Element.class::cast)
             .flatMap(node -> {
                 Set<? extends AnnotatedElement> filteredTargets = switch (node.getTagName()) {
@@ -60,6 +62,7 @@ public interface Test {
                     }
                     default -> throw new IllegalStateException("This should not have passed validation");
                 };
+                System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.TRACE, "Test of %s filtered for, result: %s", name, node.getTagName(), targets);
                 if (filteredTargets.isEmpty())
                     return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.INCOMPLETE)));
                 else if (filteredTargets.size() == 1) {

@@ -364,8 +364,7 @@ public class Main {
             //e.printStackTrace();
         }
         catch (Throwable e) {
-            System.getLogger(Main.class.getName()).log(System.Logger.Level.ERROR, "An error was encountered internally");
-            System.getLogger(Main.class.getName()).log(System.Logger.Level.TRACE, "", e);
+            System.getLogger(Main.class.getName()).log(System.Logger.Level.ERROR, "An error was encountered internally", e);
             //e.printStackTrace();
             /*try {
                 Logger.createLogFile(e);
@@ -404,11 +403,15 @@ public class Main {
             System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), StringUtils.convertCase(r.status().toString(), StringUtils.Case.SPACE));
 //        System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.INFO, "Detailed result printing coming soon!");
         System.out.println();
-        System.out.println("details:");
-        System.out.println();
+        boolean detailTitlePrinted = false;
         for (Result<?> r : s) {
             if (r.consoleOutput().isEmpty() && r.logs().isEmpty())
                 continue;
+            if (!detailTitlePrinted) {
+                System.out.println("details:");
+                System.out.println();
+                detailTitlePrinted = true;
+            }
             System.out.printf("---- %s ----%n", r.name());
             r.logs().ifPresent(l -> {
                 l.logTo(System.getLogger(Main.class.getName()));

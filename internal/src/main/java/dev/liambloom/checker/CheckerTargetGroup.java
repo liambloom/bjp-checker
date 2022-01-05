@@ -35,6 +35,8 @@ class CheckerTargetGroup<T extends Annotation> {
     }
 
     public void addPotentialTarget(AnnotatedElement e) throws InvocationTargetException, IllegalAccessException {
+        System.getLogger(Long.toString(System.identityHashCode(this))).log(System.Logger.Level.TRACE, "Potential target %s %s", e,
+            targets[checkableType.value(e.getAnnotation(checkableType.annotation()))] == null ? "rejected" : "accepted");
         Optional.ofNullable(targets[checkableType.value(e.getAnnotation(checkableType.annotation()))])
             .ifPresent(t -> t.add(e));
     }
@@ -50,6 +52,8 @@ class CheckerTargetGroup<T extends Annotation> {
             if (targets[i] != null) {
                 String testName = checkableType.name() + ' ' + i;
 
+                System.getLogger(Long.toString(System.identityHashCode(this))).log(System.Logger.Level.TRACE, "Applying tests to %s with targets %s", testName, targets[i]);
+
                 if (targets[i].isEmpty()) {
                     builder.add(Test.withFixedResult(new Result<>(testName, TestStatus.INCOMPLETE)));
                 }
@@ -60,6 +64,7 @@ class CheckerTargetGroup<T extends Annotation> {
                             Optional.ofNullable(
                                 (xpath = Util.getXPathPool().get())
                                     .evaluate(checkableType.name() + "[@num='" + i + "']", tests, XPathConstants.NODE))
+                                .filter(Element.class::isInstance)
                                 .map(Element.class::cast)
                                 .orElseThrow(() -> new IllegalArgumentException("Unable to find tests for " + testName))));
                     }

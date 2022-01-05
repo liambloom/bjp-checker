@@ -21,6 +21,7 @@ public class PrePost {
     public PrePost(Element e) {
         this.e = e;
         p = Optional.ofNullable(e.getChildNodes().item(2))
+            .filter(Element.class::isInstance)
             .map(Element.class::cast)
             .map(Post::new)
             .orElse(null);
@@ -39,6 +40,7 @@ public class PrePost {
 
     private Stream<Object> parseJavaListElements(Element e) {
         return Util.streamNodeList(e.getChildNodes())
+            .filter(Element.class::isInstance)
             .map(Element.class::cast)
             .map(this::parseJavaValue);
     }

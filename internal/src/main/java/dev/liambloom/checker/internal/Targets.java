@@ -3,11 +3,12 @@ package dev.liambloom.checker.internal;
 import java.lang.reflect.*;
 import java.util.*;
 
-public record Targets(Set<Class<?>> classes,
-                      Set<Constructor<?>> constructors,
-                      Set<Method> methods,
-                      Set<Field> fields)
-    implements Set<AnnotatedElement> {
+public class Targets implements Set<AnnotatedElement> {
+    public final Set<Class<?>> classes;
+    public final Set<Constructor<?>> constructors;
+    public final Set<Method> methods;
+    public final Set<Field> fields;
+
     public Targets() {
         this(
             Collections.synchronizedSet(new HashSet<>()),
@@ -15,6 +16,32 @@ public record Targets(Set<Class<?>> classes,
             Collections.synchronizedSet(new HashSet<>()),
             Collections.synchronizedSet(new HashSet<>())
         );
+    }
+
+    public Targets(Set<Class<?>> classes,
+                   Set<Constructor<?>> constructors,
+                   Set<Method> methods,
+                   Set<Field> fields) {
+        this.classes = classes;
+        this.constructors = constructors;
+        this.methods = methods;
+        this.fields = fields;
+    }
+
+    public Set<Class<?>> classes() {
+        return classes;
+    }
+
+    public Set<Constructor<?>> constructors() {
+        return constructors;
+    }
+
+    public Set<Method> methods() {
+        return methods;
+    }
+
+    public Set<Field> fields() {
+        return fields;
     }
 
     @Override
@@ -142,5 +169,10 @@ public record Targets(Set<Class<?>> classes,
         System.arraycopy(methods.toArray(), 0, a, constructors.size(), methods.size());
         System.arraycopy(fields.toArray(), 0, a, methods.size(), fields.size());*/
         return a;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Targets[classes=%s, constructors=%s, methods=%s, fields=%s]", classes, constructors, methods, fields);
     }
 }
