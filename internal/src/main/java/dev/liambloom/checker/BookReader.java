@@ -413,25 +413,35 @@ public final class BookReader {
         Method m = sectionAnnotation.getMethod("value");
 
         int chapter;
+        logger.log(System.Logger.Level.DEBUG, "Section annotation type: %s", sectionAnnotation);
+//        logger.log(System.Logger.Level.DEBUG, "Target annotation types: %s", );s
         AtomicInteger detectedChapter = new AtomicInteger(-1);
         List<Class<?>> classes = new PathClassLoader(targets).loadAllOwnClasses()
-            .filter(clazz -> Arrays.stream(clazz.getAnnotationsByType(sectionAnnotation))
-                .map(FunctionUtils.unchecked((FunctionThrowsException<Annotation, Integer>) a -> {
-                    m.trySetAccessible();
-                    return (int) m.invoke(a);
-                }))
-                .anyMatch(c -> {
-                    if (section.isPresent())
-                        return c == section.getAsInt();
-                    else if (detectedChapter.compareAndExchange(-1, c) != c)
-                        throw new IllegalArgumentException("Cannot auto detect section, as classes belonging to chapters "
-                            + c + " and " + detectedChapter + " were found");
-                    else
-                        return true;
-                })
+//            .peek(System.out::println)
+            .filter(clazz -> {
+                System.Logger logger = System.getLogger(Util.generateLoggerName());
+                logger.log(System.Logger.Level.TRACE, "%s has annotations %s", clazz, Arrays.toString(clazz.getAnnotations()));
+                return Arrays.stream(clazz.getAnnotationsByType(sectionAnnotation))
+                    .map(FunctionUtils.unchecked((FunctionThrowsException<Annotation, Integer>) a -> {
+                        m.trySetAccessible();
+                        return (int) m.invoke(a);
+                    }))
+                    .anyMatch(c -> {
+                        logger.log(System.Logger.Level.TRACE, "Class %s belongs to section %n, expected %n", clazz, c, section);
+                        if (section.isPresent())
+                            return c == section.getAsInt();
+                        else if (detectedChapter.compareAndExchange(-1, c) != c)
+                            throw new IllegalArgumentException("Cannot auto detect section, as classes belonging to chapters "
+                                + c + " and " + detectedChapter + " were found");
+                        else
+                            return true;
+                    });
+                }
             )
             .collect(Collectors.toList());
+        logger.log(System.Logger.Level.TRACE, "Classes: " + classes);
         chapter = section.orElseGet(detectedChapter::get);
+
 
 
         Runtime.getRuntime().addShutdownHook(dirResetter);
