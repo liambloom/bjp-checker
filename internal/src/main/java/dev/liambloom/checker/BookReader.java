@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -331,12 +330,12 @@ public final class BookReader {
     }
 
     private CheckableType<? extends Annotation> getSectionType() throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException {
-        getDocument();
+        parseAndValidateDocument();
         return sectionType;
     }
 
     private CheckableType<? extends Annotation>[] getCheckableTypes() throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException {
-        getDocument();
+        parseAndValidateDocument();
         return checkableTypes;
     }
 
@@ -378,8 +377,9 @@ public final class BookReader {
      * @throws InvocationTargetException If the book's section or checkable annotations' {@code value()} method throws an exception
      */
     @SuppressWarnings("RedundantThrows")
-    public Result<TestStatus>[] check(OptionalInt section, Map<String, boolean[]> checkables, Stream<Path> targets) throws IOException, ClassNotFoundException,
-        SAXException, NoSuchMethodException, IllegalAccessException {
+    public Result<TestStatus>[] check(@SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalInt section, Map<String, boolean[]> checkables,
+                                      Stream<Path> targets) throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException,
+        IllegalAccessException, InvocationTargetException {
         getDocument();
 
         NodeList metadataNodes;
@@ -416,7 +416,7 @@ public final class BookReader {
         logger.log(System.Logger.Level.DEBUG, "Section annotation type: %s", sectionAnnotation);
 //        logger.log(System.Logger.Level.DEBUG, "Target annotation types: %s", );s
         AtomicInteger detectedChapter = new AtomicInteger(-1);
-        List<Class<?>> classes = new PathClassLoader(targets).loadAllOwnClasses()
+        List<Class<?>> classes = new PathClassLoader(targets, classLoader).loadAllOwnClasses()
 //            .peek(System.out::println)
             .filter(clazz -> {
                 System.Logger logger = System.getLogger(Util.generateLoggerName());
@@ -427,7 +427,7 @@ public final class BookReader {
                         return (int) m.invoke(a);
                     }))
                     .anyMatch(c -> {
-                        logger.log(System.Logger.Level.TRACE, "Class %s belongs to section %n, expected %n", clazz, c, section);
+                        logger.log(System.Logger.Level.TRACE, "Class %s belongs to section %d, expecting %s", clazz, c, section);
                         if (section.isPresent())
                             return c == section.getAsInt();
                         else if (detectedChapter.compareAndExchange(-1, c) != c)
@@ -612,6 +612,7 @@ public final class BookReader {
     class CheckableType<T extends Annotation> {
         private final String name;
         private final Class<T> annotation;
+        private final Method value;
 
         /**
          * Constructs a {@code CheckableType} from an {@code Element}
@@ -627,22 +628,16 @@ public final class BookReader {
             Class<?> annotation = classLoader.loadClass(e.getAttribute("annotation"));
             if (!Annotation.class.isAssignableFrom(annotation))
                 throw new ClassCastException("Cannot convert " + annotation.getName() + " to java.lang.Annotation");
-            Method m = annotation.getMethod("value");
-            if (!m.getReturnType().equals(int.class))
-                throw new ClassCastException("Cannot convert " + m.getGenericReturnType() + " to int");
+            value = annotation.getMethod("value");
+            if (!value.getReturnType().equals(int.class))
+                throw new ClassCastException("Cannot convert " + value.getGenericReturnType() + " to int");
+            value.trySetAccessible();
             this.annotation = (Class<T>) annotation;
         }
 
         public int value(T target) throws InvocationTargetException, IllegalAccessException {
-            Method m;
-            try {
-                m = annotation.getMethod("value");
-            }
-            catch (NoSuchMethodException e) {
-                throw new IllegalStateException("This should never be thrown", e);
-            }
-            m.trySetAccessible();
-            return (int) m.invoke(target);
+            System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.TRACE, "Getting %s of %s", name, target);
+            return (int) value.invoke(target);
         }
 
         public String name() {

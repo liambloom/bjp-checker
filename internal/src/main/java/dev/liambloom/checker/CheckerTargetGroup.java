@@ -5,6 +5,7 @@ import dev.liambloom.checker.TestStatus;
 import dev.liambloom.checker.internal.Targets;
 import dev.liambloom.checker.internal.Test;
 import dev.liambloom.checker.internal.Util;
+import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -16,6 +17,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -34,10 +36,12 @@ class CheckerTargetGroup<T extends Annotation> {
         this.checkableType = checkableType;
     }
 
+    @SuppressWarnings("RedundantThrows")
     public void addPotentialTarget(AnnotatedElement e) throws InvocationTargetException, IllegalAccessException {
-        System.getLogger(Long.toString(System.identityHashCode(this))).log(System.Logger.Level.TRACE, "Potential target %s %s", e,
-            targets[checkableType.value(e.getAnnotation(checkableType.annotation()))] == null ? "rejected" : "accepted");
-        Optional.ofNullable(targets[checkableType.value(e.getAnnotation(checkableType.annotation()))])
+        System.getLogger(Long.toString(System.identityHashCode(this))).log(System.Logger.Level.TRACE, "Potential target %s: Annotated with %s, looking for %s",
+            e, Arrays.toString(e.getAnnotations()), checkableType.annotation()/* , targets[checkableType.value(e.getAnnotation(checkableType.annotation()))] == null ? "rejected" : "accepted" */);
+        Optional.ofNullable(e.getAnnotation(checkableType.annotation()))
+            .map(FunctionUtils.unchecked((FunctionThrowsException<T, Targets>) a -> targets[checkableType.value(a)]))
             .ifPresent(t -> t.add(e));
     }
 
