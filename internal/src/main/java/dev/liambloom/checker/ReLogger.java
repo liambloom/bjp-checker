@@ -68,6 +68,10 @@ public class ReLogger implements System.Logger {
             r.logTo(logger);
     }
 
+    public synchronized boolean isEmpty() {
+        return logs.isEmpty();
+    }
+
     public synchronized void reset() {
         logs.clear();
     }

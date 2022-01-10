@@ -284,7 +284,7 @@ public class StaticExecutableTest implements Test {
                     post.logs().ifPresent(l -> l.logTo(logger));
                     subResults.addAll(post.subResults());
                 }
-                return new Result<>(name, status, Optional.of(logger), consoleInLogger || status != TestStatus.FAILED ? Optional.empty() : Optional.ofNullable(actualOut), subResults);
+                return new Result<>(name, status, logger.isEmpty() ? Optional.empty() : Optional.of(logger), consoleInLogger || status != TestStatus.FAILED ? Optional.empty() : Optional.ofNullable(actualOut), subResults);
             }
             finally {
                 lock.unlock();

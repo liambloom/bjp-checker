@@ -40,7 +40,7 @@ public class PrintStreamLogger implements System.Logger {
             throwableMessage = os.toString();
         }
         else
-            throwableMessage = throwable.getMessage();
+            throwableMessage = throwable.toString();
         log(level, bundle, msg + ": " + throwableMessage);
     }
 

@@ -372,7 +372,9 @@ public class Main {
             System.exit(1);
         }
         finally {
+            System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Shutting down. Currently running: " + Thread.getAllStackTraces().keySet());
             AnsiConsole.systemUninstall();
+            System.exit(0);
         }
     }
 
