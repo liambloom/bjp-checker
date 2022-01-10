@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -36,6 +37,7 @@ public class StaticExecutableTest implements Test {
     private final Post expectedReturns;
     private final Class<? extends Throwable> expectedThrows;
     private final AtomicBoolean hasRun = new AtomicBoolean(false);
+    private final Lock lock;
 
     public StaticExecutableTest(String name, ExecutableInvocation invoke, Targets targets, Node test) {
         this.name = name;
@@ -44,24 +46,27 @@ public class StaticExecutableTest implements Test {
 //        this.targets = targets;
 //        this.test = test;
         int i = 0;
-        NodeList children = test.getChildNodes();
-        in = ((Element) children.item(i)).getTagName().equals("System.in")
-            ? new ByteArrayInputStream(children.item(i++).getTextContent().getBytes())
+        List<Element> children = Util.streamNodeList(test.getChildNodes())
+            .filter(Element.class::isInstance)
+            .map(Element.class::cast)
+            .collect(Collectors.toList());
+        in = children.get(i).getTagName().equals("System.in")
+            ? new ByteArrayInputStream(children.get(i++).getTextContent().getBytes())
             : null;
-        if (((Element) children.item(i)).getTagName().equals("this")) // TODO: Update Schema
+        if (children.get(i).getTagName().equals("this")) // TODO: Update Schema
             throw new IllegalArgumentException("Element <this> invalid in top level method");
-        argConditions = ((Element) children.item(i)).getTagName().equals("arguments")
-            ? Util.streamNodeList(children.item(i++).getChildNodes())
+        argConditions = children.get(i).getTagName().equals("arguments")
+            ? Util.streamNodeList(children.get(i++).getChildNodes())
             .filter(Element.class::isInstance)
             .map(Element.class::cast)
             .map(PrePost::new)
             .toArray(PrePost[]::new)
             : new PrePost[0];
         Map<Path, String> writesTo;
-        if (((Element) children.item(i)).getTagName().equals("throws")) {
+        if (children.get(i).getTagName().equals("throws")) {
             try {
-                //noinspection unchecked
-                expectedThrows = (Class<? extends Throwable>) ClassLoader.getSystemClassLoader().loadClass(children.item(i++).getTextContent());
+                //noinspection unchecked,UnusedAssignment
+                expectedThrows = (Class<? extends Throwable>) ClassLoader.getSystemClassLoader().loadClass(children.get(i++).getTextContent());
             }
             catch (ClassNotFoundException | ClassCastException e) {
                 throw new IllegalStateException("This should not have passed validation.", e);
@@ -72,17 +77,13 @@ public class StaticExecutableTest implements Test {
         }
         else {
             expectedThrows = null;
-            expectedReturns = Optional.ofNullable(children.item(i))
-                .filter(Element.class::isInstance)
-                .map(Element.class::cast)
+            expectedReturns = Optional.ofNullable(children.get(i))
                 .filter(n -> n.getTagName().equals("returns"))
                 .map(Post::new)
                 .orElse(null);
             if (expectedReturns != null)
                 i++;
-            String rawExpectedPrints = Optional.ofNullable(children.item(i))
-                .filter(Element.class::isInstance)
-                .map(Element.class::cast)
+            String rawExpectedPrints = Optional.ofNullable(children.get(i))
                 .filter(n -> n.getTagName().equals("prints"))
                 .map(Element::getTextContent)
                 .map(String::stripIndent)
@@ -91,29 +92,36 @@ public class StaticExecutableTest implements Test {
                 expectedOut = null;
             else {
                 expectedOut = Util.cleansePrint(rawExpectedPrints);
+                //noinspection UnusedAssignment
                 i++;
             }
-            writesTo = IntStream.range(i, children.getLength())
-                .mapToObj(children::item)
-                .filter(Element.class::isInstance)
-                .map(Element.class::cast)
+            writesTo = children.stream()
                 .collect(Collectors.toMap(
                     e -> Path.of(e.getAttribute("href")),
                     e -> e.getTextContent().stripIndent()
                 ));
         }
-        executor = in == null && expectedOut == null && writesTo.isEmpty() ? readOnlyTest : writingTest;
+        if (in == null && expectedOut == null && writesTo.isEmpty()) {
+            executor = readOnlyTest;
+            lock = testLock.readLock();
+        }
+        else {
+            executor = writingTest;
+            lock = testLock.writeLock();
+        }
         // TODO: Re-load classes to allow them to write to files in writesTo
     }
 
     public static Stream<Test> stream(String name, Executable executable, ExecutableInvocation invoke, Targets targets, Node node) {
+        System.Logger logger = System.getLogger(Util.generateLoggerName());
+        logger.log(System.Logger.Level.TRACE, "Streaming static executable tests for " + name);
         if (!executable.canAccess(null) && !executable.trySetAccessible()) {
-            ReLogger logger = new ReLogger(Test.class.getName());
-            logger.log(System.Logger.Level.ERROR, "Bad Header: %s %s %s is not accessible",
+            ReLogger resultDetails = new ReLogger(Test.class.getName());
+            resultDetails.log(System.Logger.Level.ERROR, "Bad Header: %s %s %s is not accessible",
                 StringUtils.convertCase(Util.getAccessibilityModifierName(executable), StringUtils.Case.SENTENCE),
                 executable.getClass().getSimpleName().toLowerCase(Locale.ENGLISH),
                 Util.executableToString(executable));
-            return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, logger)));
+            return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, resultDetails)));
         }
         XPath xpath = Util.getXPathPool().get();
         NodeList expectedParamNodes;
@@ -150,7 +158,7 @@ public class StaticExecutableTest implements Test {
         )
             .wrap()
             .parameterArray();
-        boolean isCorrectParams = false;
+        boolean isCorrectParams = true;
         boolean usesVarArgs = false;
         if (params.length == expectedParams.length || executable.isVarArgs() && expectedParams.length >= params.length - 1) {
             for (int i = 0; i < expectedParams.length; i++) {
@@ -161,6 +169,8 @@ public class StaticExecutableTest implements Test {
             }
         }
 
+        logger.log(System.Logger.Level.TRACE, "Static Executable %s has correct params: %b", name, isCorrectParams);
+
         if (isCorrectParams) {
             NodeList tests;
             try {
@@ -169,6 +179,7 @@ public class StaticExecutableTest implements Test {
             catch (XPathExpressionException e) {
                 throw new RuntimeException(e);
             }
+            logger.log(System.Logger.Level.TRACE, "There are %d tests for static executable %s", tests.getLength(), name);
             ExecutableInvocation invokeWrapper;
             if (usesVarArgs) {
                 final int nonVarArgCount = params.length - 1;
@@ -181,18 +192,25 @@ public class StaticExecutableTest implements Test {
             }
             else
                 invokeWrapper = invoke;
-            return IntStream.range(0, tests.getLength())
-                .mapToObj(i -> new StaticExecutableTest("Test " + i, invokeWrapper, targets, tests.item(i)));
+
+            Stream.Builder<Test> builder = Stream.builder();
+            int testNumber = 1;
+            for (int i = 0; i < tests.getLength(); i++) {
+                Node n = tests.item(i);
+                if (n instanceof Element e)
+                    builder.add(new StaticExecutableTest("Test " + testNumber++, invokeWrapper, targets, e));
+            }
+            return builder.build();
         }
         else {
-            ReLogger logger = new ReLogger(Util.generateLoggerName());
-            logger.log(System.Logger.Level.INFO, "%s %s was detected, but did not have the expected parameters (%s)",
+            ReLogger resultDetails = new ReLogger(Util.generateLoggerName());
+            resultDetails.log(System.Logger.Level.INFO, "%s %s was detected, but did not have the expected parameters (%s)",
                 executable.getClass().getSimpleName(),
                 Util.executableToString(executable),
                 Util.streamNodeList(expectedParamNodes)
                     .map(Node::getTextContent)
                     .collect(Collectors.joining(", ")));
-            return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.INCOMPLETE, logger)));
+            return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.INCOMPLETE, resultDetails)));
         }
     }
 
@@ -201,7 +219,7 @@ public class StaticExecutableTest implements Test {
         if (hasRun.getAndSet(true))
             throw new IllegalStateException("Test has already been run");
         return executor.submit(() -> {
-            testLock.readLock().lock();
+            lock.lock();
             try {
                 System.setIn(in == null ? InputStream.nullInputStream(): in);
                 ByteArrayOutputStream actualOut = expectedOut == null ? null : new ByteArrayOutputStream();
@@ -269,7 +287,7 @@ public class StaticExecutableTest implements Test {
                 return new Result<>(name, status, Optional.of(logger), consoleInLogger || status != TestStatus.FAILED ? Optional.empty() : Optional.ofNullable(actualOut), subResults);
             }
             finally {
-                testLock.writeLock().unlock();
+                lock.unlock();
             }
         });
     }

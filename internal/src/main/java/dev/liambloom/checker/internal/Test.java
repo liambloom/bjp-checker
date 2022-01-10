@@ -44,7 +44,7 @@ public interface Test {
                 Set<? extends AnnotatedElement> filteredTargets = switch (node.getTagName()) {
                     case "method" -> targets.methods();
                     case "constructor" -> targets.constructors();
-                    case "project" -> {
+                    case "program" -> {
                         Set<AnnotatedElement> projectTargets = targets.classes().stream()
                             .filter(t -> {
                                 try {
@@ -60,15 +60,15 @@ public interface Test {
                         projectTargets.addAll(targets.methods());
                         yield projectTargets;
                     }
-                    default -> throw new IllegalStateException("This should not have passed validation");
+                    default -> throw new IllegalStateException("Target type " + node.getTagName() + " not recognized");
                 };
-                System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.TRACE, "Test of %s filtered for, result: %s", name, node.getTagName(), targets);
+                System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.TRACE, "Test of %s filtered for, result: %s; targets: %s", name, node.getTagName(), targets);
                 if (filteredTargets.isEmpty())
                     return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.INCOMPLETE)));
                 else if (filteredTargets.size() == 1) {
                     AnnotatedElement target = filteredTargets.iterator().next();
                     if (target instanceof Constructor<?> c)
-                        return StaticExecutableTest.stream(name, c, c::newInstance, targets, testGroup);
+                        return StaticExecutableTest.stream(name, c, c::newInstance, targets, node);
                     else if (target instanceof Class<?> c) {
                         try {
                             target = c.getDeclaredMethod("main", String[].class);
@@ -83,7 +83,7 @@ public interface Test {
                         return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, logger)));
                     }
                     if (target instanceof Method m)
-                        return StaticExecutableTest.stream(name, m, p -> m.invoke(null, p), targets, testGroup);
+                        return StaticExecutableTest.stream(name, m, p -> m.invoke(null, p), targets, node);
 
                     throw new IllegalStateException("Unreachable: Target of impossible type");
                 }

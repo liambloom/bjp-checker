@@ -21,6 +21,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.*;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -450,12 +451,17 @@ public final class BookReader {
         changeDirectory(book.loadResources(tempDir, getResources()));
 
         Node ch;
+        logger.log(System.Logger.Level.DEBUG, "Chapter %d", chapter);
         try {
-            ch = (Node) xpath.evaluate("/book/chapter[@num='" + chapter + "']", document, XPathConstants.NODE);
+            ch = (Node) xpath.evaluate("/book/section[@num='" + chapter + "']", document, XPathConstants.NODE);
+            logger.log(System.Logger.Level.TRACE, "Chapter %d is %s", chapter, ch);
         }
         catch (XPathExpressionException e) {
             throw new RuntimeException(e);
         }
+
+        if (ch == null)
+            throw new NoSuchElementException((section.isPresent() ? "S" : "Auto-detected s") + "ection " + chapter + " does not exist");
 
         InputStream prevIn = System.in;
         PrintStream prevOut = System.out;
@@ -465,7 +471,13 @@ public final class BookReader {
                  .parallel()
                  .map(a -> new CheckerTargetGroup<>(a, checkables.getOrDefault(a.name(), new boolean[0])))
                  .flatMap(FunctionUtils.unchecked((FunctionThrowsException<CheckerTargetGroup<?>, Stream<Test>>) (e -> {
-                     e.addPotentialTargets(classes.iterator());
+                     for (Class<?> clazz : classes) {
+                         e.addPotentialTarget(clazz);
+                         for (AnnotatedElement[] i : new AnnotatedElement[][]{ clazz.getMethods(), clazz.getConstructors(), clazz.getFields() }) {
+                             for (AnnotatedElement j : i)
+                                 e.addPotentialTarget(j);
+                         }
+                     }
                      return e.apply(ch);
                  })))
                  .map(Test::start)

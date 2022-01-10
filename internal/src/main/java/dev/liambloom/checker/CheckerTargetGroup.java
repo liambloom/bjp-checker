@@ -19,6 +19,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -46,9 +47,9 @@ class CheckerTargetGroup<T extends Annotation> {
     }
 
     @SuppressWarnings("RedundantThrows")
-    public void addPotentialTargets(Iterator<? extends AnnotatedElement> iter) throws InvocationTargetException, IllegalAccessException {
-        iter.forEachRemaining(FunctionUtils.unchecked(this::addPotentialTarget));
-    }
+//    public void addPotentialTargets(Iterator<? extends AnnotatedElement> iter) throws InvocationTargetException, IllegalAccessException {
+//        iter.forEachRemaining(FunctionUtils.unchecked(this::addPotentialTarget));
+//    }
 
     public Stream<Test> apply(Node tests) {
         Stream.Builder<Test> builder = Stream.builder();

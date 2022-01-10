@@ -4,12 +4,8 @@ import dev.liambloom.checker.*;
 import dev.liambloom.checker.internal.Util;
 import dev.liambloom.checker.ui.*;
 import dev.liambloom.util.StringUtils;
-import dev.liambloom.util.function.ConsumerThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
 import javafx.application.Application;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import org.fusesource.jansi.AnsiConsole;
 import org.xml.sax.SAXException;
 
@@ -229,7 +225,7 @@ public class Main {
 //                        }
 //                        while (!reader.validateResults());
 
-                        printResults(result);
+                        new ResultPrinter().printResults(result);
                     }
                     catch (SAXException | ClassNotFoundException | IllegalArgumentException e) {
                         throw new UserErrorException(e);
@@ -304,7 +300,7 @@ public class Main {
                             if (args.length == 2)
                                 throw new UserErrorException("Missing argument after validate");
                             try {
-                                printResults((args[2].equals("-a") || args[2].equals("--all")
+                                new ResultPrinter().printResults((args[2].equals("-a") || args[2].equals("--all")
                                     ? Arrays.stream(Books.getAllBookNames())
                                     : Arrays.stream(args).skip(2))
                                     .map(Books::getBook)
@@ -397,37 +393,7 @@ public class Main {
             throw new UserErrorException("Unexpected argument: `" + args[i + names.length] + '\'');
     }
 
-    @SuppressWarnings("RedundantThrows")
-    public static void printResults(Result<?>[] s) throws IOException {
-        for (Result<?> r : s)
-            System.out.printf("%s ... \u001b[%sm%s\u001b[0m%n", r.name(), r.status().color().ansi(), StringUtils.convertCase(r.status().toString(), StringUtils.Case.SPACE));
-//        System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.INFO, "Detailed result printing coming soon!");
-        System.out.println();
-        boolean detailTitlePrinted = false;
-        for (Result<?> r : s) {
-            if (r.consoleOutput().isEmpty() && r.logs().isEmpty())
-                continue;
-            if (!detailTitlePrinted) {
-                System.out.println("details:");
-                System.out.println();
-                detailTitlePrinted = true;
-            }
-            System.out.printf("---- %s ----%n", r.name());
-            r.logs().ifPresent(l -> {
-                l.logTo(System.getLogger(Main.class.getName()));
-                r.consoleOutput().ifPresent(c -> System.out.println());
-//                throw new NotYetImplementedError("Detailed result printing");
-            });
-            r.consoleOutput().ifPresent(FunctionUtils.unchecked((ConsumerThrowsException<ByteArrayOutputStream>) c -> {
-                c.writeTo(System.out);
-                System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Console output");
-//                throw new NotYetImplementedError("Detailed result printing");
-            }));
-            System.out.println();
-        }
-    }
-
-//    private static void BeanBook
+    //    private static void BeanBook
 
     private static BeanBook getMaybeAnonymousBook(String name) throws IOException {
         try {
