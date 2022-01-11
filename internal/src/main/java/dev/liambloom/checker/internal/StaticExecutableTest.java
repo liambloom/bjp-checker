@@ -14,6 +14,7 @@ import javax.xml.xpath.XPathExpressionException;
 import java.io.*;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Executable;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -158,9 +159,10 @@ public class StaticExecutableTest implements Test {
         )
             .wrap()
             .parameterArray();
-        boolean isCorrectParams = true;
+        boolean isCorrectParams = false;
         boolean usesVarArgs = false;
         if (params.length == expectedParams.length || executable.isVarArgs() && expectedParams.length >= params.length - 1) {
+            isCorrectParams = true;
             for (int i = 0; i < expectedParams.length; i++) {
                 if (!(isCorrectParams = i < params.length && params[i].isAssignableFrom(expectedParams[i])
                     && (!executable.isVarArgs() || i != params.length - 1 || params.length == expectedParams.length)
@@ -235,8 +237,8 @@ public class StaticExecutableTest implements Test {
                     actualReturn = invoke.invoke(args);
                     actualThrows = null;
                 }
-                catch (Throwable t) {
-                    actualThrows = t;
+                catch (InvocationTargetException t) {
+                    actualThrows = t.getCause();
                     actualReturn = null;
                 }
                 TestStatus status = TestStatus.OK;
@@ -245,9 +247,14 @@ public class StaticExecutableTest implements Test {
                 List<Result<? extends TestStatus>> subResults = new ArrayList<>();
                 if (expectedThrows != null) {
                     if (!expectedThrows.isInstance(actualThrows)) {
+                        status = TestStatus.FAILED;
                         logger.log(System.Logger.Level.ERROR, "Expected " + expectedThrows.getCanonicalName() + " to be thrown, but "
                             + (actualThrows == null ? "nothing" : actualThrows.getClass().getCanonicalName()) + " was thrown instead");
                     }
+                }
+                else if (actualThrows != null) {
+                    status = TestStatus.FAILED;
+                    logger.log(System.Logger.Level.ERROR, "Unexpected error thrown", actualThrows);
                 }
                 if (expectedReturns != null) {
                     Result<TestStatus> post = expectedReturns.check(actualReturn);

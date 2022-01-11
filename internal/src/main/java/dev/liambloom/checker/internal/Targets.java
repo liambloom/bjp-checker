@@ -91,7 +91,7 @@ public class Targets implements Set<AnnotatedElement> {
     }
 
     @Override
-    public void clear() {
+    public synchronized void clear() {
         classes.clear();
         constructors.clear();
         methods.clear();
@@ -172,7 +172,7 @@ public class Targets implements Set<AnnotatedElement> {
     }
 
     @Override
-    public String toString() {
+    public synchronized String toString() {
         return String.format("Targets[classes=%s, constructors=%s, methods=%s, fields=%s]", classes, constructors, methods, fields);
     }
 }

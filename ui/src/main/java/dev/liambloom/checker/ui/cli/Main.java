@@ -97,7 +97,7 @@ public class Main {
                                         throw new UserErrorException(e);
                                     }
                                 }
-                                case "-b", "--books" -> {
+                                case "-b", "--book" -> {
                                     if (testName != null)
                                         throw new UserErrorException("Repeat argument: " + arg);
                                     testName = Optional.ofNullable(argQ.poll()).orElseThrow(() -> new UserErrorException("Missing argument: expected a value after " + arg));

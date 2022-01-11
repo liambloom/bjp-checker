@@ -443,7 +443,21 @@ public final class BookReader {
         logger.log(System.Logger.Level.TRACE, "Classes: " + classes);
         chapter = section.orElseGet(detectedChapter::get);
 
-
+        Targets potentialTargets = new Targets();
+        Queue<Class<?>> classQ = new LinkedList<>(classes);
+        while (!classQ.isEmpty()) {
+            Class<?> c = classQ.remove();
+            potentialTargets.classes().add(c);
+            Set<Class<?>> inner = new HashSet<>();
+            Collections.addAll(inner, c.getClasses());
+            Collections.addAll(inner, c.getDeclaredClasses());
+            classQ.addAll(inner);
+        }
+        potentialTargets.classes()
+            .stream()
+            .flatMap(c -> Stream.of(c.getFields(), c.getDeclaredFields(), c.getMethods(), c.getDeclaredMethods(), c.getDeclaredConstructors()))
+            .flatMap(Stream::of)
+            .forEach(potentialTargets::add);
 
         Runtime.getRuntime().addShutdownHook(dirResetter);
         if (tempDir == null)
@@ -471,13 +485,8 @@ public final class BookReader {
                  .parallel()
                  .map(a -> new CheckerTargetGroup<>(a, checkables.getOrDefault(a.name(), new boolean[0])))
                  .flatMap(FunctionUtils.unchecked((FunctionThrowsException<CheckerTargetGroup<?>, Stream<Test>>) (e -> {
-                     for (Class<?> clazz : classes) {
-                         e.addPotentialTarget(clazz);
-                         for (AnnotatedElement[] i : new AnnotatedElement[][]{ clazz.getMethods(), clazz.getConstructors(), clazz.getFields() }) {
-                             for (AnnotatedElement j : i)
-                                 e.addPotentialTarget(j);
-                         }
-                     }
+                     for (AnnotatedElement potential : potentialTargets)
+                        e.addPotentialTarget(potential);
                      return e.apply(ch);
                  })))
                  .map(Test::start)
