@@ -1,6 +1,7 @@
 package dev.liambloom.checker;
 
-import dev.liambloom.checker.internal.*;
+import dev.liambloom.checker.books.BookLocator;
+import dev.liambloom.checker.books.Result;
 import dev.liambloom.util.function.ConsumerThrowsException;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
@@ -49,33 +50,19 @@ import java.util.zip.ZipOutputStream;
 /**
  * Note: this is NOT thread safe.
  */
-public final class BookReader {
+public final class BookChecker {
     private static final Path initDir = Path.of(".").toAbsolutePath().normalize();
-    private static final Thread dirResetter = new Thread(BookReader::resetDir);
+    private static final Thread dirResetter = new Thread(BookChecker::resetDir);
     private static final XPathFactory xpf = XPathFactory.newInstance();
     private static final DocumentBuilderFactory dbf;
     private static final Lock nativeLoaderLock = new ReentrantLock();
     private static boolean triedLoadNative;
     private static boolean loadedNativeSuccess;
 
-    static {
-        dbf = DocumentBuilderFactory.newInstance();
-        SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.1");
-        try {
-            factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
-            dbf.setSchema(factory.newSchema(
-                new StreamSource(BookReader.class.getResourceAsStream("/book-schema.xsd"))));
-        }
-        catch (SAXException e) {
-            e.printStackTrace();
-        }
-        dbf.setNamespaceAware(true);
-    }
-
     // Set at initialization
     private final System.Logger logger = System.getLogger(Long.toString(System.identityHashCode(this)));
     private final XPath xpath = xpf.newXPath();
-    private final Book book;
+    private final BookLocator book;
     private final String name;
     private MessageDigest digest;
 
@@ -84,7 +71,7 @@ public final class BookReader {
     private ClassLoader classLoader;
     private Result<TestValidationStatus> result = null;
     private Exception documentParseException;
-    private CheckableType<? extends Annotation> sectionType = null;
+    private CheckableType<? extends Annotation> chapterType = null;
     private CheckableType<? extends Annotation>[] checkableTypes = null;
 
     // Set in check()
@@ -99,11 +86,11 @@ public final class BookReader {
     // Set in getResources()
     private String[] resources = null;
 
-    public BookReader(Book book) {
+    public BookChecker(BookLocator book) {
         this(book.toString(), book);
     }
 
-    public BookReader(String name, Book book) {
+    public BookChecker(String name, BookLocator book) {
         this.name = name;
         this.book = book;
         try {
@@ -117,185 +104,9 @@ public final class BookReader {
                 removeTempDir();
             }
             catch (IOException e) {
-                System.getLogger(BookReader.class.getName()).log(System.Logger.Level.ERROR, "Error removing temp dir", e);
+                System.getLogger(BookChecker.class.getName()).log(System.Logger.Level.ERROR, "Error removing temp dir", e);
             }
         }));
-    }
-
-    private void parseAndValidateDocument() throws IOException, SAXException, ClassNotFoundException, NoSuchMethodException {
-        logger.log(System.Logger.Level.TRACE, "Parsing & validating document");
-        if (document != null)
-            logger.log(System.Logger.Level.TRACE, "Document already parsed");
-        else if (documentParseException == null) {
-            ValidationErrorHandler handler = new ValidationErrorHandler(name);
-            try {
-                logger.log(System.Logger.Level.TRACE, "Parsing document");
-                if (!book.exists()) {
-                    logger.log(System.Logger.Level.TRACE, "Book does not exist");
-                    result = new Result<>(name, TestValidationStatus.NOT_FOUND);
-                    throw new IllegalStateException("Book " + book + " does not exist");
-                }
-                DocumentBuilder db;
-                try {
-                    db = dbf.newDocumentBuilder();
-                }
-                catch (ParserConfigurationException e) {
-                    logger.log(System.Logger.Level.DEBUG, "Failure to create document builder", e);
-                    throw new RuntimeException(e);
-                }
-                logger.log(System.Logger.Level.TRACE, "Document builder obtained");
-                db.setErrorHandler(handler);
-                try {
-                    document = db.parse(new DigestInputStream(book.getInputStream(), digest));
-                    logger.log(System.Logger.Level.TRACE, "Successfully parsed document");
-                }
-                catch (SAXException e) {
-                    logger.log(System.Logger.Level.TRACE, "Error parsing document");
-                    result = new Result<>(name, TestValidationStatus.INVALID, handler.getLogs());
-                    throw e;
-                }
-                catch (Throwable e) {
-                    logger.log(System.Logger.Level.TRACE, "Non-sax error parsing document", e);
-                    e.printStackTrace();
-                    throw e;
-                }
-                // I'd like to wrap exceptions in SAXParseException, but I have no way to get the line/column number
-                //  without using a SAX parser. Since I want a document to end with, I would need to either:
-                //  a: parse it twice, or b: build my own DocumentBuilder.
-                try {
-                    URI bookUri = book.getResourceBaseURI();
-                    classLoader = new URLClassLoader((Util.streamNodeList((NodeList) xpath
-                        .evaluate("/book/meta/classPath/include", document, XPathConstants.NODESET))
-                        .filter(Element.class::isInstance)
-                        .map(Element.class::cast)
-                        .map(Element::getTextContent)
-                        .map(bookUri::resolve))
-                        .map(FunctionUtils.unchecked(URI::toURL))
-                        .toArray(URL[]::new));
-                }
-                catch (XPathExpressionException | URISyntaxException e) {
-                    throw new RuntimeException(e);
-                }
-                NodeList checkableTypeNodes = document.getElementsByTagName("checkableType");
-                checkableTypes = new CheckableType[checkableTypeNodes.getLength()];
-                Stream.Builder<Exception> checkableTypeErrors = Stream.builder();
-                for (int i = 0; i < checkableTypeNodes.getLength(); i++) {
-                    try {
-                        checkableTypes[i] = new CheckableType<>((Element) checkableTypeNodes.item(i));
-                    }
-                    catch (ClassNotFoundException | ClassCastException | NoSuchMethodException e) {
-                        checkableTypeErrors.add(e);
-                    }
-                }
-
-                Stream<Exception> typeErrors = Stream.of(
-                    Stream.of(
-                        elementOfType("parameter")
-                            .map(Node::getTextContent),
-                        elementOfType("Array", "ArrayList", "LinkedList", "TargetArrayList", "Stack", "HashSet", "TreeSet", "TargetTree")
-                            .map(e -> e.getAttribute("elementType")),
-                        elementOfType("HashMap", "TreeMap")
-                            .flatMap(e -> Stream.of("keyType", "valueType").map(e::getAttribute))
-                    )
-                        .flatMap(Function.identity())
-                        .map(String::trim)
-                        .map(type -> switch (type) {
-                            case "byte", "short", "int", "long", "float", "double", "boolean", "char", "this" -> null;
-                            default -> {
-                                try {
-                                    classLoader.loadClass(type);
-                                    yield null;
-                                }
-                                catch (ClassNotFoundException e) {
-                                    yield e;
-                                }
-                            }
-                        })
-                        .filter(Objects::nonNull),
-                    elementOfType("throws")
-                        .map(Node::getTextContent)
-                        .map(String::trim)
-                        .map(type -> {
-                            try {
-                                Throwable.class.isAssignableFrom(classLoader.loadClass(type));
-                                return null;
-                            }
-                            catch (ClassNotFoundException | ClassCastException e) {
-                                return e;
-                            }
-                        }),
-                    elementOfType("sectionType")
-                        .map(element -> {
-                            try {
-                                sectionType = new CheckableType<>(element);
-                                return null;
-                            }
-                            catch (ClassNotFoundException | ClassCastException | NoSuchMethodException e) {
-                                return e;
-                            }
-                        }),
-                    checkableTypeErrors.build()
-                )
-                    .flatMap(Function.<Stream<? extends Exception>>identity())
-                    .filter(Objects::nonNull);
-
-//                typeErrors = typeErrors
-
-                List<Exception> typeErrorsList = typeErrors.collect(Collectors.toList());
-                for (Exception e : typeErrorsList)
-                    handler.log(System.Logger.Level.ERROR, e);
-                if (typeErrorsList.isEmpty())
-                    logger.log(System.Logger.Level.TRACE, "No type errors present");
-                else {
-                    logger.log(System.Logger.Level.TRACE, "Type errors present");
-                    Exception err = typeErrorsList.get(0);
-                    if (err instanceof ClassNotFoundException e)
-                        throw e;
-                    else if (err instanceof ClassCastException e)
-                        throw e;
-                    else if (err instanceof NoSuchMethodException e)
-                        throw e;
-                    else
-                        throw new IllegalStateException("Type error is not a type error", err);
-                }
-
-                if (!book.supportsResourceLoading()
-                    && (document.getElementsByTagName("File").getLength() > 0 || document.getElementsByTagName("Path").getLength() > 0)) {
-                    UnsupportedOperationException e = new UnsupportedOperationException("Book document contains <File> or <Path> element, but Book does not support file resolution");
-                    handler.log(System.Logger.Level.ERROR, e);
-                    throw e;
-                }
-            }
-            catch (IOException | SAXException | ClassNotFoundException | RuntimeException | NoSuchMethodException e) {
-                if (result == null)
-                    result = new Result<>(name, TestValidationStatus.INVALID, handler.getLogs());
-                documentParseException = e;
-                throw e;
-            }
-            finally {
-                if (result == null) {
-                    if (handler.getMaxErrorKind() == null)
-                        result = new Result<>(name, TestValidationStatus.VALID);
-                    else if (handler.getMaxErrorKind() == System.Logger.Level.WARNING)
-                        result = new Result<>(name, TestValidationStatus.VALID_WITH_WARNINGS, handler.getLogs());
-                    else
-                        result = new Result<>(name, TestValidationStatus.INVALID, handler.getLogs());
-                }
-            }
-        }
-        else {
-            logger.log(System.Logger.Level.TRACE, "A previous attempt to parse the document failed");
-            if (documentParseException instanceof RuntimeException e)
-                throw e;
-            else if (documentParseException instanceof IOException e)
-                throw e;
-            else if (documentParseException instanceof SAXException e)
-                throw e;
-            else if (documentParseException instanceof ClassNotFoundException e)
-                throw e;
-            else
-                throw new IllegalStateException("DocumentParseException had unexpected value");
-        }
     }
 
     private Stream<Element> elementOfType(String... types) {
@@ -330,9 +141,9 @@ public final class BookReader {
         return document;
     }
 
-    private CheckableType<? extends Annotation> getSectionType() throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException {
+    private CheckableType<? extends Annotation> getChapterType() throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException {
         parseAndValidateDocument();
-        return sectionType;
+        return chapterType;
     }
 
     private CheckableType<? extends Annotation>[] getCheckableTypes() throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException {
@@ -363,7 +174,7 @@ public final class BookReader {
 
     /**
      * Checks according to args
-     * @param section             The section to check, or {@code OptionalInt.empty()} to auto-detect.
+     * @param chapter             The chapter to check, or {@code OptionalInt.empty()} to auto-detect.
      * @param checkables          A map between annotations for checkables and the checkables of that type to run.
      * @param targets             A stream of classes that should be checked
      * @return A stream containing the results of all checks
@@ -371,20 +182,20 @@ public final class BookReader {
      * @throws IOException If an i/o error occurs
      * @throws ClassNotFoundException If the book references a class that could not be found
      * @throws SAXException If a SAXException is thrown when parsing the book
-     * @throws ClassCastException If the book's section or checkable annotations are not actually annotations, or if their
+     * @throws ClassCastException If the book's chapter or checkable annotations are not actually annotations, or if their
      *              {@code value()} methods don't return {@code int}s.
-     * @throws NoSuchMethodException If the book's section or checkable annotations don't have a {@code value()} method
-     * @throws IllegalAccessException If the book's section or checkable annotations' {@code value()} method is not accessible
-     * @throws InvocationTargetException If the book's section or checkable annotations' {@code value()} method throws an exception
+     * @throws NoSuchMethodException If the book's chapter or checkable annotations don't have a {@code value()} method
+     * @throws IllegalAccessException If the book's chapter or checkable annotations' {@code value()} method is not accessible
+     * @throws InvocationTargetException If the book's chapter or checkable annotations' {@code value()} method throws an exception
      */
     @SuppressWarnings("RedundantThrows")
-    public Result<TestStatus>[] check(@SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalInt section, Map<String, boolean[]> checkables,
+    public Result<TestStatus>[] check(@SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalInt chapter, Map<String, boolean[]> checkables,
                                       Stream<Path> targets) throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException,
         IllegalAccessException, InvocationTargetException {
         getDocument();
 
         NodeList metadataNodes;
-//        sectionAnnotation;
+//        chapterAnnotation;
 //        Map<String, Class<? extends Annotation>> checkableAnnotations = new HashMap<>();
 //        checkableAnnotations;
 //        Stream<String> resources;
@@ -404,17 +215,17 @@ public final class BookReader {
             .filter(Element.class::isInstance)
             .map(Element.class::cast)
             .toArray(Element[]::new);
-        Class<? extends Annotation> sectionAnnotation = getSectionType().annotation();
+        Class<? extends Annotation> chapterAnnotation = getChapterType().annotation();
 
         for (String checkable : checkables.keySet()) {
             if (!getCheckableTypeSet().contains(checkable))
                 throw new IllegalArgumentException("Checkable \"" + checkable + "\" does not exist");
         }
 
-        Method m = sectionAnnotation.getMethod("value");
+        Method m = chapterAnnotation.getMethod("value");
 
-        int chapter;
-        logger.log(System.Logger.Level.DEBUG, "Section annotation type: %s", sectionAnnotation);
+        int checkedChapter;
+        logger.log(System.Logger.Level.DEBUG, "Chapter annotation type: %s", chapterAnnotation);
 //        logger.log(System.Logger.Level.DEBUG, "Target annotation types: %s", );s
         AtomicInteger detectedChapter = new AtomicInteger(-1);
         List<Class<?>> classes = new PathClassLoader(targets, classLoader).loadAllOwnClasses()
@@ -422,17 +233,17 @@ public final class BookReader {
             .filter(clazz -> {
                 System.Logger logger = System.getLogger(Util.generateLoggerName());
                 logger.log(System.Logger.Level.TRACE, "%s has annotations %s", clazz, Arrays.toString(clazz.getAnnotations()));
-                return Arrays.stream(clazz.getAnnotationsByType(sectionAnnotation))
+                return Arrays.stream(clazz.getAnnotationsByType(chapterAnnotation))
                     .map(FunctionUtils.unchecked((FunctionThrowsException<Annotation, Integer>) a -> {
                         m.trySetAccessible();
                         return (int) m.invoke(a);
                     }))
                     .anyMatch(c -> {
-                        logger.log(System.Logger.Level.TRACE, "Class %s belongs to section %d, expecting %s", clazz, c, section);
-                        if (section.isPresent())
-                            return c == section.getAsInt();
+                        logger.log(System.Logger.Level.TRACE, "Class %s belongs to chapter %d, expecting %s", clazz, c, chapter);
+                        if (chapter.isPresent())
+                            return c == chapter.getAsInt();
                         else if (detectedChapter.compareAndExchange(-1, c) != c)
-                            throw new IllegalArgumentException("Cannot auto detect section, as classes belonging to chapters "
+                            throw new IllegalArgumentException("Cannot auto detect chapter, as classes belonging to chapters "
                                 + c + " and " + detectedChapter + " were found");
                         else
                             return true;
@@ -441,7 +252,7 @@ public final class BookReader {
             )
             .collect(Collectors.toList());
         logger.log(System.Logger.Level.TRACE, "Classes: " + classes);
-        chapter = section.orElseGet(detectedChapter::get);
+        checkedChapter = chapter.orElseGet(detectedChapter::get);
 
         Targets potentialTargets = new Targets();
         Queue<Class<?>> classQ = new LinkedList<>(classes);
@@ -465,17 +276,17 @@ public final class BookReader {
         changeDirectory(book.loadResources(tempDir, getResources()));
 
         Node ch;
-        logger.log(System.Logger.Level.DEBUG, "Chapter %d", chapter);
+        logger.log(System.Logger.Level.DEBUG, "Chapter %d", checkedChapter);
         try {
-            ch = (Node) xpath.evaluate("/book/section[@num='" + chapter + "']", document, XPathConstants.NODE);
-            logger.log(System.Logger.Level.TRACE, "Chapter %d is %s", chapter, ch);
+            ch = (Node) xpath.evaluate("/book/chapter[@num='" + checkedChapter + "']", document, XPathConstants.NODE);
+            logger.log(System.Logger.Level.TRACE, "Chapter %d is %s", checkedChapter, ch);
         }
         catch (XPathExpressionException e) {
             throw new RuntimeException(e);
         }
 
         if (ch == null)
-            throw new NoSuchElementException((section.isPresent() ? "S" : "Auto-detected s") + "ection " + chapter + " does not exist");
+            throw new NoSuchElementException((chapter.isPresent() ? "S" : "Auto-detected s") + "ection " + checkedChapter + " does not exist");
 
         InputStream prevIn = System.in;
         PrintStream prevOut = System.out;
@@ -498,7 +309,7 @@ public final class BookReader {
              return r;
         }
         catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e.getMessage(), e);
         }
         finally {
             System.setIn(prevIn);
@@ -530,7 +341,7 @@ public final class BookReader {
                 try {
                     tempDir = Files.createTempDirectory(null);
                     tempFile = tempDir.resolve(System.mapLibraryName("native"));
-                    Files.copy(Objects.requireNonNull(BookReader.class.getResourceAsStream("native/"
+                    Files.copy(Objects.requireNonNull(BookChecker.class.getResourceAsStream("/native/"
                         + System.getProperty("os.arch") + "/"
                         + System.mapLibraryName("native"))), tempFile);
                     System.load(tempFile.toAbsolutePath().toString());
@@ -538,7 +349,7 @@ public final class BookReader {
                 }
                 catch (UnsatisfiedLinkError | IOException | NullPointerException e) {
                     loadedNativeSuccess = false;
-                    System.getLogger(BookReader.class.getName()).log(System.Logger.Level.WARNING,
+                    System.getLogger(BookChecker.class.getName()).log(System.Logger.Level.WARNING,
                         "Failed to load native library for " + System.getProperty("os.name")
                             + " on " + System.getProperty("os.arch"),
                         e);
@@ -560,8 +371,18 @@ public final class BookReader {
             triedLoadNative = true;
             nativeLoaderLock.unlock();
         }
-        if (loadedNativeSuccess)
-            changeDirectory(path.toString());
+        if (loadedNativeSuccess) {
+            try {
+                changeDirectory(path.toString());
+            }
+            catch (UnsatisfiedLinkError e) {
+                loadedNativeSuccess = false;
+                System.getLogger(BookChecker.class.getName()).log(System.Logger.Level.WARNING,
+                    "Failed to load native library for " + System.getProperty("os.name")
+                        + " on " + System.getProperty("os.arch"),
+                    e);
+            }
+        }
     }
 
     private static native void changeDirectory(String path);

@@ -19,6 +19,8 @@
     <modules>
         <module>internal</module>
         <module>ui</module>
+        <module>books</module>
+        <module>xmlBook</module>
     </modules>
 
     <properties>

@@ -1,6 +1,6 @@
-package dev.liambloom.checker.internal;
+package dev.liambloom.checker.books.xmlBook;
 
-import dev.liambloom.checker.ReLogger;
+import dev.liambloom.checker.books.ReLogger;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXParseException;
 
@@ -8,9 +8,9 @@ import java.util.Comparator;
 import java.util.Optional;
 import java.util.function.BinaryOperator;
 
-public class ValidationErrorHandler implements ErrorHandler {
+class ValidationErrorHandler implements ErrorHandler {
     private static final BinaryOperator<System.Logger.Level> max = BinaryOperator.maxBy(Comparator.naturalOrder());
-    private final ReLogger logger = new ReLogger(Util.generateLoggerName());
+    private final ReLogger logger = new ReLogger(System.identityHashCode(this) + "");
     private System.Logger.Level maxErrorKind = System.Logger.Level.ALL;
     private final String book;
 

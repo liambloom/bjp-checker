@@ -1,6 +1,6 @@
-package dev.liambloom.checker;
+package dev.liambloom.checker.books;
 
-public enum TestValidationStatus implements Result.Status {
+public enum BookValidationStatus implements Result.Status {
     VALID(Color.GREEN),
     VALID_WITH_WARNINGS(Color.YELLOW),
     NOT_FOUND(Color.MAGENTA),
@@ -8,7 +8,7 @@ public enum TestValidationStatus implements Result.Status {
 
     private final Color color;
 
-    TestValidationStatus(Color color) {
+    BookValidationStatus(Color color) {
         this.color = color;
     }
 

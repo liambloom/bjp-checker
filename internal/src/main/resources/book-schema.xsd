@@ -14,13 +14,13 @@
     <!-- TODO: organize -->
 
     <xs:element name="book" type="bookType">
-        <xs:unique name="sectionNumUnique">
-            <xs:selector xpath="section" />
+        <xs:unique name="chapterNumUnique">
+            <xs:selector xpath="chapter" />
             <xs:field xpath="@num" />
         </xs:unique>
 
-        <xs:key name="sectionTypeKey">
-            <xs:selector xpath="meta/sectionType" />
+        <xs:key name="chapterTypeKey">
+            <xs:selector xpath="meta/chapterType" />
             <xs:field xpath="@name" />
         </xs:key>
 
@@ -39,7 +39,7 @@
                     <xs:field xpath="@name" />
                 </xs:unique>
             </xs:element>
-            <xs:element name="section" type="sectionType" maxOccurs="unbounded">
+            <xs:element name="chapter" type="chapterType" maxOccurs="unbounded">
                 <xs:unique name="exerciseNumUnique">
                     <xs:selector xpath="exercise" />
                     <xs:field xpath="@num" />
@@ -49,7 +49,7 @@
                     <xs:field xpath="@num" />
                 </xs:unique>
 
-<!--                <xs:keyref name="sectionTypeRef" refer="sectionTypeKey">-->
+<!--                <xs:keyref name="chapterTypeRef" refer="chapterTypeKey">-->
 <!--                    <xs:selector xpath="." />-->
 <!--                    <xs:field xpath="@type" />-->
 <!--                </xs:keyref>-->
@@ -59,7 +59,7 @@
 
     <xs:complexType name="meta">
         <xs:sequence>
-            <xs:element name="sectionType" type="annotationDef" />
+            <xs:element name="chapterType" type="annotationDef" />
             <xs:element name="checkableType" maxOccurs="unbounded" type="annotationDef" />
             <xs:element name="classPath" type="classPath" />
             <xs:element name="rsc" minOccurs="0" maxOccurs="unbounded" type="rsc" />
@@ -96,7 +96,7 @@
         </xs:sequence>
     </xs:complexType>-->
 
-    <xs:complexType name="sectionType">
+    <xs:complexType name="chapterType">
         <xs:choice maxOccurs="unbounded">
             <xs:element name="exercise" type="checked" />
             <xs:element name="programmingProject" type="checked" />

@@ -36,6 +36,8 @@ public final class Util {
 
     public static String cleansePrint(String raw) {
         String[] lines = Util.TRAILING_SPACES_AND_NEWLINE.split(raw);
+        if (lines.length == 0)
+            return "";
         Stream<String> linesStream = Arrays.stream(lines);
         if (lines[lines.length - 1].isBlank())
             linesStream = linesStream.limit(lines.length - 1);

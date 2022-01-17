@@ -1,20 +1,26 @@
-package dev.liambloom.checker;
+package dev.liambloom.checker.books;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.stream.Stream;
 
-public abstract class Book {
+public interface BookLocator {
+    /**
+     * Returns the name of the book this locates.
+     *
+     * @return The name of the book.
+     */
+    String name();
+
     /**
      * Returns the input stream represented by this book.
      *
      * @return The input stream
      * @throws IOException If an i/o error occurs
      */
-    protected abstract InputStream getInputStream() throws IOException;
+    InputStream getInputStream() throws IOException;
 
     /**
      * Returns {@code true} if the document "exists". The exact definition of this may
@@ -24,11 +30,11 @@ public abstract class Book {
      * @return True if the book exists, false otherwise
      * @throws IOException If an i/o error occurs
      */
-    public abstract boolean exists() throws IOException;
+    boolean exists() throws IOException;
 
-    public abstract URI getResourceBaseURI() throws URISyntaxException;
+    URI getResourceBaseURI() throws URISyntaxException;
 
-    /**
+    /*
      * Loads all the resources required by a book. The list of resources is passed in by a
      * {@code dev.liambloom.checker.BookReader} (not found in this module). The resources
      * should be loaded and placed into the destination directory.
@@ -54,8 +60,8 @@ public abstract class Book {
      * @return The root path from which to access the resources with the given paths.
      * @throws IOException If an i/o error occurs
      * @throws UnsupportedOperationException If this book does not support path resolution.
-     */
-    protected Path loadResources(Path destination, String[] resources) throws IOException {
+     *
+    default Path loadResources(Path destination, String[] resources) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -64,8 +70,8 @@ public abstract class Book {
      * 
      * @return {@code true} if this book supports path resolution, {@code false} otherwise
      * @see #loadResources(Path, String[])
-     */
-    protected boolean supportsResourceLoading() {
+     *
+    default boolean supportsResourceLoading() {
         return false;
-    }
+    }*/
 }

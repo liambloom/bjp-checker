@@ -2,27 +2,16 @@ package dev.liambloom.checker.ui;
 
 import dev.liambloom.checker.*;
 import dev.liambloom.checker.internal.Util;
-import dev.liambloom.util.function.FunctionUtils;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.*;
-import javafx.fxml.FXML;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.lang.ref.Reference;
 import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.WatchEvent;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.prefs.Preferences;
 
 public class BeanBook {
     public static final long RESULT_VALIDATION_PERIOD = 10_000;
@@ -34,12 +23,12 @@ public class BeanBook {
             return super.get();
         }
     };
-    public final ObjectBinding<BookReader> reader = new ObjectBinding<>() {
+    public final ObjectBinding<BookChecker> reader = new ObjectBinding<>() {
         { bind(BeanBook.this.inner); }
 
         @Override
-        protected BookReader computeValue() {
-            return new BookReader(BeanBook.this.inner.get());
+        protected BookChecker computeValue() {
+            return new BookChecker(BeanBook.this.inner.get());
         }
     };
     public final StringProperty name = new StringPropertyBase() {
@@ -176,7 +165,7 @@ public class BeanBook {
      *
      * @return The {@code Book} used internally by this {@code BeanBook}
      */
-    public Book getInnerBook() {
+    public BookLocator getInnerBook() {
         return inner.get();
     }
 

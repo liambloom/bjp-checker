@@ -1,6 +1,6 @@
 package dev.liambloom.checker.ui.gui;
 
-import dev.liambloom.checker.Book;
+import dev.liambloom.checker.BookLocator;
 import dev.liambloom.checker.ui.Books;
 import dev.liambloom.util.function.ConsumerThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
@@ -115,7 +115,7 @@ public class MainController {
             })));
     }
 
-    private void addTests(Book book) throws IOException {
+    private void addTests(BookLocator book) throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getClassLoader().getResource("views/TestListItem.fxml"));
 //        loader.getNamespace().put("TEST_LIST_MARGIN", TEST_LIST_MARGIN);
         Parent node = loader.load();
@@ -135,7 +135,7 @@ public class MainController {
     public void initialize() throws IOException {
         try {
             Books.getAllBooks()
-                .forEachOrdered(FunctionUtils.unchecked((ConsumerThrowsException<Book>) this::addTests));
+                .forEachOrdered(FunctionUtils.unchecked((ConsumerThrowsException<BookLocator>) this::addTests));
             if (testToggleGroup.getSelectedToggle() == null || ((Control) testToggleGroup.getSelectedToggle()).isDisabled())
                 ((Toggle) ((Parent) testList.getChildren().get(1)).getChildrenUnmodifiable().get(0)).setSelected(true);
         }

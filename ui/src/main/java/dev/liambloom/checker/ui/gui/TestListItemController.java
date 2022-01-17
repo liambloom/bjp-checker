@@ -1,6 +1,6 @@
 package dev.liambloom.checker.ui.gui;
 
-import dev.liambloom.checker.Book;
+import dev.liambloom.checker.BookLocator;
 import dev.liambloom.checker.ui.BeanBook;
 import dev.liambloom.checker.ui.Books;
 import dev.liambloom.checker.Result;
@@ -139,7 +139,7 @@ public class TestListItemController {
         return book.get();
     }
 
-    public void setBook(Book book) throws IOException {
+    public void setBook(BookLocator book) throws IOException {
         this.book.set(new BeanBook(book));
         nameWidthWrapper.bind(new DoubleBinding() {
             {

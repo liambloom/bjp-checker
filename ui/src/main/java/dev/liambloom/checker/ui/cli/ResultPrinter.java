@@ -8,20 +8,25 @@ import dev.liambloom.util.function.FunctionUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ResultPrinter {
     private boolean detailTitlePrinted;
+    private final System.Logger logger = new PrintStreamLogger(Long.toString(System.identityHashCode(this)),
+        Stream.of(System.Logger.Level.values()).collect(Collectors.toMap(Function.identity(), e -> true)), System.out);
+    private final System.Logger debugLogger = System.getLogger(Long.toString(System.identityHashCode(this)) + "-debug");
 
     public void printResults(Result<?>[] s) throws IOException {
         detailTitlePrinted = false;
-        System.getLogger(Long.toString(System.identityHashCode(this))).log(System.Logger.Level.TRACE, "Printing Results: %s", Arrays.toString(s));
+        debugLogger.log(System.Logger.Level.TRACE, "Printing Results: %s", Arrays.toString(s));
         for (Result<?> r : s)
             printResultSimple(r, 0);
-//        System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.INFO, "Detailed result printing coming soon!");
         System.out.println();
         for (Result<?> r : s)
             printResultDetails(r.name(), r);
-        System.getLogger(Long.toString(System.identityHashCode(this))).log(System.Logger.Level.TRACE, "Done Printing Results: %s", Arrays.toString(s));
+        debugLogger.log(System.Logger.Level.TRACE, "Done Printing Results: %s", Arrays.toString(s));
     }
 
     private void printResultSimple(Result<?> r, int level) {
@@ -40,12 +45,12 @@ public class ResultPrinter {
             }
             System.out.printf("---- %s ----%n", fullName);
             r.logs().ifPresent(l -> {
-                l.logTo(System.getLogger(Main.class.getName()));
-                r.consoleOutput().ifPresent(c -> System.out.println());
+                l.logTo(logger);
+//                r.consoleOutput().ifPresent(c -> System.out.println());
             });
             r.consoleOutput().ifPresent(FunctionUtils.unchecked((ConsumerThrowsException<ByteArrayOutputStream>) c -> {
-                c.writeTo(System.out);
-                System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Console output");
+                logger.log(System.Logger.Level.INFO, "Console output:");
+                System.out.println("  | " + String.join(System.lineSeparator() + "  | ", c.toString().split("\\R")));
             }));
             System.out.println();
         }

@@ -34,7 +34,7 @@ public class PrintStreamLogger implements System.Logger {
     @Override
     public void log(Level level, ResourceBundle bundle, String msg, Throwable throwable) {
         String throwableMessage;
-        if (isLoggable(Level.TRACE)) {
+        if (true || isLoggable(Level.TRACE)) {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             throwable.printStackTrace(new PrintStream(os));
             throwableMessage = os.toString();
@@ -47,7 +47,7 @@ public class PrintStreamLogger implements System.Logger {
     @Override
     public void log(Level level, ResourceBundle bundle, String msg, Object... params) {
         if (isLoggable(level))
-            out.printf("\u001b[" + color(level).ansi() + "m[" + level.name().toLowerCase(Locale.ROOT) + "]\u001b[0m "  + String.join(System.lineSeparator() + " ".repeat(level.name().length() + 2), msg.split("\\R")) + "%n", params);
+            out.printf("\u001b[" + color(level).ansi() + "m[" + level.name().toLowerCase(Locale.ROOT) + "]\u001b[0m "  + String.join(System.lineSeparator() + " ".repeat(level.name().length() + 3), msg.split("\\R")) + "%n", params);
     }
 
     private Color color(Level level) {

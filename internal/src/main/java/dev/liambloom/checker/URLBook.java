@@ -1,8 +1,5 @@
 package dev.liambloom.checker;
 
-import dev.liambloom.util.function.FunctionThrowsException;
-import dev.liambloom.util.function.FunctionUtils;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,10 +9,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-public class URLBook extends Book {
+public class URLBook extends BookLocator {
     private final URL url;
 
     public URLBook(URL url) {

@@ -16,11 +16,13 @@ import java.util.stream.Stream;
 
 public class PrePost {
     private final Element e;
-    private final Post p;
+    private final Object pre;
+    private final Post post;
 
     public PrePost(Element e) {
         this.e = e;
-        p = Optional.ofNullable(e.getChildNodes().item(2))
+        pre = parseJavaValue((Element) e.getFirstChild().getFirstChild());
+        post = Optional.ofNullable(e.getChildNodes().item(2))
             .filter(Element.class::isInstance)
             .map(Element.class::cast)
             .map(Post::new)
@@ -28,14 +30,14 @@ public class PrePost {
     }
 
     public Object getPre() {
-        return parseJavaValue((Element) e.getFirstChild().getFirstChild());
+        return pre;
     }
 
     public Result<TestStatus> checkPost(Object o) {
-        if (p == null)
+        if (post == null)
             return new Result<>(null /* TODO */, TestStatus.OK);
         else
-            return p.check(o);
+            return post.check(o);
     }
 
     private Stream<Object> parseJavaListElements(Element e) {

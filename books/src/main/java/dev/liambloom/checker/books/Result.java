@@ -1,4 +1,4 @@
-package dev.liambloom.checker;
+package dev.liambloom.checker.books;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Collections;

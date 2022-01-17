@@ -1,7 +1,6 @@
 package dev.liambloom.checker;
 
 import dev.liambloom.checker.Result;
-import dev.liambloom.checker.TestStatus;
 import dev.liambloom.checker.internal.Targets;
 import dev.liambloom.checker.internal.Test;
 import dev.liambloom.checker.internal.Util;
@@ -16,18 +15,15 @@ import javax.xml.xpath.XPathExpressionException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 class CheckerTargetGroup<T extends Annotation> {
     private final Targets[] targets;
-    private final BookReader.CheckableType<T> checkableType;
+    private final BookChecker.CheckableType<T> checkableType;
 
-    public CheckerTargetGroup(BookReader.CheckableType<T> checkableType, boolean[] initWhich) {
+    public CheckerTargetGroup(BookChecker.CheckableType<T> checkableType, boolean[] initWhich) {
         targets = new Targets[initWhich.length];
         for (int i = 0; i < initWhich.length; i++) {
             if (initWhich[i])
@@ -42,7 +38,9 @@ class CheckerTargetGroup<T extends Annotation> {
         System.getLogger(Long.toString(System.identityHashCode(this))).log(System.Logger.Level.TRACE, "Potential target %s: Annotated with %s, looking for %s",
             e, Arrays.toString(e.getAnnotations()), checkableType.annotation()/* , targets[checkableType.value(e.getAnnotation(checkableType.annotation()))] == null ? "rejected" : "accepted" */);
         Optional.ofNullable(e.getAnnotation(checkableType.annotation()))
-            .map(FunctionUtils.unchecked((FunctionThrowsException<T, Targets>) a -> targets[checkableType.value(a)]))
+            .map(FunctionUtils.unchecked((FunctionThrowsException<T, Integer>) checkableType::value))
+            .filter(i -> i < targets.length)
+            .map(i -> targets[i])
             .ifPresent(t -> t.add(e));
     }
 

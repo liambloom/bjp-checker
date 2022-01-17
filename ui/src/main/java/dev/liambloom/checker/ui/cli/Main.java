@@ -85,7 +85,7 @@ public class Main {
                             String arg = argQ.remove();
 
                             switch (arg) {
-                                case "-s", "--section" -> {
+                                case "-c", "--chapter" -> {
                                     if (chapter.isPresent())
                                         throw new UserErrorException("Repeat argument: " + arg);
                                     try {
@@ -177,10 +177,10 @@ public class Main {
 
                         BeanBook book = getMaybeAnonymousBook(testName);
                         Result<TestStatus>[] result;
-                        BookReader reader;
+                        BookChecker reader;
 
 //                        do {
-                            reader = new BookReader(testName, book.getInnerBook());
+                            reader = new BookChecker(testName, book.getInnerBook());
 
                             Map<String, String> checkableNameAbbrMap = new HashMap<>();
                             Set<String> names = new HashSet<>();
@@ -304,8 +304,8 @@ public class Main {
                                     ? Arrays.stream(Books.getAllBookNames())
                                     : Arrays.stream(args).skip(2))
                                     .map(Books::getBook)
-                                    .map(b -> new BookReader(b.getName(), b.getInnerBook()))
-                                    .map(FunctionUtils.unchecked(BookReader::validateBook))
+                                    .map(b -> new BookChecker(b.getName(), b.getInnerBook()))
+                                    .map(FunctionUtils.unchecked(BookChecker::validateBook))
                                     .toArray(Result[]::new));
                             }
                             catch (NullPointerException e) {

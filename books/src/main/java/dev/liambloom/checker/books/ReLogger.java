@@ -1,4 +1,4 @@
-package dev.liambloom.checker;
+package dev.liambloom.checker.books;
 
 import java.util.ArrayList;
 import java.util.ResourceBundle;
