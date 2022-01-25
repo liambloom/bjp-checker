@@ -97,10 +97,13 @@
     </xs:complexType>-->
 
     <xs:complexType name="chapterType">
-        <xs:choice maxOccurs="unbounded">
-            <xs:element name="exercise" type="checked" />
-            <xs:element name="programmingProject" type="checked" />
-        </xs:choice>
+<!--        <xs:choice maxOccurs="unbounded">-->
+<!--            <xs:element name="exercise" type="checked" />-->
+<!--            <xs:element name="programmingProject" type="checked" />-->
+<!--        </xs:choice>-->
+        <xs:sequence>
+            <xs:element maxOccurs="unbounded" name="checkable" type="checkable" />
+        </xs:sequence>
         <xs:attribute name="type" type="xs:string" />
         <xs:attribute name="num" type="positiveInt" use="required" />
     </xs:complexType>
@@ -108,7 +111,7 @@
     <!--<xs:group name="checked">
     </xs:group>-->
 
-    <xs:complexType name="checked">
+    <xs:complexType name="checkable">
         <xs:sequence>
             <!--<xs:element name="mutuals" type="mutuals" minOccurs="0">
                 <xs:unique name="mutualChapterUnique">
@@ -131,6 +134,7 @@
                 <xs:element name="program" type="methodType" />
             </xs:choice>
         </xs:sequence>
+        <xs:attribute name="type" type="xs:string" use="required" />
         <xs:attribute name="num" type="xs:int" use="required" />
         <!-- <xs:attribute name="name" type="xs:string" use="required" /> -->
     </xs:complexType>

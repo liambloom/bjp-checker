@@ -53,7 +53,6 @@ import java.util.zip.ZipOutputStream;
 public final class BookChecker {
     private static final Path initDir = Path.of(".").toAbsolutePath().normalize();
     private static final Thread dirResetter = new Thread(BookChecker::resetDir);
-    private static final XPathFactory xpf = XPathFactory.newInstance();
     private static final DocumentBuilderFactory dbf;
     private static final Lock nativeLoaderLock = new ReentrantLock();
     private static boolean triedLoadNative;
@@ -61,7 +60,6 @@ public final class BookChecker {
 
     // Set at initialization
     private final System.Logger logger = System.getLogger(Long.toString(System.identityHashCode(this)));
-    private final XPath xpath = xpf.newXPath();
     private final BookLocator book;
     private final String name;
     private MessageDigest digest;
