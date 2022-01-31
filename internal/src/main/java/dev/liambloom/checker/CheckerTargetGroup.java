@@ -1,8 +1,9 @@
 package dev.liambloom.checker;
 
 import dev.liambloom.checker.Result;
-import dev.liambloom.checker.internal.Targets;
-import dev.liambloom.checker.internal.Test;
+import dev.liambloom.checker.books.TestStatus;
+import dev.liambloom.checker.books.Targets;
+import dev.liambloom.checker.books.Test;
 import dev.liambloom.checker.internal.Util;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;

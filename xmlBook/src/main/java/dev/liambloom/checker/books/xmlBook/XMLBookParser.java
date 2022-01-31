@@ -1,5 +1,6 @@
 package dev.liambloom.checker.books.xmlBook;
 
+import com.google.auto.service.AutoService;
 import dev.liambloom.checker.books.*;
 import org.xml.sax.SAXException;
 
@@ -7,6 +8,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@AutoService(BookParser.class)
 public class XMLBookParser implements BookParser {
     private final AtomicBoolean optimizeForSingleChapter = new AtomicBoolean(false);
 

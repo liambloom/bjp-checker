@@ -1,6 +1,7 @@
 package dev.liambloom.checker.ui.cli;
 
 import dev.liambloom.checker.*;
+import dev.liambloom.checker.books.TestStatus;
 import dev.liambloom.checker.internal.Util;
 import dev.liambloom.checker.ui.*;
 import dev.liambloom.util.StringUtils;

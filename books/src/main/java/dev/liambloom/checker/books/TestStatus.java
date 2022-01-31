@@ -1,4 +1,4 @@
-package dev.liambloom.checker;
+package dev.liambloom.checker.books;
 
 public enum TestStatus implements Result.Status {
     /*

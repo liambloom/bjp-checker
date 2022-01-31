@@ -2,7 +2,7 @@ package dev.liambloom.checker.internal;
 
 import dev.liambloom.checker.NotYetImplementedError;
 import dev.liambloom.checker.Result;
-import dev.liambloom.checker.TestStatus;
+import dev.liambloom.checker.books.TestStatus;
 import org.w3c.dom.Element;
 
 public class Post {

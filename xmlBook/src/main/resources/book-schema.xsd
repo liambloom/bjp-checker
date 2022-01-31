@@ -126,7 +126,7 @@
                 <xs:element name="constructor">
                     <xs:complexType>
                         <xs:group ref="methodBody" />
-                        <xs:attribute name="in" type="javaIdent" use="required" />
+<!--                        <xs:attribute name="in" type="javaIdent" use="required" />-->
                     </xs:complexType>
                 </xs:element>
 

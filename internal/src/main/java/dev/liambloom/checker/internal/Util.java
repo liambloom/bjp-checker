@@ -87,33 +87,7 @@ public final class Util {
         return getAccessibilityModifierName(m.getModifiers());
     }
 
-    public static Class<?> loadClass(String name) throws ClassNotFoundException {
-        return loadClass(ClassLoader.getSystemClassLoader(), name);
-    }
 
-    public static Class<?> loadClass(ClassLoader loader, String name) throws ClassNotFoundException {
-        int arrayDepth = 0;
-        StringBuilder componentName = new StringBuilder(name);
-        componentName.trimToSize();
-        while (componentName.length() > 2 && componentName.charAt(componentName.length() - 2) == '[' && componentName.charAt(componentName.length() - 1) == ']') {
-            arrayDepth++;
-            componentName.delete(componentName.length() - 2, componentName.length());
-        }
-        Class<?> clazz = switch (name) {
-            case "byte" -> byte.class;
-            case "short" -> short.class;
-            case "int" -> int.class;
-            case "long" -> long.class;
-            case "float" -> float.class;
-            case "double" -> double.class;
-            case "boolean" -> boolean.class;
-            case "char" -> char.class;
-            default -> loader.loadClass(name);
-        };
-        for (int i = 0; i < arrayDepth; i++)
-            clazz = clazz.arrayType();
-        return clazz;
-    }
 
     public static ResourcePool<XPath> getXPathPool() {
         return xPathPool;

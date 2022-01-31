@@ -1,4 +1,4 @@
-package dev.liambloom.checker.internal;
+package dev.liambloom.checker.books;
 
 import java.lang.reflect.*;
 import java.util.*;
