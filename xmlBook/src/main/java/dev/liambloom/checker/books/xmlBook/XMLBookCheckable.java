@@ -3,11 +3,16 @@ package dev.liambloom.checker.books.xmlBook;
 import dev.liambloom.checker.books.*;
 import dev.liambloom.util.XMLUtils;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
-import java.lang.reflect.*;
+import java.lang.invoke.MethodType;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
@@ -20,10 +25,13 @@ public class XMLBookCheckable implements Checkable {
     private static final Pattern TRAILING_SPACES_AND_NEWLINE = Pattern.compile("\\s*\\R");
     private final String name;
     private final Element element;
+    private final Chapter chapter;
+    private final XPath xpath = XMLBook.getXPath();
 
-    XMLBookCheckable(String name, Element element) {
+    XMLBookCheckable(String name, Element element, Chapter chapter) {
         this.name = name;
         this.element = element;
+        this.chapter = chapter;
     }
 
     @Override
@@ -34,74 +42,124 @@ public class XMLBookCheckable implements Checkable {
     @Override
     public synchronized Test[] tests(StaticExecutableTest.Factory factory) {
         return XMLUtils.streamNodeListElements(element.getChildNodes())
-            .map(element -> {
-                StaticExecutableTest.Type type = StaticExecutableTest.Type.valueOf(element.getTagName().toUpperCase(Locale.ENGLISH));
-                int i = 0;
-                List<Element> children = XMLUtils.streamNodeListElements(element.getChildNodes()).toList();
-                InputStream in = children.get(i).getTagName().equals("System.in")
-                    ? new ByteArrayInputStream(children.get(i++).getTextContent().getBytes())
-                    : null;
-                if (children.get(i).getTagName().equals("this")) // TODO: Update Schema
-                    throw new IllegalArgumentException("Element <this> invalid in top level method");
-                List<Element> argElements = children.get(i).getTagName().equals("arguments")
-                    ? XMLUtils.streamNodeListElements(children.get(i++).getChildNodes()).toList()
-                    : Collections.emptyList();
-                Iterator<Element> iter = argElements.iterator();
-                Object[] args = new Object[argElements.size()];
-                Post[] post = new Post[argElements.size()];
-                for (int j = 0; iter.hasNext(); j++) {
-                    Element e = iter.next();
-                    List<Element> prePost = XMLUtils.streamNodeListElements(e.getChildNodes()).toList();
-                    args[j] = parseJavaItem(prePost.get(0));
-                    // TODO: set post
+            .sequential()
+            .flatMap(element -> {
+                NodeList params;
+                try {
+                    params = (NodeList) xpath.evaluate("parameters/parameter", element, XPathConstants.NODESET);
                 }
-                Post expectedReturns;
-                String expectedOut;
-                Class<? extends Throwable> expectedThrows;
-                Map<Path, String> writesTo;
-                if (children.get(i).getTagName().equals("throws")) {
-                    try {
-                        //noinspection unchecked,UnusedAssignment
-                        expectedThrows = (Class<? extends Throwable>) ClassLoader.getSystemClassLoader().loadClass(children.get(i++).getTextContent());
-                    }
-                    catch (ClassNotFoundException | ClassCastException e) {
-                        throw new IllegalStateException("This should not have passed validation.", e);
-                    }
-                    expectedReturns = null;
-                    expectedOut = null;
-                    writesTo = Collections.emptyMap();
+                catch (XPathExpressionException e) { // I hate that this is a checked exception
+                    throw new RuntimeException(e);
                 }
-                else {
-                    expectedThrows = null;
-                    expectedReturns = Optional.ofNullable(children.get(i))
-                        .filter(n -> n.getTagName().equals("returns"))
-                        .map((Function<? super Element, Post>) e -> {
-                            throw new Error("Post condition creation not yet implemented");
-                        })
-                        .orElse(null);
-                    if (expectedReturns != null)
-                        i++;
-                    String rawExpectedPrints = Optional.ofNullable(children.get(i))
-                        .filter(n -> n.getTagName().equals("prints"))
-                        .map(Element::getTextContent)
-                        .map(String::stripIndent)
-                        .orElse(null);
-                    if (rawExpectedPrints == null)
-                        expectedOut = null;
-                    else {
-                        expectedOut = cleansePrint(rawExpectedPrints);
-                        //noinspection UnusedAssignment
-                        i++;
-                    }
-                    writesTo = children.stream()
-                        .collect(Collectors.toMap(
-                            e -> Path.of(e.getAttribute("href")),
-                            e -> cleansePrint(e.getTextContent())
-                        ));
-                }
-                return factory.newInstance(type, new StaticExecutableTest.Conditions(in, args, post, expectedOut, expectedReturns, expectedThrows, writesTo));
+
+                StaticExecutableTest.TargetLocator locator = new StaticExecutableTest.TargetLocator(
+                    StaticExecutableTest.Type.valueOf(element.getTagName().toUpperCase(Locale.ENGLISH)),
+                    Optional.of(element.getAttribute("name"))
+                        .filter(s -> !s.isEmpty()),
+                    Optional.of(element.getAttribute("in"))
+                        .filter(s -> !s.isEmpty())
+                        .map(n -> {
+                            try {
+                                return getChapter().getBook().getMeta().classLoader().loadClass(n);
+                            }
+                            catch (ClassNotFoundException e) {
+                                throw new IllegalStateException("Document was incorrectly parsed", e);
+                            }
+                        }),
+                    MethodType.methodType(void.class, XMLUtils.streamNodeListElements(params)
+                            .map(Node::getTextContent)
+                            .map(String::trim)
+                            .map(n -> {
+                                try {
+                                    return getChapter().getBook().getMeta().classLoader().loadClass(n);
+                                }
+                                catch (ClassNotFoundException e) {
+                                    throw new IllegalStateException("Document was incorrectly parsed", e);
+                                }
+                            })
+                            .collect(Collectors.toList())
+                        )
+                        .wrap()
+                        .parameterArray()
+                );
+                return XMLUtils.streamNodeListElements(element.getChildNodes())
+                    .sequential()
+                    .map(Element::getChildNodes)
+                    .map(XMLUtils::streamNodeListElements)
+                    .map(Stream::toList)
+                    .map(children -> {
+                        int i = 0;
+                        InputStream in = children.get(i).getTagName().equals("System.in")
+                            ? new ByteArrayInputStream(children.get(i++).getTextContent().getBytes())
+                            : null;
+                        if (children.get(i).getTagName().equals("this")) // TODO: Update Schema
+                            throw new IllegalArgumentException("Element <this> invalid in top level method");
+                        List<Element> argElements = children.get(i).getTagName().equals("arguments")
+                            ? XMLUtils.streamNodeListElements(children.get(i++).getChildNodes()).toList()
+                            : Collections.emptyList();
+                        Iterator<Element> iter = argElements.iterator();
+                        Object[] args = new Object[argElements.size()];
+                        Post[] post = new Post[argElements.size()];
+                        for (int j = 0; iter.hasNext(); j++) {
+                            Element e = iter.next();
+                            List<Element> prePost = XMLUtils.streamNodeListElements(e.getChildNodes()).toList();
+                            args[j] = parseJavaItem(prePost.get(0));
+                            // TODO: set post
+                        }
+                        Post expectedReturns;
+                        String expectedOut;
+                        Class<? extends Throwable> expectedThrows;
+                        Map<Path, String> writesTo;
+                        if (children.get(i).getTagName().equals("throws")) {
+                            try {
+                                //noinspection unchecked,UnusedAssignment
+                                expectedThrows = (Class<? extends Throwable>) ClassLoader.getSystemClassLoader().loadClass(children.get(i++).getTextContent());
+                            }
+                            catch (ClassNotFoundException | ClassCastException e) {
+                                throw new IllegalStateException("This should not have passed validation.", e);
+                            }
+                            expectedReturns = null;
+                            expectedOut = null;
+                            writesTo = Collections.emptyMap();
+                        }
+                        else {
+                            expectedThrows = null;
+                            expectedReturns = Optional.ofNullable(children.get(i))
+                                .filter(n -> n.getTagName().equals("returns"))
+                                .map((Function<? super Element, Post>) e -> {
+                                    throw new Error("Post condition creation not yet implemented");
+                                })
+                                .orElse(null);
+                            if (expectedReturns != null)
+                                i++;
+                            String rawExpectedPrints = Optional.ofNullable(children.get(i))
+                                .filter(n -> n.getTagName().equals("prints"))
+                                .map(Element::getTextContent)
+                                .map(String::stripIndent)
+                                .orElse(null);
+                            if (rawExpectedPrints == null)
+                                expectedOut = null;
+                            else {
+                                expectedOut = cleansePrint(rawExpectedPrints);
+                                //noinspection UnusedAssignment
+                                i++;
+                            }
+                            writesTo = children.stream()
+                                .collect(Collectors.toMap(
+                                    e -> Path.of(e.getAttribute("href")),
+                                    e -> cleansePrint(e.getTextContent())
+                                ));
+                        }
+                        return new StaticExecutableTest.Conditions(in, args, post, expectedOut, expectedReturns, expectedThrows, writesTo);
+                    })
+                    .map(conditions -> factory.newInstance(locator, conditions));
             })
             .toArray(Test[]::new);
+    }
+
+    @Override
+    public Chapter getChapter() {
+        return chapter;
     }
 
     private Object parseJavaValue(Element e) {

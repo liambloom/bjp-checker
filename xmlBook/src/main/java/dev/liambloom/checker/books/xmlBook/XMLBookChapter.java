@@ -1,5 +1,6 @@
 package dev.liambloom.checker.books.xmlBook;
 
+import dev.liambloom.checker.books.Book;
 import dev.liambloom.checker.books.Chapter;
 import dev.liambloom.checker.books.Checkable;
 import dev.liambloom.checker.books.CheckableType;
@@ -11,11 +12,13 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
 public class XMLBookChapter implements Chapter {
-    private final XPath xpath = XMLBook.xpf.newXPath();
+    private final XPath xpath = XMLBook.getXPath();
+    private final Book book;
     private Element element;
 
-    XMLBookChapter(Element element) {
+    XMLBookChapter(Element element, Book book) {
         this.element = element;
+        this.book = book;
     }
 
     @Override
@@ -29,7 +32,12 @@ public class XMLBookChapter implements Chapter {
         catch (XPathExpressionException ex) {
             throw new RuntimeException();
         }
-        return new XMLBookCheckable(type.name() + " " + number, e);
+        return new XMLBookCheckable(type.name() + " " + number, e, this);
+    }
+
+    @Override
+    public Book getBook() {
+        return book;
     }
 
     synchronized void cloneElement() {

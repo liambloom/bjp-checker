@@ -50,7 +50,7 @@ class XMLBookReader {
         }
         dbf.setNamespaceAware(true);
     }
-    
+
     // Set at initialization
     private final System.Logger logger = System.getLogger(Long.toString(System.identityHashCode(this)));
     private final XPath xpath = xpf.newXPath();
@@ -68,7 +68,7 @@ class XMLBookReader {
 
     // Set in getResources()
     private URL[] resources;
-    
+
     public XMLBookReader(String name, BookLocator locator) {
         this.name = name;
         this.locator = locator;
@@ -171,7 +171,9 @@ class XMLBookReader {
                                 elementOfType("Array", "ArrayList", "LinkedList", "TargetArrayList", "Stack", "HashSet", "TreeSet", "TargetTree")
                                     .map(e -> e.getAttribute("elementType")),
                                 elementOfType("HashMap", "TreeMap")
-                                    .flatMap(e -> Stream.of("keyType", "valueType").map(e::getAttribute))
+                                    .flatMap(e -> Stream.of("keyType", "valueType").map(e::getAttribute)),
+                                elementOfType("method", "program")
+                                    .map(e -> e.getAttribute("in"))
                             )
                             .flatMap(Function.identity())
                             .map(String::trim)

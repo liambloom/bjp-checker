@@ -16,8 +16,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class XMLBook implements Book {
-    static final XPathFactory xpf = XPathFactory.newInstance();
-    private final XPath xpath = xpf.newXPath();
+    private static final XPathFactory xpf = XPathFactory.newInstance();
+    private final XPath xpath = getXPath();
     private final Document document;
     private final Meta meta;
     private final boolean optimizeForSingleChapter;
@@ -40,9 +40,9 @@ public class XMLBook implements Book {
                 actualOptimizeForSingleChapter = false;
             }
             else
-                return hasChapter = new XMLBookChapter(getChapterElement(chapter));
+                return hasChapter = new XMLBookChapter(getChapterElement(chapter), this);
         }
-        return new XMLBookChapter((Element) getChapterElement(chapter).cloneNode(true));
+        return new XMLBookChapter((Element) getChapterElement(chapter).cloneNode(true), this);
     }
 
     private Element getChapterElement(int chapter) {
@@ -61,5 +61,9 @@ public class XMLBook implements Book {
 
     public boolean isOptimizedForSingleChapter() {
         return optimizeForSingleChapter;
+    }
+
+    static synchronized XPath getXPath() {
+        return xpf.newXPath();
     }
 }
