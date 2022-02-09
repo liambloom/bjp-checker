@@ -36,4 +36,8 @@ public class CheckableType<T extends Annotation> {
             throw new IllegalStateException("This should have thrown an exception in the constructor", e);
         }
     }
+
+    public int valueGenetic(Annotation target) throws InvocationTargetException, ClassCastException {
+        return value(annotation.cast(target));
+    }
 }

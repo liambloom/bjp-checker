@@ -13,6 +13,7 @@ module dev.liambloom.checker.ui {
     requires org.fusesource.jansi;
     requires dev.liambloom.util.function;
     requires dev.liambloom.util.base;
+    requires dev.liambloom.checker.books;
     // requires net.harawata.appdirs;
     exports dev.liambloom.checker.ui.cli;
     exports dev.liambloom.checker.ui.gui;

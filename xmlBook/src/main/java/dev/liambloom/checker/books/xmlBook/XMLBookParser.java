@@ -13,11 +13,16 @@ public class XMLBookParser implements BookParser {
     private final AtomicBoolean optimizeForSingleChapter = new AtomicBoolean(false);
 
     @Override
-    public Book parse(BookLocator locator) throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException, URISyntaxException {
+    public Book parse(BookLocator locator) throws IOException, ClassNotFoundException, NoSuchMethodException, URISyntaxException, BookParserException {
         XMLBookReader reader = new XMLBookReader(locator.name(), locator);
-        return new XMLBook(reader.getDocument(),
-            new Meta(reader.getChapterType(), reader.getCheckableTypes(), reader.getClassLoader(), reader.getResources()),
-            optimizeForSingleChapter.getAcquire());
+        try {
+            return new XMLBook(reader.getDocument(),
+                new Meta(reader.getChapterType(), reader.getCheckableTypes(), reader.getClassLoader(), reader.getResources()),
+                optimizeForSingleChapter.getAcquire());
+        }
+        catch (SAXException e) {
+            throw new BookParserException(e);
+        }
     }
 
     @Override

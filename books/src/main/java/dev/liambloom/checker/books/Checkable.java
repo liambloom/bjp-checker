@@ -1,7 +1,7 @@
 package dev.liambloom.checker.books;
 
 public interface Checkable {
-    Test[] tests(StaticExecutableTest.Factory factory);
+    StaticExecutableTestInfo[] tests();
     String getName();
     Chapter getChapter();
 }

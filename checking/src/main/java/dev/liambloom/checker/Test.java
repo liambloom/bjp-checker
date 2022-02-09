@@ -1,6 +1,7 @@
-package dev.liambloom.checker.books;
+package dev.liambloom.checker;
 
-import java.util.concurrent.CompletableFuture;
+import dev.liambloom.checker.books.Result;
+
 import java.util.concurrent.Future;
 
 public interface Test {

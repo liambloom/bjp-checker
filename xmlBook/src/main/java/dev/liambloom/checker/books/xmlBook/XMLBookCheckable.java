@@ -17,12 +17,10 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class XMLBookCheckable implements Checkable {
-    private static final Pattern TRAILING_SPACES_AND_NEWLINE = Pattern.compile("\\s*\\R");
     private final String name;
     private final Element element;
     private final Chapter chapter;
@@ -40,7 +38,7 @@ public class XMLBookCheckable implements Checkable {
     }
 
     @Override
-    public synchronized Test[] tests(StaticExecutableTest.Factory factory) {
+    public synchronized StaticExecutableTestInfo[] tests() {
         return XMLUtils.streamNodeListElements(element.getChildNodes())
             .sequential()
             .flatMap(element -> {
@@ -52,15 +50,15 @@ public class XMLBookCheckable implements Checkable {
                     throw new RuntimeException(e);
                 }
 
-                StaticExecutableTest.TargetLocator locator = new StaticExecutableTest.TargetLocator(
-                    StaticExecutableTest.Type.valueOf(element.getTagName().toUpperCase(Locale.ENGLISH)),
+                StaticExecutableTestInfo.TargetLocator locator = new StaticExecutableTestInfo.TargetLocator(
+                    StaticExecutableTestInfo.Type.valueOf(element.getTagName().toUpperCase(Locale.ENGLISH)),
                     Optional.of(element.getAttribute("name"))
                         .filter(s -> !s.isEmpty()),
                     Optional.of(element.getAttribute("in"))
                         .filter(s -> !s.isEmpty())
                         .map(n -> {
                             try {
-                                return getChapter().getBook().getMeta().classLoader().loadClass(n);
+                                return getBookClassLoader().loadClass(n);
                             }
                             catch (ClassNotFoundException e) {
                                 throw new IllegalStateException("Document was incorrectly parsed", e);
@@ -71,7 +69,7 @@ public class XMLBookCheckable implements Checkable {
                             .map(String::trim)
                             .map(n -> {
                                 try {
-                                    return getChapter().getBook().getMeta().classLoader().loadClass(n);
+                                    return getClass(n);
                                 }
                                 catch (ClassNotFoundException e) {
                                     throw new IllegalStateException("Document was incorrectly parsed", e);
@@ -132,29 +130,24 @@ public class XMLBookCheckable implements Checkable {
                                 .orElse(null);
                             if (expectedReturns != null)
                                 i++;
-                            String rawExpectedPrints = Optional.ofNullable(children.get(i))
+                            expectedOut = Optional.ofNullable(children.get(i))
                                 .filter(n -> n.getTagName().equals("prints"))
                                 .map(Element::getTextContent)
                                 .map(String::stripIndent)
                                 .orElse(null);
-                            if (rawExpectedPrints == null)
-                                expectedOut = null;
-                            else {
-                                expectedOut = cleansePrint(rawExpectedPrints);
-                                //noinspection UnusedAssignment
+                            if (expectedOut != null)
                                 i++;
-                            }
                             writesTo = children.stream()
                                 .collect(Collectors.toMap(
                                     e -> Path.of(e.getAttribute("href")),
-                                    e -> cleansePrint(e.getTextContent())
+                                    Node::getTextContent
                                 ));
                         }
-                        return new StaticExecutableTest.Conditions(in, args, post, expectedOut, expectedReturns, expectedThrows, writesTo);
+                        return new StaticExecutableTestInfo.Conditions(in, args, post, expectedOut, expectedReturns, expectedThrows, writesTo);
                     })
-                    .map(conditions -> factory.newInstance(locator, conditions));
+                    .map(conditions -> new StaticExecutableTestInfo(locator, conditions));
             })
-            .toArray(Test[]::new);
+            .toArray(StaticExecutableTestInfo[]::new);
     }
 
     @Override
@@ -208,8 +201,8 @@ public class XMLBookCheckable implements Checkable {
             return parseJavaValue(e);
     }
 
-    public static Class<?> getClass(String name) throws ClassNotFoundException {
-        return getClass(ClassLoader.getSystemClassLoader(), name);
+    public Class<?> getClass(String name) throws ClassNotFoundException {
+        return getClass(getBookClassLoader(), name);
     }
 
     public static Class<?> getClass(ClassLoader loader, String name) throws ClassNotFoundException {
@@ -236,16 +229,7 @@ public class XMLBookCheckable implements Checkable {
         return clazz;
     }
 
-    private static String cleansePrint(String raw) {
-        String[] lines = TRAILING_SPACES_AND_NEWLINE.split(raw);
-        if (lines.length == 0)
-            return "";
-        Stream<String> linesStream = Arrays.stream(lines);
-        if (lines[lines.length - 1].isBlank())
-            linesStream = linesStream.limit(lines.length - 1);
-        if (lines[0].isEmpty())
-            linesStream = linesStream.skip(1);
-        return linesStream
-            .collect(Collectors.joining(System.lineSeparator()));
+    private ClassLoader getBookClassLoader() {
+        return getChapter().getBook().getMeta().classLoader();
     }
 }

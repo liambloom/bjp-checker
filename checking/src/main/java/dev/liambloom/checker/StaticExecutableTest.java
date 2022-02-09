@@ -1,45 +1,51 @@
-package dev.liambloom.checker.books;
+package dev.liambloom.checker;
 
+import dev.liambloom.checker.books.*;
 import dev.liambloom.util.StringUtils;
+
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.*;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class StaticExecutableTest implements Test {
+    private static final Pattern TRAILING_SPACES_AND_NEWLINE = Pattern.compile("\\s*\\R");
     private final String name;
-    //    private final Executable executable;
     private final ExecutableInvocation invoke;
-    //    private final Targets targets;
-//    private final Node test;
-    private final Conditions conditions;
-//    private final AtomicBoolean hasRun = new AtomicBoolean(false);
+    private final StaticExecutableTestInfo.Conditions conditions;
+    private final AtomicBoolean hasRun = new AtomicBoolean(false);
     private final ExecutorService executor;
     private final Lock lock;
 
-    private StaticExecutableTest(String name, Executable executable, ExecutableInvocation invoke, Conditions conditions) {
+    private StaticExecutableTest(String name, Executable executable, ExecutableInvocation invoke, StaticExecutableTestInfo.Conditions conditions) {
         this.name = name;
         this.invoke = invoke;
         this.conditions = conditions;
-        if (conditions.in == null && conditions.expectedOut == null && conditions.writesTo.isEmpty()) {
-            executor = readOnlyTest;
-            lock = testLock.readLock();
+        if (conditions.in() == null && conditions.expectedOut() == null && conditions.writesTo().isEmpty()) {
+            executor = Checker.readOnlyTest;
+            lock = Checker.testLock.readLock();
         }
         else {
-            executor = writingTest;
-            lock = testLock.writeLock();
+            executor = Checker.writingTest;
+            lock = Checker.testLock.writeLock();
         }
     }
 
     public static class Factory {
-        private static final Map<TargetLocator, Function<Conditions, Test>> locatedTargets = Collections.synchronizedMap(new HashMap<>());
+        private static final Map<StaticExecutableTestInfo.TargetLocator, Function<StaticExecutableTestInfo.Conditions, Test>> locatedTargets = Collections.synchronizedMap(new HashMap<>());
         private final AtomicInteger counter = new AtomicInteger(1);
         private final Targets targets;
 
@@ -51,7 +57,7 @@ public class StaticExecutableTest implements Test {
             return "Test " + counter.getAndIncrement();
         }
 
-        public Test newInstance(TargetLocator targetLocator, Conditions conditions) {
+        public Test newInstance(StaticExecutableTestInfo.TargetLocator targetLocator, StaticExecutableTestInfo.Conditions conditions) {
 //            String name = "Test " + counter.getAndIncrement();
             return locatedTargets.computeIfAbsent(targetLocator, __ -> {
                 Set<? extends AnnotatedElement> filteredTargets = switch (targetLocator.type()) {
@@ -200,22 +206,97 @@ public class StaticExecutableTest implements Test {
         }
     }
 
-    public enum Type {
-        METHOD,
-        CONSTRUCTOR,
-        PROGRAM
+    @Override
+    public Future<Result<TestStatus>> start() {
+        if (hasRun.getAndSet(true))
+            throw new IllegalStateException("Test has already been run");
+        return executor.submit(() -> {
+            lock.lock();
+            try {
+                System.setIn(conditions.in() == null ? InputStream.nullInputStream(): conditions.in());
+                ByteArrayOutputStream actualOut = conditions.expectedOut() == null ? null : new ByteArrayOutputStream();
+                PrintStream ps = new PrintStream(conditions.expectedOut() == null ? OutputStream.nullOutputStream() : actualOut);
+                System.setOut(ps);
+                System.setErr(ps);
+                Object actualReturn;
+                Throwable actualThrows;
+                try {
+                    actualReturn = invoke.invoke(conditions.args());
+                    actualThrows = null;
+                }
+                catch (InvocationTargetException t) {
+                    actualThrows = t.getCause();
+                    actualReturn = null;
+                }
+                TestStatus status = TestStatus.OK;
+                ReLogger logger = new ReLogger(Long.toString(System.identityHashCode(this)));
+                boolean consoleInLogger;
+                List<Result<? extends TestStatus>> subResults = new ArrayList<>();
+                if (conditions.expectedThrows() != null) {
+                    if (!conditions.expectedThrows().isInstance(actualThrows)) {
+                        status = TestStatus.FAILED;
+                        logger.log(System.Logger.Level.ERROR, "Expected " + conditions.expectedThrows().getCanonicalName() + " to be thrown, but "
+                            + (actualThrows == null ? "nothing" : actualThrows.getClass().getCanonicalName()) + " was thrown instead");
+                    }
+                }
+                else if (actualThrows != null) {
+                    status = TestStatus.FAILED;
+                    logger.log(System.Logger.Level.ERROR, "Unexpected error thrown", actualThrows);
+                }
+                if (conditions.expectedReturns() != null) {
+                    Result<TestStatus> post = conditions.expectedReturns().check(actualReturn);
+                    if (status.compareTo(post.status()) < 0)
+                        status = post.status();
+                    post.logs().ifPresent(l -> l.logTo(logger));
+                    subResults.addAll(post.subResults());
+                }
+                String cleansedExpectedOut = Optional.ofNullable(conditions.expectedOut()).map(StaticExecutableTest::cleansePrint).orElse(null);
+                String cleansedActualOutput;
+                if (conditions.expectedOut() != null && !cleansedExpectedOut.equals(cleansedActualOutput = cleansePrint(actualOut.toString()))) {
+                    StringBuilder errMsg = new StringBuilder();
+                    errMsg.append("Incorrect Console Output:\n")
+                        .append("  Expected:");
+                    for (String line : cleansedExpectedOut.split("\\n")) {
+                        errMsg.append("\n  | ")
+                            .append(line);
+                    }
+                    errMsg.append("\n  Actual:");
+                    for (String line : cleansedActualOutput.split("\\n")) {
+                        errMsg.append("\n  | ")
+                            .append(line);
+                    }
+                    logger.log(System.Logger.Level.ERROR, errMsg.toString());
+                    status = TestStatus.FAILED;
+                    consoleInLogger = true;
+                }
+                else
+                    consoleInLogger = false;
+                // TODO: DRY -- this code is repeated from the return value check
+                for (int j = 0; j < conditions.args().length; j++) {
+                    Result<TestStatus> post = conditions.argConditions()[j].check(conditions.args()[j]);
+                    if (status.compareTo(post.status()) < 0)
+                        status = post.status();
+                    post.logs().ifPresent(l -> l.logTo(logger));
+                    subResults.addAll(post.subResults());
+                }
+                return new Result<>(name, status, logger.isEmpty() ? Optional.empty() : Optional.of(logger), consoleInLogger || status != TestStatus.FAILED ? Optional.empty() : Optional.ofNullable(actualOut), subResults);
+            }
+            finally {
+                lock.unlock();
+            }
+        });
     }
 
-    public record Conditions(InputStream in,
-                             Object[] args,
-                             Post[] argConditions,
-                             String expectedOut,
-                             Post expectedReturns,
-                             Class<? extends Throwable> expectedThrows,
-                             Map<Path, String> writesTo) { }
-
-    public record TargetLocator(Type type,
-                                Optional<String> name,
-                                Optional<Class<?>> container,
-                                Class<?>[] params) { }
+    static String cleansePrint(String raw) {
+        String[] lines = TRAILING_SPACES_AND_NEWLINE.split(raw);
+        if (lines.length == 0)
+            return "";
+        Stream<String> linesStream = Arrays.stream(lines);
+        if (lines[lines.length - 1].isBlank())
+            linesStream = linesStream.limit(lines.length - 1);
+        if (lines[0].isEmpty())
+            linesStream = linesStream.skip(1);
+        return linesStream
+            .collect(Collectors.joining(System.lineSeparator()));
+    }
 }

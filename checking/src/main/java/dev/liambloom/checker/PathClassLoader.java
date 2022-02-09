@@ -1,4 +1,4 @@
-package dev.liambloom.checker.internal;
+package dev.liambloom.checker;
 
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;

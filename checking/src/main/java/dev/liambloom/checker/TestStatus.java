@@ -1,4 +1,7 @@
-package dev.liambloom.checker.books;
+package dev.liambloom.checker;
+
+import dev.liambloom.checker.books.Color;
+import dev.liambloom.checker.books.Result;
 
 public enum TestStatus implements Result.Status {
     /*

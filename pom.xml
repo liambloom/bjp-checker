@@ -17,10 +17,12 @@
     </issueManagement>
 
     <modules>
-        <module>internal</module>
+<!--        <module>internal</module>-->
         <module>ui</module>
         <module>books</module>
+        <module>checking</module>
         <module>xmlBook</module>
+        <module>checking</module>
     </modules>
 
     <properties>

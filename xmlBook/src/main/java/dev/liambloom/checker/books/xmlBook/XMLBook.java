@@ -5,15 +5,11 @@ import dev.liambloom.checker.books.Chapter;
 import dev.liambloom.checker.books.Meta;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class XMLBook implements Book {
     private static final XPathFactory xpf = XPathFactory.newInstance();
