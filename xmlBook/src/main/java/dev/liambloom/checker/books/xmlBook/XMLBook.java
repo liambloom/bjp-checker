@@ -1,6 +1,7 @@
 package dev.liambloom.checker.books.xmlBook;
 
 import dev.liambloom.checker.books.Book;
+import dev.liambloom.checker.books.BookLocator;
 import dev.liambloom.checker.books.Chapter;
 import dev.liambloom.checker.books.Meta;
 import org.w3c.dom.Document;
@@ -14,6 +15,7 @@ import javax.xml.xpath.XPathFactory;
 public class XMLBook implements Book {
     private static final XPathFactory xpf = XPathFactory.newInstance();
     private final XPath xpath = getXPath();
+    private final BookLocator locator;
     private final Document document;
     private final Meta meta;
     private final boolean optimizeForSingleChapter;
@@ -21,9 +23,10 @@ public class XMLBook implements Book {
     private XMLBookChapter hasChapter = null;
 
 
-    XMLBook(Document document, Meta meta, boolean optimizeForSingleChapter) {
+    XMLBook(BookLocator locator, Document document, Meta meta, boolean optimizeForSingleChapter) {
         this.document = document;
         this.meta = meta;
+        this.locator = locator;
         actualOptimizeForSingleChapter = this.optimizeForSingleChapter = optimizeForSingleChapter;
     }
 
@@ -48,6 +51,11 @@ public class XMLBook implements Book {
         catch (XPathExpressionException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    @Override
+    public BookLocator getLocator() {
+        return locator;
     }
 
     @Override

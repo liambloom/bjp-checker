@@ -11,6 +11,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -56,7 +58,7 @@ public class Checker {
     @SuppressWarnings("RedundantThrows")
     public Result<TestStatus>[] check(@SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalInt chapter, Map<String, boolean[]> checkables,
                                       Stream<Path> targets) throws IOException, ClassNotFoundException, NoSuchMethodException,
-        IllegalAccessException, InvocationTargetException {
+        IllegalAccessException, InvocationTargetException, URISyntaxException {
         for (String checkable : checkables.keySet()) {
             if (!getCheckableTypeSet().contains(checkable))
                 throw new IllegalArgumentException("Checkable \"" + checkable + "\" does not exist");
@@ -106,7 +108,26 @@ public class Checker {
         Runtime.getRuntime().addShutdownHook(dirResetter);
         if (tempDir == null)
             tempDir = Files.createTempDirectory(null);
-        changeDirectory(book.loadResources(tempDir, getResources()));
+
+
+        String rawBase = book.getLocator().getResourceBaseURI().normalize().getPath();
+        String base = rawBase.endsWith("/") ? rawBase : rawBase + "/";
+        String bookPath = book.getLocator().getURI().normalize().getPath();
+        if (!bookPath.startsWith(base))
+            throw new IllegalArgumentException("Book is not located in resources");
+
+        for (ResourceLocator l : book.getMeta().resources()) {
+            String resourcePath = book.getLocator().getURI().resolve(l.getURI()).normalize().getPath();
+            if (!resourcePath.startsWith(base))
+                throw new IllegalArgumentException("Resource " + resourcePath + " not located below resource base " + base);
+            Path p = tempDir.resolve(resourcePath);
+            Files.createDirectories(p.getParent());
+            Files.copy(l.getInputStream(), p);
+        }
+
+        Path working = tempDir.resolve(bookPath);
+        Files.createDirectories(working.getParent());
+        changeDirectory(working);
 
         InputStream prevIn = System.in;
         PrintStream prevOut = System.out;
@@ -198,16 +219,16 @@ public class Checker {
             nativeLoaderLock.unlock();
         }
         if (loadedNativeSuccess) {
-            try {
+//            try {
                 changeDirectory(path.toString());
-            }
-            catch (UnsatisfiedLinkError e) {
-                loadedNativeSuccess = false;
-                System.getLogger(BookChecker.class.getName()).log(System.Logger.Level.WARNING,
-                    "Failed to load native library for " + System.getProperty("os.name")
-                        + " on " + System.getProperty("os.arch"),
-                    e);
-            }
+//            }
+//            catch (UnsatisfiedLinkError e) {
+//                loadedNativeSuccess = false;
+//                System.getLogger(BookChecker.class.getName()).log(System.Logger.Level.WARNING,
+//                    "Failed to load native library for " + System.getProperty("os.name")
+//                        + " on " + System.getProperty("os.arch"),
+//                    e);
+//            }
         }
     }
 

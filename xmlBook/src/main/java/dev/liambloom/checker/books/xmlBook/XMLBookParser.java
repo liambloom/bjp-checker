@@ -14,7 +14,7 @@ public class XMLBookParser implements BookParser {
 
     @Override
     public Book parse(BookLocator locator) throws IOException, ClassNotFoundException, NoSuchMethodException, URISyntaxException, BookParserException {
-        XMLBookReader reader = new XMLBookReader(locator.name(), locator);
+        XMLBookReader reader = new XMLBookReader(locator.getName(), locator);
         try {
             return new XMLBook(reader.getDocument(),
                 new Meta(reader.getChapterType(), reader.getCheckableTypes(), reader.getClassLoader(), reader.getResources()),
@@ -27,7 +27,7 @@ public class XMLBookParser implements BookParser {
 
     @Override
     public Result<BookValidationStatus> validate(BookLocator locator) throws IOException {
-        return new XMLBookReader(locator.name(), locator).validateBook();
+        return new XMLBookReader(locator.getName(), locator).validateBook();
     }
 
     public boolean isOptimizedForSingleChapter() {

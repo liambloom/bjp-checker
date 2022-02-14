@@ -1,6 +1,9 @@
 package dev.liambloom.checker.books;
 
-import java.net.URL;
+import java.net.URI;
 
-public record Meta(CheckableType<?> chapterType, CheckableType<?>[] checkableTypes, ClassLoader classLoader, URL[] resources) {
+public record Meta(CheckableType<?> chapterType,
+                   CheckableType<?>[] checkableTypes,
+                   ClassLoader classLoader,
+                   ResourceLocator[] resources) {
 }

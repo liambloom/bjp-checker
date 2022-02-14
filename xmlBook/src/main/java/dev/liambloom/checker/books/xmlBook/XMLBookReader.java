@@ -1,9 +1,11 @@
 package dev.liambloom.checker.books.xmlBook;
 
-import dev.liambloom.checker.books.BookLocator;
+import dev.liambloom.checker.books.ResourceLocator;
 import dev.liambloom.checker.books.BookValidationStatus;
 import dev.liambloom.checker.books.CheckableType;
 import dev.liambloom.checker.books.Result;
+import dev.liambloom.util.XMLUtils;
+import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -30,7 +32,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 class XMLBookReader {
@@ -54,9 +55,9 @@ class XMLBookReader {
     // Set at initialization
     private final System.Logger logger = System.getLogger(Long.toString(System.identityHashCode(this)));
     private final XPath xpath = xpf.newXPath();
-    private final BookLocator locator;
+    private final ResourceLocator locator;
     private final String name;
-    private MessageDigest digest;
+//    private MessageDigest digest;
 
     // Set in parseAndValidateDocument()
     private Document document = null;
@@ -67,9 +68,9 @@ class XMLBookReader {
     private CheckableType<? extends Annotation>[] checkableTypes = null;
 
     // Set in getResources()
-    private URL[] resources;
+    private URI[] resources;
 
-    public XMLBookReader(String name, BookLocator locator) {
+    public XMLBookReader(String name, ResourceLocator locator) {
         this.name = name;
         this.locator = locator;
     }
@@ -119,7 +120,7 @@ class XMLBookReader {
                 logger.log(System.Logger.Level.TRACE, "Document builder obtained");
                 db.setErrorHandler(handler);
                 try {
-                    document = db.parse(new DigestInputStream(locator.getInputStream(), digest));
+                    document = db.parse(/*new DigestInputStream(*/locator.getInputStream()/*, digest)*/);
                     logger.log(System.Logger.Level.TRACE, "Successfully parsed document");
                 }
                 catch (SAXException e) {
@@ -136,11 +137,9 @@ class XMLBookReader {
                 //  without using a SAX parser. Since I want a document to end with, I would need to either:
                 //  a: parse it twice, or b: build my own DocumentBuilder.
                 try {
-                    URI bookUri = locator.getResourceBaseURI();
-                    classLoader = new URLClassLoader(streamNodeList((NodeList) xpath
+                    URI bookUri = locator.getURI();
+                    classLoader = new URLClassLoader(XMLUtils.streamNodeListElements((NodeList) xpath
                             .evaluate("/book/meta/classPath/include", document, XPathConstants.NODESET))
-                        .filter(Element.class::isInstance)
-                        .map(Element.class::cast)
                         .map(Element::getTextContent)
                         .map(bookUri::resolve)
                         .map(FunctionUtils.unchecked(URI::toURL))
@@ -149,10 +148,7 @@ class XMLBookReader {
                 catch (XPathExpressionException | URISyntaxException e) {
                     throw new RuntimeException(e);
                 }
-                List<Element> checkableTypeElements = streamNodeList(document.getElementsByTagName("checkableType"))
-                    .filter(Element.class::isInstance)
-                    .map(Element.class::cast)
-                    .toList();
+                List<Element> checkableTypeElements = XMLUtils.streamNodeListElements(document.getElementsByTagName("checkableType")).toList();
                 checkableTypes = new CheckableType[checkableTypeElements.size()];
                 Stream.Builder<Exception> checkableTypeErrors = Stream.builder();
                 for (int i = 0; i < checkableTypeElements.size(); i++) {
@@ -291,7 +287,8 @@ class XMLBookReader {
         return classLoader;
     }
 
-    public URL[] getResources() throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException, URISyntaxException {
+    @SuppressWarnings("RedundantThrows")
+    public URI[] getResources() throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException, URISyntaxException {
         if (resources != null)
             return resources;
 
@@ -303,27 +300,19 @@ class XMLBookReader {
             throw new RuntimeException(e);
         }
 
-        return resources = streamNodeList(nodes)
-            .filter(Element.class::isInstance)
-            .map(Element.class::cast)
+        return resources = XMLUtils.streamNodeListElements(nodes)
             .map(e -> e.getAttribute("href"))
-            .map(locator.getResourceBaseURI()::resolve)
-            .map(FunctionUtils.unchecked(URI::toURL))
-            .toArray(URL[]::new);
+            .map(FunctionUtils.unchecked((FunctionThrowsException<String, URI>) URI::new))
+            .toArray(URI[]::new);
+//                .map(locator.getURI()::resolve)
+//                .map(FunctionUtils.unchecked(URI::toURL))
+//                .toArray(URL[]::new);
     }
 
     private Stream<Element> elementOfType(String... types) {
         return Arrays.stream(types)
             .map(document::getElementsByTagName)
-            .flatMap(XMLBookReader::streamNodeList)
-            .filter(Element.class::isInstance)
-            .map(Element.class::cast);
-    }
-
-    private static Stream<Node> streamNodeList(NodeList nodeList) {
-        return IntStream.range(0, nodeList.getLength())
-            .parallel()
-            .mapToObj(nodeList::item);
+            .flatMap(XMLUtils::streamNodeListElements);
     }
 
     private CheckableType<?> parseCheckableType(Element e) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException {
