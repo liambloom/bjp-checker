@@ -1,9 +1,6 @@
 package dev.liambloom.checker.books.xmlBook;
 
-import dev.liambloom.checker.books.ResourceLocator;
-import dev.liambloom.checker.books.BookValidationStatus;
-import dev.liambloom.checker.books.CheckableType;
-import dev.liambloom.checker.books.Result;
+import dev.liambloom.checker.books.*;
 import dev.liambloom.util.XMLUtils;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
@@ -55,7 +52,7 @@ class XMLBookReader {
     // Set at initialization
     private final System.Logger logger = System.getLogger(Long.toString(System.identityHashCode(this)));
     private final XPath xpath = xpf.newXPath();
-    private final ResourceLocator locator;
+    private final BookLocator locator;
     private final String name;
 //    private MessageDigest digest;
 
@@ -70,7 +67,7 @@ class XMLBookReader {
     // Set in getResources()
     private URI[] resources;
 
-    public XMLBookReader(String name, ResourceLocator locator) {
+    public XMLBookReader(String name, BookLocator locator) {
         this.name = name;
         this.locator = locator;
     }

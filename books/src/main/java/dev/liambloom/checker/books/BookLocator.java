@@ -1,10 +1,12 @@
 package dev.liambloom.checker.books;
 
 import java.net.URI;
+import java.net.URL;
 import java.util.Map;
 
-public interface BookLocator extends ResourceLocator {
+public interface BookLocator {
     String getName();
-    Map<URI, ResourceLocator> getResources();
-    URI getResourceBaseURI();
+//    URI[] getResources();
+//    URI getResourceBaseURI();
+    URL getURL();
 }

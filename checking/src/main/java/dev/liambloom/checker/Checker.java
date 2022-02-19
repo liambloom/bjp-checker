@@ -110,22 +110,38 @@ public class Checker {
             tempDir = Files.createTempDirectory(null);
 
 
-        String rawBase = book.getLocator().getResourceBaseURI().normalize().getPath();
-        String base = rawBase.endsWith("/") ? rawBase : rawBase + "/";
-        String bookPath = book.getLocator().getURI().normalize().getPath();
-        if (!bookPath.startsWith(base))
-            throw new IllegalArgumentException("Book is not located in resources");
+        String base = book.getMeta().resourceBase().normalize().getPath();
+        if (!base.endsWith("/"))
+            base += "/";
+        URI bookUri = book.getLocator().getURL().toURI();
+        URI absoluteBase = bookUri.resolve(base);
+//        String bookPath = book.getLocator().getURL().toURI().normalize().getPath();
+//        if (!bookPath.startsWith(absoluteBase))
+//            throw new IllegalArgumentException("Book is not located in resources");
 
-        for (ResourceLocator l : book.getMeta().resources()) {
-            String resourcePath = book.getLocator().getURI().resolve(l.getURI()).normalize().getPath();
+        for (URI uri : book.getMeta().resources()) {
+            // TODO:
+            // -[ ] get the resolved uri for the resource and then turn it into a url and open a connection for the input stream
+            // -[ ] Also resource base should possibly be in meta rather than the locator?
+            // -[ ] This should be checked by BookParser somehow
+            // -[ ] Check to make sure resource path does not have a relative path that goes outside of
+            //          base at ANY time (e.g. "../foo" or "/path/to/base/foo"). Keep in mind that URI#resolve
+            //          will normalize relative paths
+            String resourcePath = book.getLocator().getURI().resolve(uri).normalize().getPath();
             if (!resourcePath.startsWith(base))
                 throw new IllegalArgumentException("Resource " + resourcePath + " not located below resource base " + base);
-            Path p = tempDir.resolve(resourcePath);
+
+
+            for (String segment : uri.getPath().split("/")) {
+
+            }
+
+            Path p = tempDir.resolve(resourcePath.substring(base.length() + 1));
             Files.createDirectories(p.getParent());
-            Files.copy(l.getInputStream(), p);
+            Files.copy(, p);
         }
 
-        Path working = tempDir.resolve(bookPath);
+        Path working = tempDir.resolve(bookPath.substring(base.length() + 1));
         Files.createDirectories(working.getParent());
         changeDirectory(working);
 
