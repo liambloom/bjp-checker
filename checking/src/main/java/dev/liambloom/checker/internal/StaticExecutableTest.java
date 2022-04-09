@@ -1,5 +1,6 @@
-package dev.liambloom.checker;
+package dev.liambloom.checker.internal;
 
+import dev.liambloom.checker.TestStatus;
 import dev.liambloom.checker.books.*;
 import dev.liambloom.util.StringUtils;
 
@@ -35,12 +36,12 @@ public class StaticExecutableTest implements Test {
         this.invoke = invoke;
         this.conditions = conditions;
         if (conditions.in() == null && conditions.expectedOut() == null && conditions.writesTo().isEmpty()) {
-            executor = Checker.readOnlyTest;
-            lock = Checker.testLock.readLock();
+            executor = Test.readOnlyTest;
+            lock = Test.testLock.readLock();
         }
         else {
-            executor = Checker.writingTest;
-            lock = Checker.testLock.writeLock();
+            executor = Test.writingTest;
+            lock = Test.testLock.writeLock();
         }
     }
 
@@ -55,6 +56,10 @@ public class StaticExecutableTest implements Test {
 
         private String getName() {
             return "Test " + counter.getAndIncrement();
+        }
+
+        public Test newInstance(StaticExecutableTestInfo info) {
+            return newInstance(info.locator(), info.conditions());
         }
 
         public Test newInstance(StaticExecutableTestInfo.TargetLocator targetLocator, StaticExecutableTestInfo.Conditions conditions) {

@@ -9,14 +9,15 @@ import java.net.URISyntaxException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @AutoService(BookParser.class)
-public class XMLBookParser implements BookParser {
+public class XMLBookParser extends BookParser {
     private final AtomicBoolean optimizeForSingleChapter = new AtomicBoolean(false);
 
     @Override
     public Book parse(BookLocator locator) throws IOException, ClassNotFoundException, NoSuchMethodException, URISyntaxException, BookParserException {
-        XMLBookReader reader = new XMLBookReader(locator.getName(), locator);
+        XMLBookReader reader = new XMLBookReader(locator.name(), locator);
         try {
-            return new XMLBook(reader.getDocument(),
+            return new XMLBook(locator,
+                reader.getDocument(),
                 new Meta(reader.getChapterType(), reader.getCheckableTypes(), reader.getClassLoader(), reader.getResources()),
                 optimizeForSingleChapter.getAcquire());
         }
@@ -27,7 +28,7 @@ public class XMLBookParser implements BookParser {
 
     @Override
     public Result<BookValidationStatus> validate(BookLocator locator) throws IOException {
-        return new XMLBookReader(locator.getName(), locator).validateBook();
+        return new XMLBookReader(locator.name(), locator).validateBook();
     }
 
     public boolean isOptimizedForSingleChapter() {

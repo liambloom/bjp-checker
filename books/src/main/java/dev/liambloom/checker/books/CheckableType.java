@@ -24,7 +24,7 @@ public class CheckableType<T extends Annotation> {
         return name;
     }
 
-    public Class<? extends Annotation> annotation() {
+    public Class<T> annotation() {
         return annotation;
     }
 

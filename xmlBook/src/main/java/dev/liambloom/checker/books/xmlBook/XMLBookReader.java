@@ -22,8 +22,7 @@ import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.net.*;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
+import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -101,11 +100,6 @@ class XMLBookReader {
             ValidationErrorHandler handler = new ValidationErrorHandler(name);
             try {
                 logger.log(System.Logger.Level.TRACE, "Parsing document");
-                if (!locator.exists()) {
-                    logger.log(System.Logger.Level.TRACE, "Book does not exist");
-                    result = new Result<>(name, BookValidationStatus.NOT_FOUND);
-                    throw new IllegalStateException("Book " + locator + " does not exist");
-                }
                 DocumentBuilder db;
                 try {
                     db = dbf.newDocumentBuilder();
@@ -117,13 +111,18 @@ class XMLBookReader {
                 logger.log(System.Logger.Level.TRACE, "Document builder obtained");
                 db.setErrorHandler(handler);
                 try {
-                    document = db.parse(/*new DigestInputStream(*/locator.getInputStream()/*, digest)*/);
+                    document = db.parse(/*new DigestInputStream(*/locator.url().openStream()/*, digest)*/);
                     logger.log(System.Logger.Level.TRACE, "Successfully parsed document");
                 }
                 catch (SAXException e) {
                     logger.log(System.Logger.Level.TRACE, "Error parsing document");
                     result = new Result<>(name, BookValidationStatus.INVALID, handler.getLogs());
                     throw e;
+                }
+                catch (NoSuchFileException e) {
+                    logger.log(System.Logger.Level.TRACE, "Book does not exist");
+                    result = new Result<>(name, BookValidationStatus.NOT_FOUND);
+                    throw new IllegalStateException("Book " + locator + " does not exist");
                 }
                 catch (Throwable e) {
                     logger.log(System.Logger.Level.TRACE, "Non-sax error parsing document", e);
@@ -134,7 +133,7 @@ class XMLBookReader {
                 //  without using a SAX parser. Since I want a document to end with, I would need to either:
                 //  a: parse it twice, or b: build my own DocumentBuilder.
                 try {
-                    URI bookUri = locator.getURI();
+                    URI bookUri = locator.url().toURI();
                     classLoader = new URLClassLoader(XMLUtils.streamNodeListElements((NodeList) xpath
                             .evaluate("/book/meta/classPath/include", document, XPathConstants.NODESET))
                         .map(Element::getTextContent)

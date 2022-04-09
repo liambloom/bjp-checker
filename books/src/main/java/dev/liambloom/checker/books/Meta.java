@@ -5,6 +5,5 @@ import java.net.URI;
 public record Meta(CheckableType<?> chapterType,
                    CheckableType<?>[] checkableTypes,
                    ClassLoader classLoader,
-                   URI[] resources,
-                   URI resourceBase) {
+                   URI[] resources) {
 }

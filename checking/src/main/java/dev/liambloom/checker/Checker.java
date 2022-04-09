@@ -1,6 +1,10 @@
 package dev.liambloom.checker;
 
 import dev.liambloom.checker.books.*;
+import dev.liambloom.checker.internal.CheckerTargetGroup;
+import dev.liambloom.checker.internal.Native;
+import dev.liambloom.checker.internal.PathClassLoader;
+import dev.liambloom.checker.internal.Test;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
 
@@ -10,27 +14,18 @@ import java.io.PrintStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Checker {
-    static final ReadWriteLock testLock = new ReentrantReadWriteLock();
-    static final ExecutorService readOnlyTest = Executors.newCachedThreadPool();
-    static final ExecutorService writingTest = Executors.newSingleThreadExecutor();
-    private static final Thread dirResetter = new Thread(Checker::resetDir);
     private final Book book;
     private Set<String> checkableTypeSet = null;
     private Path tempDir = null;
@@ -43,7 +38,7 @@ public class Checker {
     /**
      * Checks according to args
      * @param chapter             The chapter to check, or {@code OptionalInt.empty()} to auto-detect.
-     * @param checkables          A map between annotations for checkables and the checkables of that type to run.
+     * @param checkables          A map between name for checkables and the checkables of that type to run.
      * @param targets             A stream of classes that should be checked
      * @return A stream containing the results of all checks
      *
@@ -105,7 +100,6 @@ public class Checker {
             .flatMap(Stream::of)
             .forEach(potentialTargets::add);
 
-        Runtime.getRuntime().addShutdownHook(dirResetter);
         if (tempDir == null)
             tempDir = Files.createTempDirectory(null);
 
@@ -113,49 +107,32 @@ public class Checker {
         String base = book.getMeta().resourceBase().normalize().getPath();
         if (!base.endsWith("/"))
             base += "/";
-        URI bookUri = book.getLocator().getURL().toURI();
-        URI absoluteBase = bookUri.resolve(base);
-//        String bookPath = book.getLocator().getURL().toURI().normalize().getPath();
-//        if (!bookPath.startsWith(absoluteBase))
-//            throw new IllegalArgumentException("Book is not located in resources");
+        URI bookUri = book.getLocator().url().toURI().normalize();
+        URI absoluteBase = bookUri.resolve(base).normalize();
 
         for (URI uri : book.getMeta().resources()) {
-            // TODO:
-            // -[ ] get the resolved uri for the resource and then turn it into a url and open a connection for the input stream
-            // -[ ] Also resource base should possibly be in meta rather than the locator?
-            // -[ ] This should be checked by BookParser somehow
-            // -[ ] Check to make sure resource path does not have a relative path that goes outside of
-            //          base at ANY time (e.g. "../foo" or "/path/to/base/foo"). Keep in mind that URI#resolve
-            //          will normalize relative paths
-            String resourcePath = book.getLocator().getURI().resolve(uri).normalize().getPath();
-            if (!resourcePath.startsWith(base))
-                throw new IllegalArgumentException("Resource " + resourcePath + " not located below resource base " + base);
+            URI resolved = book.getLocator().url().toURI().resolve(uri).normalize();
 
-
-            for (String segment : uri.getPath().split("/")) {
-
-            }
-
-            Path p = tempDir.resolve(resourcePath.substring(base.length() + 1));
+            Path p = tempDir.resolve(absoluteBase.relativize(resolved).getPath());
             Files.createDirectories(p.getParent());
-            Files.copy(, p);
+            Files.copy(resolved.toURL().openStream(), p);
         }
 
-        Path working = tempDir.resolve(bookPath.substring(base.length() + 1));
-        Files.createDirectories(working.getParent());
-        changeDirectory(working);
+        Path working = tempDir.resolve(absoluteBase.relativize(bookUri).getPath()).getParent();
+        Files.createDirectories(working);
+        Native.changeDirectory(working);
 
         InputStream prevIn = System.in;
         PrintStream prevOut = System.out;
         PrintStream prevErr = System.err;
         try {
-            List<Future<Result<TestStatus>>> futures = Arrays.stream(getCheckableTypes())
+            List<Future<Result<TestStatus>>> futures = Arrays.stream(book.getMeta().checkableTypes())
                 .parallel()
                 .map(a -> new CheckerTargetGroup<>(a, checkables.getOrDefault(a.name(), new boolean[0])))
                 .flatMap(FunctionUtils.unchecked((FunctionThrowsException<CheckerTargetGroup<?>, Stream<Test>>) (e -> {
                     for (AnnotatedElement potential : potentialTargets)
                         e.addPotentialTarget(potential);
-                    return e.apply(ch);
+                    return e.apply(book.getChapter(checkedChapter));
                 })))
                 .map(Test::start)
                 .collect(Collectors.toList());
@@ -172,19 +149,8 @@ public class Checker {
             System.setIn(prevIn);
             System.setOut(prevOut);
             System.setErr(prevErr);
-            resetDir();
-            Runtime.getRuntime().removeShutdownHook(dirResetter);
+            Native.resetDir();
         }
-    }
-
-    private synchronized Set<String> getCheckableTypeSet() {
-        if (checkableTypeSet == null)
-            checkableTypeSet = Arrays.stream(book.getMeta().checkableTypes()).map(CheckableType::name).collect(Collectors.toSet())
-        return checkableTypeSet;
-    }
-
-    private static void resetDir() {
-        changeDirectory(initDir);
     }
 
     private void removeTempDir() throws IOException {
@@ -195,58 +161,9 @@ public class Checker {
             .forEach(FunctionUtils.unchecked(Files::delete));
     }
 
-    private static void changeDirectory(Path path) {
-        nativeLoaderLock.lock();
-        try {
-            if (!triedLoadNative) {
-                Path tempDir = null;
-                Path tempFile = null;
-                try {
-                    tempDir = Files.createTempDirectory(null);
-                    tempFile = tempDir.resolve(System.mapLibraryName("native"));
-                    Files.copy(Objects.requireNonNull(BookChecker.class.getResourceAsStream("/native/"
-                        + System.getProperty("os.arch") + "/"
-                        + System.mapLibraryName("native"))), tempFile);
-                    System.load(tempFile.toAbsolutePath().toString());
-                    loadedNativeSuccess = true;
-                }
-                catch (UnsatisfiedLinkError | IOException | NullPointerException e) {
-                    loadedNativeSuccess = false;
-                    System.getLogger(BookChecker.class.getName()).log(System.Logger.Level.WARNING,
-                        "Failed to load native library for " + System.getProperty("os.name")
-                            + " on " + System.getProperty("os.arch"),
-                        e);
-                }
-                finally {
-                    try {
-                        if (tempFile != null)
-                            Files.deleteIfExists(tempFile);
-                        if (tempDir != null)
-                            Files.deleteIfExists(tempDir);
-                    }
-                    catch (IOException e) {
-                        System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.DEBUG, "Error deleting temp file for native library", e);
-                    }
-                }
-            }
-        }
-        finally {
-            triedLoadNative = true;
-            nativeLoaderLock.unlock();
-        }
-        if (loadedNativeSuccess) {
-//            try {
-                changeDirectory(path.toString());
-//            }
-//            catch (UnsatisfiedLinkError e) {
-//                loadedNativeSuccess = false;
-//                System.getLogger(BookChecker.class.getName()).log(System.Logger.Level.WARNING,
-//                    "Failed to load native library for " + System.getProperty("os.name")
-//                        + " on " + System.getProperty("os.arch"),
-//                    e);
-//            }
-        }
+    private synchronized Set<String> getCheckableTypeSet() {
+        if (checkableTypeSet == null)
+            checkableTypeSet = Arrays.stream(book.getMeta().checkableTypes()).map(CheckableType::name).collect(Collectors.toSet());
+        return checkableTypeSet;
     }
-
-    private static native void changeDirectory(String path);
 }

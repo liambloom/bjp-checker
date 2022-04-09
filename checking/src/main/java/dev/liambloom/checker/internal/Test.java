@@ -1,16 +1,52 @@
-package dev.liambloom.checker;
+package dev.liambloom.checker.internal;
 
+import dev.liambloom.checker.TestStatus;
 import dev.liambloom.checker.books.Result;
+import dev.liambloom.util.function.FunctionThrowsException;
+import dev.liambloom.util.function.FunctionUtils;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface Test {
+    ReadWriteLock testLock = new ReentrantReadWriteLock();
+    ExecutorService readOnlyTest = Executors.newCachedThreadPool();
+    ExecutorService writingTest = Executors.newSingleThreadExecutor();
+
     Future<Result<TestStatus>> start();
 
-//    static Test withFixedResult(Result<TestStatus> result) {
-//        return () -> CompletableFuture.completedFuture(result);
-//    }
-//
+    static Test of(String name, TestStatus status) {
+        return of(new Result<>(name, status));
+    }
+
+    static Test of(Result<TestStatus> result) {
+        return () -> CompletableFuture.completedFuture(result);
+    }
+
+    static Test multi(String name, Stream<Test> tests) {
+        return () -> readOnlyTest.submit(() -> {
+            List<Result<TestStatus>> subResults = tests.sequential()
+                .map(Test::start)
+                .map(FunctionUtils.unchecked((FunctionThrowsException<Future<Result<TestStatus>>, Result<TestStatus>>) Future::get))
+                .collect(Collectors.toList());
+            return new Result<>(
+                name,
+                subResults.stream()
+                    .map(Result::status)
+                    .max(Comparator.naturalOrder())
+                    .orElseThrow(),
+                subResults);
+        });
+    }
+
 //    ReadWriteLock testLock = new ReentrantReadWriteLock();
 //    ExecutorService readOnlyTest = Executors.newCachedThreadPool();
 //    ExecutorService writingTest = Executors.newSingleThreadExecutor();
@@ -62,7 +98,7 @@ public interface Test {
 //                        }
 //                    }
 //                    else if (target instanceof Method m && !Modifier.isStatic(m.getModifiers())) {
-//                        ReLogger logger = new ReLogger(Test.class.getName());
+//                        ReLogger logger = new ReLogger(Test.class.name());
 //                        logger.log(System.Logger.Level.ERROR, "Bad Header: Instance method %s should be static", Util.executableToString(m));
 //                        return Stream.of(Test.withFixedResult(new Result<>(name, TestStatus.BAD_HEADER, logger)));
 //                    }
