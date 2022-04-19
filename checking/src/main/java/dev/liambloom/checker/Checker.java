@@ -104,7 +104,7 @@ public class Checker {
             tempDir = Files.createTempDirectory(null);
 
 
-        String base = book.getMeta().resourceBase().normalize().getPath();
+        /*String base = book.getMeta().resourceBase().normalize().getPath();
         if (!base.endsWith("/"))
             base += "/";
         URI bookUri = book.getLocator().url().toURI().normalize();
@@ -120,7 +120,10 @@ public class Checker {
 
         Path working = tempDir.resolve(absoluteBase.relativize(bookUri).getPath()).getParent();
         Files.createDirectories(working);
-        Native.changeDirectory(working);
+        Native.changeDirectory(working);*/
+
+        if (book.getMeta().resources().length > 0)
+            throw new IllegalStateException("Resources are not currently supported");
 
         InputStream prevIn = System.in;
         PrintStream prevOut = System.out;

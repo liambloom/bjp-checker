@@ -22,7 +22,6 @@
         <module>books</module>
         <module>checking</module>
         <module>xmlBook</module>
-        <module>checking</module>
     </modules>
 
     <properties>
@@ -115,6 +114,10 @@
                 <configuration>
                     <source>17</source>
                     <target>17</target>
+                    <compilerArgs>
+                        <arg>-h</arg>
+                        <arg>${project.basedir}/src/main/native</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
         </plugins>

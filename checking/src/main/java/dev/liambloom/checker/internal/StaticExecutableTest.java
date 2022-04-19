@@ -249,7 +249,7 @@ public class StaticExecutableTest implements Test {
                     logger.log(System.Logger.Level.ERROR, "Unexpected error thrown", actualThrows);
                 }
                 if (conditions.expectedReturns() != null) {
-                    Result<TestStatus> post = conditions.expectedReturns().check(actualReturn);
+                    Result<TestStatus> post = PostChecker.check(conditions.expectedReturns(), actualReturn);
                     if (status.compareTo(post.status()) < 0)
                         status = post.status();
                     post.logs().ifPresent(l -> l.logTo(logger));
@@ -278,7 +278,7 @@ public class StaticExecutableTest implements Test {
                     consoleInLogger = false;
                 // TODO: DRY -- this code is repeated from the return value check
                 for (int j = 0; j < conditions.args().length; j++) {
-                    Result<TestStatus> post = conditions.argConditions()[j].check(conditions.args()[j]);
+                    Result<TestStatus> post = PostChecker.check(conditions.argConditions()[j], conditions.args()[j]);
                     if (status.compareTo(post.status()) < 0)
                         status = post.status();
                     post.logs().ifPresent(l -> l.logTo(logger));
