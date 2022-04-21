@@ -12,21 +12,18 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-public class XMLBook implements Book {
+public class XMLBook extends Book {
     private static final XPathFactory xpf = XPathFactory.newInstance();
     private final XPath xpath = getXPath();
-    private final BookLocator locator;
     private final Document document;
-    private final Meta meta;
     private final boolean optimizeForSingleChapter;
     private boolean actualOptimizeForSingleChapter;
     private XMLBookChapter hasChapter = null;
 
 
     XMLBook(BookLocator locator, Document document, Meta meta, boolean optimizeForSingleChapter) {
+        super(meta, locator);
         this.document = document;
-        this.meta = meta;
-        this.locator = locator;
         actualOptimizeForSingleChapter = this.optimizeForSingleChapter = optimizeForSingleChapter;
     }
 
@@ -51,16 +48,6 @@ public class XMLBook implements Book {
         catch (XPathExpressionException ex) {
             throw new RuntimeException(ex);
         }
-    }
-
-    @Override
-    public BookLocator getLocator() {
-        return locator;
-    }
-
-    @Override
-    public Meta getMeta() {
-        return meta;
     }
 
     public boolean isOptimizedForSingleChapter() {

@@ -7,7 +7,7 @@
   <parent>
     <groupId>dev.liambloom.checker</groupId>
     <artifactId>checker</artifactId>
-    <version>0.1.140</version>
+    <version>0.2.0</version>
   </parent>
 
   <artifactId>internal</artifactId>
@@ -40,7 +40,7 @@
 <!--    <dependency>-->
 <!--      <groupId>dev.liambloom.checker</groupId>-->
 <!--      <artifactId>books</artifactId>-->
-<!--      <version>0.1.140</version>-->
+<!--      <version>0.2.0</version>-->
 <!--    </dependency>-->
     <dependency>
       <groupId>dev.liambloom.util</groupId>
@@ -62,7 +62,7 @@
       <dependency>
           <groupId>dev.liambloom.checker</groupId>
           <artifactId>books</artifactId>
-          <version>0.1.140</version>
+          <version>0.2.0</version>
           <scope>compile</scope>
       </dependency>
   </dependencies>

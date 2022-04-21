@@ -1,9 +1,11 @@
 package dev.liambloom.checker.ui.cli;
 
-import dev.liambloom.checker.*;
+//import dev.liambloom.checker.*;
+import dev.liambloom.checker.Checker;
+import dev.liambloom.checker.TestStatus;
+import dev.liambloom.checker.books.BookLocator;
+import dev.liambloom.checker.books.BookParserException;
 import dev.liambloom.checker.books.Result;
-import dev.liambloom.checker.books.TestStatus;
-import dev.liambloom.checker.internal.Util;
 import dev.liambloom.checker.ui.*;
 import dev.liambloom.util.StringUtils;
 import dev.liambloom.util.function.FunctionUtils;
@@ -179,14 +181,14 @@ public class Main {
 
                         BeanBook book = getMaybeAnonymousBook(testName);
                         Result<TestStatus>[] result;
-                        BookChecker reader;
+//                        BookChecker reader;
 
 //                        do {
-                            reader = new BookChecker(testName, book.getInnerBook());
+//                            reader = new BookChecker(testName, book.getInnerBook());
 
                             Map<String, String> checkableNameAbbrMap = new HashMap<>();
                             Set<String> names = new HashSet<>();
-                            for (String name : reader.getCheckableTypeSet()) {
+                            for (String name : book.getMeta().checkableTypeNameSet()) {
                                 names.add(name);
                                 Set<String> variations = Stream.of(StringUtils.Case.PASCAL, StringUtils.Case.CAMEL, StringUtils.Case.SNAKE, StringUtils.Case.CONST, StringUtils.Case.SKEWER)
                                     .map(c -> StringUtils.convertCase(name, c))
@@ -223,13 +225,13 @@ public class Main {
                                 });
                             }
 
-                             result = reader.check(chapter, processedCheckables, paths);
+                             result = Checker.check(book, chapter, processedCheckables, paths);
 //                        }
 //                        while (!reader.validateResults());
 
                         new ResultPrinter().printResults(result);
                     }
-                    catch (SAXException | ClassNotFoundException | IllegalArgumentException e) {
+                    catch (BookParserException | ClassNotFoundException | IllegalArgumentException e) {
                         throw new UserErrorException(e);
                     }
                 }
@@ -289,11 +291,11 @@ public class Main {
                             String[][] strs = new String[books.length][2];
                             int maxBookNameLength = 0;
                             for (int i = 0; i < strs.length; i++) {
-                                BeanBook book = books[i];
-                                if (book.getName().length() > maxBookNameLength)
-                                    maxBookNameLength = book.getName().length();
-                                strs[i][0] = book.getName();
-                                strs[i][1] = book.getUrl().toString();
+                                BookLocator locator = books[i].getLocator();
+                                if (locator.name().length() > maxBookNameLength)
+                                    maxBookNameLength = locator.name().length();
+                                strs[i][0] = locator.name();
+                                strs[i][1] = locator.url().toString();
                             }
                             for (String[] book : strs)
                                 System.out.printf("%-" + maxBookNameLength + "s  %s%n", book[0], book[1]);
@@ -306,8 +308,7 @@ public class Main {
                                     ? Arrays.stream(Books.getAllBookNames())
                                     : Arrays.stream(args).skip(2))
                                     .map(Books::getBook)
-                                    .map(b -> new BookChecker(b.getName(), b.getInnerBook()))
-                                    .map(FunctionUtils.unchecked(BookChecker::validateBook))
+                                    .map(b -> Checker.check(b))
                                     .toArray(Result[]::new));
                             }
                             catch (NullPointerException e) {
@@ -357,7 +358,7 @@ public class Main {
             //}
         }
         catch (UserErrorException e) {
-            System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.ERROR, e.getMessage());
+            System.getLogger(Main.class.getName()).log(System.Logger.Level.ERROR, e.getMessage());
             System.exit(1);
             //e.printStackTrace();
         }
@@ -408,7 +409,7 @@ public class Main {
             return Books.getAnonymousBook(__resolveAnonymousBook(name));
         }
         catch (IllegalArgumentException e) {
-            System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.ERROR, "Unable to find saved book " + name);
+            System.getLogger(Main.class.getName()).log(System.Logger.Level.ERROR, "Unable to find saved book " + name);
             System.exit(1);
             return null;
         }
@@ -500,7 +501,9 @@ public class Main {
         if (globPath != null)
             return globPath.toUri().toURL();
 
-        System.Logger logger = System.getLogger(Util.generateLoggerName());
+        assert globPathError != null;
+
+        System.Logger logger = System.getLogger(Main.class.getName());
 
         // Return URL if not null & warn
         if (url != null) {

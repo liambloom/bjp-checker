@@ -5,7 +5,7 @@
     <parent>
         <artifactId>checker</artifactId>
         <groupId>dev.liambloom.checker</groupId>
-        <version>0.2.0</version>
+        <version>0.1.140</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -25,7 +25,7 @@
             <groupId>dev.liambloom.checker</groupId>
             <artifactId>books</artifactId>
             <version>${project.version}</version>
-<!--            <artifactId>0.2.0</artifactId>-->
+<!--            <artifactId>0.1.140</artifactId>-->
         </dependency>
         <dependency>
             <groupId>dev.liambloom.util</groupId>

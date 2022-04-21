@@ -26,15 +26,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Checker {
-    private final Book book;
-    private Set<String> checkableTypeSet = null;
-    private Path tempDir = null;
-
-
-    public Checker(Book book) {
-        this.book = book;
-    }
-
     /**
      * Checks according to args
      * @param chapter             The chapter to check, or {@code OptionalInt.empty()} to auto-detect.
@@ -51,11 +42,11 @@ public class Checker {
      * @throws InvocationTargetException If the book's chapter or checkable annotations' {@code value()} method throws an exception
      */
     @SuppressWarnings("RedundantThrows")
-    public Result<TestStatus>[] check(@SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalInt chapter, Map<String, boolean[]> checkables,
-                                      Stream<Path> targets) throws IOException, ClassNotFoundException, NoSuchMethodException,
-        IllegalAccessException, InvocationTargetException, URISyntaxException {
+    public static Result<TestStatus>[] check(Book book, @SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalInt chapter,
+                                      Map<String, boolean[]> checkables, Stream<Path> targets) throws IOException, ClassNotFoundException,
+        NoSuchMethodException, IllegalAccessException, InvocationTargetException, URISyntaxException {
         for (String checkable : checkables.keySet()) {
-            if (!getCheckableTypeSet().contains(checkable))
+            if (!book.getMeta().checkableTypeNameSet().contains(checkable))
                 throw new IllegalArgumentException("Checkable \"" + checkable + "\" does not exist");
         }
 
@@ -100,11 +91,11 @@ public class Checker {
             .flatMap(Stream::of)
             .forEach(potentialTargets::add);
 
-        if (tempDir == null)
+        /*if (tempDir == null)
             tempDir = Files.createTempDirectory(null);
 
 
-        /*String base = book.getMeta().resourceBase().normalize().getPath();
+        String base = book.getMeta().resourceBase().normalize().getPath();
         if (!base.endsWith("/"))
             base += "/";
         URI bookUri = book.getLocator().url().toURI().normalize();
@@ -156,17 +147,11 @@ public class Checker {
         }
     }
 
-    private void removeTempDir() throws IOException {
+    /*private void removeTempDir() throws IOException {
         if (tempDir == null)
             return;
         Files.walk(tempDir)
             .sorted(Comparator.comparing(Path::getNameCount))
             .forEach(FunctionUtils.unchecked(Files::delete));
-    }
-
-    private synchronized Set<String> getCheckableTypeSet() {
-        if (checkableTypeSet == null)
-            checkableTypeSet = Arrays.stream(book.getMeta().checkableTypes()).map(CheckableType::name).collect(Collectors.toSet());
-        return checkableTypeSet;
-    }
+    }*/
 }

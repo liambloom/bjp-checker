@@ -7,7 +7,7 @@
     <groupId>dev.liambloom.checker</groupId>
     <artifactId>checker</artifactId>
     <packaging>pom</packaging>
-    <version>0.2.0</version>
+    <version>0.1.140</version>
 
     <name>Checker</name>
     <url>https://checker.liambloom.dev/</url>

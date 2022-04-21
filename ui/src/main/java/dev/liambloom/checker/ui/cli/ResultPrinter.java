@@ -1,6 +1,6 @@
 package dev.liambloom.checker.ui.cli;
 
-import dev.liambloom.checker.Result;
+import dev.liambloom.checker.books.Result;
 import dev.liambloom.util.StringUtils;
 import dev.liambloom.util.function.ConsumerThrowsException;
 import dev.liambloom.util.function.FunctionUtils;

@@ -1,9 +1,5 @@
 package dev.liambloom.checker.ui;
 
-import dev.liambloom.checker.NotYetImplementedError;
-import dev.liambloom.checker.URLBook;
-import dev.liambloom.checker.internal.Util;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -13,8 +9,10 @@ import java.util.prefs.Preferences;
 
 public final class Books {
     private static final AtomicInteger anonCount = new AtomicInteger(1);
-    static final Map<String, BeanBook> loadedBooks = new WeakHashMap<>();
-    static final Preferences prefs = Preferences.userNodeForPackage(Books.class).node("books");
+    private static final Map<String, BeanBook> loadedBooks = new WeakHashMap<>();
+    private static final Preferences prefs = Preferences.userNodeForPackage(Books.class);
+    private static final Preferences books = prefs.node("books");
+    private static final Preferences parsers = prefs.node("parsers");
 
     private Books() {
     }
@@ -31,6 +29,7 @@ public final class Books {
      */
     public static BeanBook getBook(String name) {
         return loadedBooks.computeIfAbsent(name, key -> {
+            prefs.node(name);
             String url = prefs.get(name, null);
             try {
                 return new BeanBook(name, new URLBook(new URL(Objects.requireNonNull(url, "Book \"" + name + "\" does not exist"))));
