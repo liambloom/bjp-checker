@@ -45,7 +45,7 @@ public final class PathClassLoader extends ClassLoader {
                 (v1, v2) -> v1.markAsDuplicate(),
                 TreeMap<String, LazyClass>::new
             ));
-        System.getLogger(Long.toString(System.identityHashCode(this))).log(System.Logger.Level.TRACE, "new PathClassLoader" + classes);
+//        System.getLogger(Long.toString(System.identityHashCode(this))).log(System.Logger.Level.TRACE, "new PathClassLoader" + classes);
     }
 
     public Stream<Class<?>> loadAllOwnClasses() {
@@ -71,7 +71,7 @@ public final class PathClassLoader extends ClassLoader {
             }
         }
         if (r == null)
-            throw new ClassNotFoundException(name);
+            throw new ClassNotFoundException('"' + name + '"');
         return r;
     }
 

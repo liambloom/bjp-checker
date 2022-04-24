@@ -70,7 +70,7 @@ public class Native {
                     Files.deleteIfExists(tempDir);
             }
             catch (IOException e) {
-                System.getLogger(Native.class.getName()).log(System.Logger.Level.DEBUG, "Error deleting temp file for native library", e);
+//                System.getLogger(Native.class.getName()).log(System.Logger.Level.DEBUG, "Error deleting temp file for native library", e);
             }
         }
         return true;

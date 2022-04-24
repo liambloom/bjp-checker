@@ -4,6 +4,8 @@ import dev.liambloom.checker.books.ReLogger;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXParseException;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.function.BinaryOperator;
@@ -23,6 +25,7 @@ class ValidationErrorHandler implements ErrorHandler {
     }
 
     private void log(System.Logger.Level level, String prepend, Throwable e) {
+//        logger.log(System.Logger.Level.TRACE, "%s %s", level, e);
         maxErrorKind = max.apply(maxErrorKind, level);
         logger.log(level, Optional.ofNullable(prepend).orElse("")
             + (e instanceof SAXParseException spe ? getMessage(spe) : getMessage(e)));
@@ -60,7 +63,9 @@ class ValidationErrorHandler implements ErrorHandler {
     }
 
     private String getMessage(Throwable e) {
-        return e.getClass().getName() + ": " + e.getMessage();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        e.printStackTrace(new PrintStream(baos));
+        return e.getClass().getName() + ": " + e.getMessage() + "\n" + baos;
     }
 
     public System.Logger.Level getMaxErrorKind() {

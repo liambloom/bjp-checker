@@ -40,4 +40,9 @@ public class CheckableType<T extends Annotation> {
     public int valueGenetic(Annotation target) throws InvocationTargetException, ClassCastException {
         return value(annotation.cast(target));
     }
+
+    @Override
+    public String toString() {
+        return "CheckableType " + name + ": " + annotation.getName();
+    }
 }

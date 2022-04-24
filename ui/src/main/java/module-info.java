@@ -9,6 +9,7 @@ module dev.liambloom.checker.ui {
     requires javafx.fxml;
 //    requires dev.liambloom.checker.internal;
     requires com.google.auto.service;
+    requires dev.liambloom.checker.books.xmlBook;
 //    requires dev.liambloom.checker.books;
     requires org.fusesource.jansi;
     requires dev.liambloom.util.function;

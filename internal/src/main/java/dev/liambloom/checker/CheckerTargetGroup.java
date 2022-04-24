@@ -36,7 +36,7 @@ class CheckerTargetGroup<T extends Annotation> {
 
     @SuppressWarnings("RedundantThrows")
     public void addPotentialTarget(AnnotatedElement e) throws InvocationTargetException, IllegalAccessException {
-        System.getLogger(Long.toString(System.identityHashCode(this))).log(System.Logger.Level.TRACE, "Potential target %s: Annotated with %s, looking for %s",
+//        System.getLogger(Long.toString(System.identityHashCode(this))).log(System.Logger.Level.TRACE, "Potential target %s: Annotated with %s, looking for %s",
             e, Arrays.toString(e.getAnnotations()), checkableType.annotation()/* , targets[checkableType.value(e.getAnnotation(checkableType.annotation()))] == null ? "rejected" : "accepted" */);
         Optional.ofNullable(e.getAnnotation(checkableType.annotation()))
             .map(FunctionUtils.unchecked((FunctionThrowsException<T, Integer>) checkableType::value))
@@ -56,7 +56,7 @@ class CheckerTargetGroup<T extends Annotation> {
             if (targets[i] != null) {
                 String testName = checkableType.name() + ' ' + i;
 
-                System.getLogger(Long.toString(System.identityHashCode(this))).log(System.Logger.Level.TRACE, "Applying tests to %s with targets %s", testName, targets[i]);
+//                System.getLogger(Long.toString(System.identityHashCode(this))).log(System.Logger.Level.TRACE, "Applying tests to %s with targets %s", testName, targets[i]);
 
                 if (targets[i].isEmpty()) {
                     builder.add(Test.withFixedResult(new Result<>(testName, TestStatus.INCOMPLETE)));

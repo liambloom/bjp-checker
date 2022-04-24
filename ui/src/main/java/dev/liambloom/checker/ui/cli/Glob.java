@@ -1,6 +1,5 @@
 package dev.liambloom.checker.ui.cli;
 
-import dev.liambloom.checker.internal.Util;
 import dev.liambloom.checker.ui.UserErrorException;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
@@ -106,7 +105,7 @@ public class Glob {
 
         private void starWarning() {
             if (Arrays.stream(segments).anyMatch(s -> !s.equals("**") && s.contains("**")))
-                System.getLogger(Util.generateLoggerName()).log(Level.WARNING, "\"**\" as part of a larger segment is interpreted as two single stars");
+                System.getLogger(System.identityHashCode(this) + "").log(Level.WARNING, "\"**\" as part of a larger segment is interpreted as two single stars");
         }
 
         private Stream<Path> files(Path base, int i) throws IOException {

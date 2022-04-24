@@ -4,10 +4,7 @@ import dev.liambloom.checker.books.*;
 import dev.liambloom.util.XMLUtils;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -49,7 +46,7 @@ class XMLBookReader {
     }
 
     // Set at initialization
-    private final System.Logger logger = System.getLogger(Long.toString(System.identityHashCode(this)));
+    private final System.Logger logger = System.getLogger(XMLBookReader.class.getName() + System.identityHashCode(this));
     private final XPath xpath = xpf.newXPath();
     private final BookLocator locator;
     private final String name;
@@ -93,39 +90,42 @@ class XMLBookReader {
     }
 
     private void parseAndValidateDocument() throws IOException, SAXException, ClassNotFoundException, NoSuchMethodException {
-        logger.log(System.Logger.Level.TRACE, "Parsing & validating document");
-        if (document != null)
+//        logger.log(System.Logger.Level.TRACE, "Parsing & validating document");
+        /*if (document != null)
             logger.log(System.Logger.Level.TRACE, "Document already parsed");
-        else if (documentParseException == null) {
+        else */
+        if (document != null)
+            return;
+        if (documentParseException == null) {
             ValidationErrorHandler handler = new ValidationErrorHandler(name);
             try {
-                logger.log(System.Logger.Level.TRACE, "Parsing document");
+//                logger.log(System.Logger.Level.TRACE, "Parsing document");
                 DocumentBuilder db;
                 try {
                     db = dbf.newDocumentBuilder();
                 }
                 catch (ParserConfigurationException e) {
-                    logger.log(System.Logger.Level.DEBUG, "Failure to create document builder", e);
+//                    logger.log(System.Logger.Level.DEBUG, "Failure to create document builder", e);
                     throw new RuntimeException(e);
                 }
-                logger.log(System.Logger.Level.TRACE, "Document builder obtained");
+//                logger.log(System.Logger.Level.TRACE, "Document builder obtained");
                 db.setErrorHandler(handler);
                 try {
                     document = db.parse(/*new DigestInputStream(*/locator.url().openStream()/*, digest)*/);
-                    logger.log(System.Logger.Level.TRACE, "Successfully parsed document");
+//                    logger.log(System.Logger.Level.TRACE, "Successfully parsed document");
                 }
                 catch (SAXException e) {
-                    logger.log(System.Logger.Level.TRACE, "Error parsing document");
+//                    logger.log(System.Logger.Level.TRACE, "Error parsing document");
                     result = new Result<>(name, BookValidationStatus.INVALID, handler.getLogs());
                     throw e;
                 }
                 catch (NoSuchFileException e) {
-                    logger.log(System.Logger.Level.TRACE, "Book does not exist");
+//                    logger.log(System.Logger.Level.TRACE, "Book does not exist");
                     result = new Result<>(name, BookValidationStatus.NOT_FOUND);
                     throw new IllegalStateException("Book " + locator + " does not exist");
                 }
                 catch (Throwable e) {
-                    logger.log(System.Logger.Level.TRACE, "Non-sax error parsing document", e);
+//                    logger.log(System.Logger.Level.TRACE, "Non-sax error parsing document", e);
                     e.printStackTrace();
                     throw e;
                 }
@@ -160,12 +160,18 @@ class XMLBookReader {
                         Stream.of(
                                 elementOfType("parameter")
                                     .map(Node::getTextContent),
-                                elementOfType("Array", "ArrayList", "LinkedList", "TargetArrayList", "Stack", "HashSet", "TreeSet", "TargetTree")
-                                    .map(e -> e.getAttribute("elementType")),
-                                elementOfType("HashMap", "TreeMap")
-                                    .flatMap(e -> Stream.of("keyType", "valueType").map(e::getAttribute)),
-                                elementOfType("method", "program")
-                                    .map(e -> e.getAttribute("in"))
+                                Stream.of(
+                                    elementOfType("Array", "ArrayList", "LinkedList", "TargetArrayList", "Stack", "HashSet", "TreeSet", "TargetTree")
+                                        .map(e -> e.getAttributeNode("elementType")),
+                                    elementOfType("HashMap", "TreeMap")
+                                            .flatMap(e -> Stream.of("keyType", "valueType")
+                                                .map(e::getAttributeNode)),
+                                    elementOfType("method", "program")
+                                        .map(e -> e.getAttributeNode("in"))
+                                )
+                                    .flatMap(Function.identity())
+                                    .filter(Objects::nonNull)
+                                    .map(Attr::getValue)
                             )
                             .flatMap(Function.identity())
                             .map(String::trim)
@@ -211,13 +217,13 @@ class XMLBookReader {
 
 //                typeErrors = typeErrors
 
-                List<Exception> typeErrorsList = typeErrors.collect(Collectors.toList());
+                List<Exception> typeErrorsList = typeErrors.toList();
                 for (Exception e : typeErrorsList)
                     handler.log(System.Logger.Level.ERROR, e);
-                if (typeErrorsList.isEmpty())
-                    logger.log(System.Logger.Level.TRACE, "No type errors present");
-                else {
-                    logger.log(System.Logger.Level.TRACE, "Type errors present");
+                if (!typeErrorsList.isEmpty())
+//                    logger.log(System.Logger.Level.TRACE, "No type errors present");
+                /*else*/ {
+//                    logger.log(System.Logger.Level.TRACE, "Type errors present");
                     Exception err = typeErrorsList.get(0);
                     if (err instanceof ClassNotFoundException e)
                         throw e;
@@ -237,24 +243,25 @@ class XMLBookReader {
 //                }
             }
             catch (IOException | SAXException | ClassNotFoundException | RuntimeException | NoSuchMethodException e) {
-                if (result == null)
+                if (result == null){
+                    handler.log(System.Logger.Level.ERROR, e);
                     result = new Result<>(name, BookValidationStatus.INVALID, handler.getLogs());
+                }
                 documentParseException = e;
                 throw e;
             }
             finally {
                 if (result == null) {
-                    if (handler.getMaxErrorKind() == null)
-                        result = new Result<>(name, BookValidationStatus.VALID);
-                    else if (handler.getMaxErrorKind() == System.Logger.Level.WARNING)
-                        result = new Result<>(name, BookValidationStatus.VALID_WITH_WARNINGS, handler.getLogs());
-                    else
-                        result = new Result<>(name, BookValidationStatus.INVALID, handler.getLogs());
+                    result = switch (handler.getMaxErrorKind()) {
+                        case ALL -> new Result<>(name, BookValidationStatus.VALID);
+                        case WARNING -> new Result<>(name, BookValidationStatus.VALID_WITH_WARNINGS, handler.getLogs());
+                        default -> new Result<>(name, BookValidationStatus.INVALID, handler.getLogs());
+                    };
                 }
             }
         }
         else {
-            logger.log(System.Logger.Level.TRACE, "A previous attempt to parse the document failed");
+//            logger.log(System.Logger.Level.TRACE, "A previous attempt to parse the document failed");
             if (documentParseException instanceof RuntimeException e)
                 throw e;
             else if (documentParseException instanceof IOException e)
@@ -264,7 +271,7 @@ class XMLBookReader {
             else if (documentParseException instanceof ClassNotFoundException e)
                 throw e;
             else
-                throw new IllegalStateException("DocumentParseException had unexpected value");
+                throw new IllegalStateException("DocumentParseException had unexpected type " + documentParseException.getClass().getSimpleName());
         }
     }
 
@@ -315,6 +322,6 @@ class XMLBookReader {
         Class<?> clazz = classLoader.loadClass(e.getAttribute("annotation"));
         if (!Annotation.class.isAssignableFrom(clazz))
             throw new ClassCastException("Cannot convert " + clazz.getName() + " to java.lang.Annotation");
-        return new CheckableType<>(e.getAttribute(name), (Class<? extends Annotation>) clazz);
+        return new CheckableType<>(e.getAttribute("name"), (Class<? extends Annotation>) clazz);
     }
 }

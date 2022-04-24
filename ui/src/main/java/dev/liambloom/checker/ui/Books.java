@@ -1,6 +1,15 @@
 package dev.liambloom.checker.ui;
 
+import dev.liambloom.checker.books.Book;
+import dev.liambloom.checker.books.BookLocator;
+import dev.liambloom.checker.books.BookParserException;
+import dev.liambloom.checker.books.xmlBook.XMLBookParser;
+import dev.liambloom.util.function.FunctionThrowsException;
+import dev.liambloom.util.function.FunctionUtils;
+
+import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -9,10 +18,10 @@ import java.util.prefs.Preferences;
 
 public final class Books {
     private static final AtomicInteger anonCount = new AtomicInteger(1);
-    private static final Map<String, BeanBook> loadedBooks = new WeakHashMap<>();
-    private static final Preferences prefs = Preferences.userNodeForPackage(Books.class);
-    private static final Preferences books = prefs.node("books");
-    private static final Preferences parsers = prefs.node("parsers");
+    static final Map<String, BeanBook> loadedBooks = new WeakHashMap<>();
+    static final Preferences prefs = Preferences.userNodeForPackage(Books.class).node("books");
+//    private static final Preferences books = prefs.node("books");
+//    private static final Preferences parsers = prefs.node("parsers");
 
     private Books() {
     }
@@ -27,28 +36,29 @@ public final class Books {
      * @return The book
      * @throws NullPointerException If the book does not exist
      */
-    public static BeanBook getBook(String name) {
-        return loadedBooks.computeIfAbsent(name, key -> {
+    @SuppressWarnings("RedundantThrows")
+    public static BeanBook getBook(String name) throws IOException, ClassNotFoundException, NoSuchMethodException, URISyntaxException, BookParserException {
+        return loadedBooks.computeIfAbsent(name, FunctionUtils.unchecked((FunctionThrowsException<String, BeanBook>) key -> {
             prefs.node(name);
             String url = prefs.get(name, null);
             try {
-                return new BeanBook(name, new URLBook(new URL(Objects.requireNonNull(url, "Book \"" + name + "\" does not exist"))));
+                return new BeanBook(name, new URL(Objects.requireNonNull(url, "Book \"" + name + "\" does not exist")));
             }
             catch (MalformedURLException e) {
                 throw new RuntimeException(e);
             }
-        });
+        }));
     }
 
-    public static BeanBook getAnonymousBook(URL url) {
-        return new BeanBook("<anonymous book #" + anonCount.getAndIncrement() + ">", new URLBook(url));
+    public static BeanBook getAnonymousBook(URL url) throws BookParserException, IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException {
+        return new BeanBook("<anonymous book #" + anonCount.getAndIncrement() + ">", url);
     }
 
     public static String[] getAllBookNames() throws BackingStoreException {
         return prefs.keys();
     }
 
-    public static BeanBook[] getAllBooks() throws BackingStoreException {
+    public static BeanBook[] getAllBooks() throws BackingStoreException, BookParserException, IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException {
         String[] names = getAllBookNames();
         BeanBook[] books = new BeanBook[names.length];
         for (int i = 0; i < books.length; i++)
@@ -80,11 +90,15 @@ public final class Books {
         prefs.put(s, url.toString());
     }
 
-    public static void remove(String name) {
-        if (prefs.get(name, null) == null)
-            throw new IllegalArgumentException("Book \"" + name + "\" doesn't exist");
-        prefs.remove(name);
-        Optional.ofNullable(loadedBooks.remove(name)).ifPresent(BeanBook::remove);
+//    public static void remove(String name) {
+//        if (prefs.get(name, null) == null)
+//            throw new IllegalArgumentException("Book \"" + name + "\" doesn't exist");
+//        prefs.remove(name);
+//        Optional.ofNullable(loadedBooks.remove(name)).ifPresent(BeanBook::remove);
+//    }
+
+    public static Book newBook(String name, URL url) throws BookParserException, IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException {
+        return new XMLBookParser().parse(new BookLocator(name, url));
     }
 
 //    public static boolean existsNamed(String n) {

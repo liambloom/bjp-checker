@@ -5,13 +5,13 @@ import dev.liambloom.checker.Checker;
 import dev.liambloom.checker.TestStatus;
 import dev.liambloom.checker.books.BookLocator;
 import dev.liambloom.checker.books.BookParserException;
+import dev.liambloom.checker.books.CheckableType;
 import dev.liambloom.checker.books.Result;
 import dev.liambloom.checker.ui.*;
 import dev.liambloom.util.StringUtils;
 import dev.liambloom.util.function.FunctionUtils;
 import javafx.application.Application;
 import org.fusesource.jansi.AnsiConsole;
-import org.xml.sax.SAXException;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -188,7 +188,7 @@ public class Main {
 
                             Map<String, String> checkableNameAbbrMap = new HashMap<>();
                             Set<String> names = new HashSet<>();
-                            for (String name : book.getMeta().checkableTypeNameSet()) {
+                            for (String name : book.getBook().getMeta().checkableTypeNameSet()) {
                                 names.add(name);
                                 Set<String> variations = Stream.of(StringUtils.Case.PASCAL, StringUtils.Case.CAMEL, StringUtils.Case.SNAKE, StringUtils.Case.CONST, StringUtils.Case.SKEWER)
                                     .map(c -> StringUtils.convertCase(name, c))
@@ -225,13 +225,13 @@ public class Main {
                                 });
                             }
 
-                             result = Checker.check(book, chapter, processedCheckables, paths);
+                             result = Checker.check(book.getBook(), chapter, processedCheckables, paths);
 //                        }
 //                        while (!reader.validateResults());
 
                         new ResultPrinter().printResults(result);
                     }
-                    catch (BookParserException | ClassNotFoundException | IllegalArgumentException e) {
+                    catch (/*BookParserException |*/ ClassNotFoundException | IllegalArgumentException e) {
                         throw new UserErrorException(e);
                     }
                 }
@@ -253,26 +253,29 @@ public class Main {
                         }
                         case "remove" -> {
                             assertArgsPresent(args, 2, "name");
-                            try {
-                                Books.remove(args[2]);
-                            }
-                            catch (IllegalArgumentException e) {
-                                throw new UserErrorException(e.getMessage(), e);
-                            }
+                            throw new UserErrorException("Go away");
+//                            try {
+//                                Books.remove(args[2]);
+//                            }
+//                            catch (IllegalArgumentException e) {
+//                                throw new UserErrorException(e.getMessage(), e);
+//                            }
                         }
                         case "rename" -> {
                             assertArgsPresent(args, 2, "old name", "new name");
-                            try {
-                                Books.getBook(args[2]).setName(args[3]);
-                            }
-                            catch (NullPointerException | java.lang.IllegalArgumentException e) {
-                                System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Caught exception when renaming");
-                                throw new UserErrorException(e.getMessage(), e);
-                            }
-                            catch (Throwable e) {
-                                System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Unexpected exception of type %s thrown when renaming", e.getClass().getName());
-                                throw e;
-                            }
+//                            try {
+//                                Books.getBook(args[2]).setName(args[3]);
+//                            }
+//                            catch (NullPointerException | java.lang.IllegalArgumentException e) {
+//                                System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Caught exception when renaming");
+//                                throw new UserErrorException(e.getMessage(), e);
+//                            }
+
+//                            catch (Throwable e) {
+//                                System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Unexpected exception of type %s thrown when renaming", e.getClass().getName());
+//                                throw e;
+//                            }
+                            throw new UserErrorException("Nope");
                         }
                         case "move" -> {
                             assertArgsPresent(args, 2, "name", "new URL");
@@ -283,7 +286,8 @@ public class Main {
                             catch (NullPointerException e) {
                                 throw new UserErrorException(e.getMessage(), e);
                             }
-                            book.setUrl(resolveAnonymousBook(args[3]));
+                            throw new UserErrorException("shut up");
+//                            book.setUrl(resolveAnonymousBook(args[3]));
                         }
                         case "list" -> {
                             assertArgsPresent(args, 2);
@@ -291,7 +295,7 @@ public class Main {
                             String[][] strs = new String[books.length][2];
                             int maxBookNameLength = 0;
                             for (int i = 0; i < strs.length; i++) {
-                                BookLocator locator = books[i].getLocator();
+                                BookLocator locator = books[i].getBookLocator();
                                 if (locator.name().length() > maxBookNameLength)
                                     maxBookNameLength = locator.name().length();
                                 strs[i][0] = locator.name();
@@ -307,9 +311,10 @@ public class Main {
                                 new ResultPrinter().printResults((args[2].equals("-a") || args[2].equals("--all")
                                     ? Arrays.stream(Books.getAllBookNames())
                                     : Arrays.stream(args).skip(2))
-                                    .map(Books::getBook)
-                                    .map(b -> Checker.check(b))
+                                    .map(FunctionUtils.unchecked(Books::getBook))
+                                    .map(BeanBook::getValidationResult)
                                     .toArray(Result[]::new));
+//                                throw new UserErrorException("fuck off");
                             }
                             catch (NullPointerException e) {
                                 throw new UserErrorException(e.getMessage(), e);
@@ -375,7 +380,7 @@ public class Main {
             System.exit(1);
         }
         finally {
-            System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Shutting down. Currently running: " + Thread.getAllStackTraces().keySet());
+//            System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Shutting down. Currently running: " + Thread.getAllStackTraces().keySet());
             AnsiConsole.systemUninstall();
             System.exit(0);
         }
@@ -405,6 +410,9 @@ public class Main {
             return Books.getBook(name);
         }
         catch (NullPointerException ignored) { }
+        catch (BookParserException | URISyntaxException | ClassNotFoundException | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
         try {
             return Books.getAnonymousBook(__resolveAnonymousBook(name));
         }
@@ -412,6 +420,10 @@ public class Main {
             System.getLogger(Main.class.getName()).log(System.Logger.Level.ERROR, "Unable to find saved book " + name);
             System.exit(1);
             return null;
+        }
+        catch (BookParserException | URISyntaxException | ClassNotFoundException |
+               NoSuchMethodException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -452,10 +464,10 @@ public class Main {
             }
         }
 
-        System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "URL " + (url == null ? "is null" : "is not null"));
-        System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "URL " + (urlExists ? "exists" : "doesn't exist"));
-        if (url != null)
-            System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "url = " + url);
+//        System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "URL " + (url == null ? "is null" : "is not null"));
+//        System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "URL " + (urlExists ? "exists" : "doesn't exist"));
+//        if (url != null)
+//            System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "url = " + url);
 
         // Return URL if it exists
         if (urlExists)

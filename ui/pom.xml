@@ -15,11 +15,11 @@
   <url>https://checker.liambloom.dev/</url>
 
   <dependencies>
-    <dependency>
-      <groupId>dev.liambloom.checker</groupId>
-      <artifactId>internal</artifactId>
-      <version>0.2.0</version>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>dev.liambloom.checker</groupId>-->
+<!--      <artifactId>internal</artifactId>-->
+<!--      <version>0.2.0</version>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-controls</artifactId>
@@ -54,6 +54,11 @@
       <artifactId>checking</artifactId>
       <version>0.2.0</version>
       <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>dev.liambloom.checker</groupId>
+      <artifactId>xmlBook</artifactId>
+      <version>0.2.0</version>
     </dependency>
     <!--    <dependency>-->
 <!--      <groupId>net.harawata</groupId>-->

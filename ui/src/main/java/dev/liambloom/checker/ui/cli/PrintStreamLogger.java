@@ -1,6 +1,6 @@
 package dev.liambloom.checker.ui.cli;
 
-import dev.liambloom.checker.Color;
+import dev.liambloom.checker.books.Color;
 import org.fusesource.jansi.AnsiConsole;
 
 import java.io.ByteArrayOutputStream;

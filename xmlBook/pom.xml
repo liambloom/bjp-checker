@@ -18,6 +18,21 @@
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>lib</id>
+            <name>lib</name>
+            <url>file:///${project.basedir}/../lib</url>
+            <releases>
+                <enabled>true</enabled>
+                <checksumPolicy>ignore</checksumPolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>dev.liambloom.checker</groupId>
@@ -38,6 +53,11 @@
             <artifactId>auto-service-annotations</artifactId>
             <version>1.0.1</version>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>xerces</groupId>
+            <artifactId>xercesImpl-XSD-1.1</artifactId>
+            <version>2.12.1</version>
         </dependency>
     </dependencies>
 </project>

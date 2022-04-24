@@ -212,21 +212,21 @@ public final class BookChecker {
         Method m = chapterAnnotation.getMethod("value");
 
         int checkedChapter;
-        logger.log(System.Logger.Level.DEBUG, "Chapter annotation type: %s", chapterAnnotation);
+//        logger.log(System.Logger.Level.DEBUG, "Chapter annotation type: %s", chapterAnnotation);
 //        logger.log(System.Logger.Level.DEBUG, "Target annotation types: %s", );s
         AtomicInteger detectedChapter = new AtomicInteger(-1);
         List<Class<?>> classes = new PathClassLoader(targets, classLoader).loadAllOwnClasses()
 //            .peek(System.out::println)
             .filter(clazz -> {
                 System.Logger logger = System.getLogger(Util.generateLoggerName());
-                logger.log(System.Logger.Level.TRACE, "%s has annotations %s", clazz, Arrays.toString(clazz.getAnnotations()));
+//                logger.log(System.Logger.Level.TRACE, "%s has annotations %s", clazz, Arrays.toString(clazz.getAnnotations()));
                 return Arrays.stream(clazz.getAnnotationsByType(chapterAnnotation))
                     .map(FunctionUtils.unchecked((FunctionThrowsException<Annotation, Integer>) a -> {
                         m.trySetAccessible();
                         return (int) m.invoke(a);
                     }))
                     .anyMatch(c -> {
-                        logger.log(System.Logger.Level.TRACE, "Class %s belongs to chapter %d, expecting %s", clazz, c, chapter);
+//                        logger.log(System.Logger.Level.TRACE, "Class %s belongs to chapter %d, expecting %s", clazz, c, chapter);
                         if (chapter.isPresent())
                             return c == chapter.getAsInt();
                         else if (detectedChapter.compareAndExchange(-1, c) != c)
@@ -238,7 +238,7 @@ public final class BookChecker {
                 }
             )
             .collect(Collectors.toList());
-        logger.log(System.Logger.Level.TRACE, "Classes: " + classes);
+//        logger.log(System.Logger.Level.TRACE, "Classes: " + classes);
         checkedChapter = chapter.orElseGet(detectedChapter::get);
 
         Targets potentialTargets = new Targets();
@@ -263,10 +263,10 @@ public final class BookChecker {
         changeDirectory(book.loadResources(tempDir, getResources()));
 
         Node ch;
-        logger.log(System.Logger.Level.DEBUG, "Chapter %d", checkedChapter);
+//        logger.log(System.Logger.Level.DEBUG, "Chapter %d", checkedChapter);
         try {
             ch = (Node) xpath.evaluate("/book/chapter[@num='" + checkedChapter + "']", document, XPathConstants.NODE);
-            logger.log(System.Logger.Level.TRACE, "Chapter %d is %s", checkedChapter, ch);
+//            logger.log(System.Logger.Level.TRACE, "Chapter %d is %s", checkedChapter, ch);
         }
         catch (XPathExpressionException e) {
             throw new RuntimeException(e);
@@ -349,7 +349,7 @@ public final class BookChecker {
                             Files.deleteIfExists(tempDir);
                     }
                     catch (IOException e) {
-                        System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.DEBUG, "Error deleting temp file for native library", e);
+//                        System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.DEBUG, "Error deleting temp file for native library", e);
                     }
                 }
             }
@@ -465,7 +465,7 @@ public final class BookChecker {
         }
 
         public int value(T target) throws InvocationTargetException, IllegalAccessException {
-            System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.TRACE, "Getting %s of %s", name, target);
+//            System.getLogger(Util.generateLoggerName()).log(System.Logger.Level.TRACE, "Getting %s of %s", name, target);
             return (int) value.invoke(target);
         }
 

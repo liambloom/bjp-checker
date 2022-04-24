@@ -20,13 +20,13 @@ public class ResultPrinter {
 
     public void printResults(Result<?>[] s) throws IOException {
         detailTitlePrinted = false;
-        debugLogger.log(System.Logger.Level.TRACE, "Printing Results: %s", Arrays.toString(s));
+//        debugLogger.log(System.Logger.Level.TRACE, "Printing Results: %s", Arrays.toString(s));
         for (Result<?> r : s)
             printResultSimple(r, 0);
         System.out.println();
         for (Result<?> r : s)
             printResultDetails(r.name(), r);
-        debugLogger.log(System.Logger.Level.TRACE, "Done Printing Results: %s", Arrays.toString(s));
+//        debugLogger.log(System.Logger.Level.TRACE, "Done Printing Results: %s", Arrays.toString(s));
     }
 
     private void printResultSimple(Result<?> r, int level) {
@@ -45,10 +45,12 @@ public class ResultPrinter {
             }
             System.out.printf("---- %s ----%n", fullName);
             r.logs().ifPresent(l -> {
+                debugLogger.log(System.Logger.Level.DEBUG, "Logs are present");
                 l.logTo(logger);
 //                r.consoleOutput().ifPresent(c -> System.out.println());
             });
             r.consoleOutput().ifPresent(FunctionUtils.unchecked((ConsumerThrowsException<ByteArrayOutputStream>) c -> {
+                debugLogger.log(System.Logger.Level.DEBUG, "Console output is present");
                 logger.log(System.Logger.Level.INFO, "Console output:");
                 System.out.println("  | " + String.join(System.lineSeparator() + "  | ", c.toString().split("\\R")));
             }));
