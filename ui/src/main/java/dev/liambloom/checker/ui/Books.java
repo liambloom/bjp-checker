@@ -18,7 +18,7 @@ import java.util.prefs.Preferences;
 
 public final class Books {
     private static final AtomicInteger anonCount = new AtomicInteger(1);
-    static final Map<String, BeanBook> loadedBooks = new WeakHashMap<>();
+    static final Map<String, SelfLoadingBook> loadedBooks = new WeakHashMap<>();
     static final Preferences prefs = Preferences.userNodeForPackage(Books.class).node("books");
 //    private static final Preferences books = prefs.node("books");
 //    private static final Preferences parsers = prefs.node("parsers");
@@ -36,13 +36,12 @@ public final class Books {
      * @return The book
      * @throws NullPointerException If the book does not exist
      */
-    @SuppressWarnings("RedundantThrows")
-    public static BeanBook getBook(String name) throws IOException, ClassNotFoundException, NoSuchMethodException, URISyntaxException, BookParserException {
-        return loadedBooks.computeIfAbsent(name, FunctionUtils.unchecked((FunctionThrowsException<String, BeanBook>) key -> {
+    public static SelfLoadingBook getBook(String name) {
+        return loadedBooks.computeIfAbsent(name, FunctionUtils.unchecked((FunctionThrowsException<String, SelfLoadingBook>) key -> {
             prefs.node(name);
             String url = prefs.get(name, null);
             try {
-                return new BeanBook(name, new URL(Objects.requireNonNull(url, "Book \"" + name + "\" does not exist")));
+                return new SelfLoadingBook(name, new URL(Objects.requireNonNull(url, "Book \"" + name + "\" does not exist")), new XMLBookParser());
             }
             catch (MalformedURLException e) {
                 throw new RuntimeException(e);
@@ -50,17 +49,17 @@ public final class Books {
         }));
     }
 
-    public static BeanBook getAnonymousBook(URL url) throws BookParserException, IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException {
-        return new BeanBook("<anonymous book #" + anonCount.getAndIncrement() + ">", url);
+    public static SelfLoadingBook getAnonymousBook(URL url) throws BookParserException, IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException {
+        return new SelfLoadingBook("<anonymous book #" + anonCount.getAndIncrement() + ">", url, new XMLBookParser());
     }
 
     public static String[] getAllBookNames() throws BackingStoreException {
         return prefs.keys();
     }
 
-    public static BeanBook[] getAllBooks() throws BackingStoreException, BookParserException, IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException {
+    public static SelfLoadingBook[] getAllBooks() throws BackingStoreException {
         String[] names = getAllBookNames();
-        BeanBook[] books = new BeanBook[names.length];
+        SelfLoadingBook[] books = new SelfLoadingBook[names.length];
         for (int i = 0; i < books.length; i++)
             books[i] = getBook(names[i]);
         return books;
@@ -90,12 +89,13 @@ public final class Books {
         prefs.put(s, url.toString());
     }
 
-//    public static void remove(String name) {
-//        if (prefs.get(name, null) == null)
-//            throw new IllegalArgumentException("Book \"" + name + "\" doesn't exist");
-//        prefs.remove(name);
+    public static void remove(String name) {
+        if (prefs.get(name, null) == null)
+            throw new IllegalArgumentException("Book \"" + name + "\" doesn't exist");
+        prefs.remove(name);
+        throw new Error("doesn't work yet");
 //        Optional.ofNullable(loadedBooks.remove(name)).ifPresent(BeanBook::remove);
-//    }
+    }
 
     public static Book newBook(String name, URL url) throws BookParserException, IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException {
         return new XMLBookParser().parse(new BookLocator(name, url));

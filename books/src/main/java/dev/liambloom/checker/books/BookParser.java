@@ -48,4 +48,33 @@ public abstract class BookParser {
     }
     protected abstract Book parse(BookLocator locator) throws IOException, ClassNotFoundException, NoSuchMethodException, URISyntaxException, BookParserException;
     public abstract Result<BookValidationStatus> validate(BookLocator locator) throws IOException;
+
+    /**
+     * A convenience method to re-throw an error thrown by a book parser and stored, such
+     * as in a variable or a container exception
+     *
+     * @param throwable The exception to be thrown
+     * @return The exception, if it is not of one of the thrown types
+     * @throws RuntimeException If {@code throwable} is a {@code RuntimeException}
+     * @throws IOException If {@code throwable} is an {@code IOException}
+     * @throws ClassNotFoundException If {@code throwable} is a {@code ClassNotFoundException}
+     * @throws NoSuchMethodException If {@code throwable} is a {@code NoSuchMethodException}
+     * @throws BookParserException If {@code throwable} is a {@code BookParserException}
+     */
+    public static Throwable reThrowError(Throwable throwable) throws IOException, ClassNotFoundException, NoSuchMethodException, BookParserException, URISyntaxException {
+        if (throwable instanceof RuntimeException e)
+            throw e;
+        else if (throwable instanceof IOException e)
+            throw e;
+        else if (throwable instanceof BookParserException e)
+            throw e;
+        else if (throwable instanceof ClassNotFoundException e)
+            throw e;
+        else if (throwable instanceof NoSuchMethodException e)
+            throw e;
+        else if (throwable instanceof URISyntaxException e)
+            throw e;
+        else
+            return throwable;
+    }
 }

@@ -104,7 +104,6 @@
         <xs:sequence>
             <xs:element maxOccurs="unbounded" name="checkable" type="checkable" />
         </xs:sequence>
-        <xs:attribute name="type" type="xs:string" />
         <xs:attribute name="num" type="positiveInt" use="required" />
     </xs:complexType>
 

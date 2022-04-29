@@ -262,16 +262,18 @@ class XMLBookReader {
         }
         else {
 //            logger.log(System.Logger.Level.TRACE, "A previous attempt to parse the document failed");
-            if (documentParseException instanceof RuntimeException e)
+
+            if (documentParseException instanceof SAXException e)
                 throw e;
-            else if (documentParseException instanceof IOException e)
-                throw e;
-            else if (documentParseException instanceof SAXException e)
-                throw e;
-            else if (documentParseException instanceof ClassNotFoundException e)
-                throw e;
-            else
+            else {
+                try {
+                    //noinspection ThrowableNotThrown,ResultOfMethodCallIgnored
+                    BookParser.reThrowError(documentParseException);
+                }
+                catch (BookParserException | URISyntaxException ignored) {
+                }
                 throw new IllegalStateException("DocumentParseException had unexpected type " + documentParseException.getClass().getSimpleName());
+            }
         }
     }
 

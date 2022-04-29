@@ -1,8 +1,10 @@
-package dev.liambloom.checker.ui;
+package dev.liambloom.checker.ui.gui;
 
 //import dev.liambloom.checker.*;
 import dev.liambloom.checker.books.*;
 import dev.liambloom.checker.books.xmlBook.XMLBookParser;
+import dev.liambloom.checker.ui.Books;
+import dev.liambloom.checker.ui.SelfLoadingBook;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.*;
@@ -41,7 +43,7 @@ public class BeanBook {
     public static final long RESULT_VALIDATION_PERIOD = 10_000;
     private static final AtomicInteger anonCount = new AtomicInteger(0);
     private static final Timer timer = new Timer(true);
-    private final System.Logger logger = System.getLogger(BeanBook.class.getName() + System.identityHashCode(this));
+    private final System.Logger logger = System.getLogger(SelfLoadingBook.class.getName() + System.identityHashCode(this));
     private final ObjectBinding<BookLocator> inner;
     public final ReadOnlyStringProperty name;
     public final ReadOnlyObjectProperty<URL> url;
@@ -112,12 +114,12 @@ public class BeanBook {
             }
         };
         validationResult = new ObjectBinding<>() {
-            { bind(BeanBook.this.inner); }
+            { bind(SelfLoadingBook.this.inner); }
 
             @Override
             protected Result<BookValidationStatus> computeValue() {
                 try {
-                    return new XMLBookParser().validate(BeanBook.this.inner.get());
+                    return new XMLBookParser().validate(SelfLoadingBook.this.inner.get());
                 }
                 catch (IOException e) {
                     logger.log(System.Logger.Level.ERROR, "Error validating book", e);
@@ -127,12 +129,12 @@ public class BeanBook {
         };
 
         exists = new BooleanBinding() {
-            { bind(BeanBook.this.inner); }
+            { bind(SelfLoadingBook.this.inner); }
 
             @Override
             protected boolean computeValue() {
                 try {
-                    BeanBook.this.inner.get().url().openConnection().connect();
+                    SelfLoadingBook.this.inner.get().url().openConnection().connect();
                     return true;
                 }
                 catch (FileNotFoundException e) {

@@ -5,7 +5,6 @@ import dev.liambloom.checker.Checker;
 import dev.liambloom.checker.TestStatus;
 import dev.liambloom.checker.books.BookLocator;
 import dev.liambloom.checker.books.BookParserException;
-import dev.liambloom.checker.books.CheckableType;
 import dev.liambloom.checker.books.Result;
 import dev.liambloom.checker.ui.*;
 import dev.liambloom.util.StringUtils;
@@ -179,7 +178,7 @@ public class Main {
 
                         Stream<Path> paths = new Glob(globArgs).files();
 
-                        BeanBook book = getMaybeAnonymousBook(testName);
+                        SelfLoadingBook book = getMaybeAnonymousBook(testName);
                         Result<TestStatus>[] result;
 //                        BookChecker reader;
 
@@ -188,7 +187,7 @@ public class Main {
 
                             Map<String, String> checkableNameAbbrMap = new HashMap<>();
                             Set<String> names = new HashSet<>();
-                            for (String name : book.getBook().getMeta().checkableTypeNameSet()) {
+                            for (String name : book.book().getMeta().checkableTypeNameSet()) {
                                 names.add(name);
                                 Set<String> variations = Stream.of(StringUtils.Case.PASCAL, StringUtils.Case.CAMEL, StringUtils.Case.SNAKE, StringUtils.Case.CONST, StringUtils.Case.SKEWER)
                                     .map(c -> StringUtils.convertCase(name, c))
@@ -225,7 +224,7 @@ public class Main {
                                 });
                             }
 
-                             result = Checker.check(book.getBook(), chapter, processedCheckables, paths);
+                             result = Checker.check(book.book(), chapter, processedCheckables, paths);
 //                        }
 //                        while (!reader.validateResults());
 
@@ -279,7 +278,7 @@ public class Main {
                         }
                         case "move" -> {
                             assertArgsPresent(args, 2, "name", "new URL");
-                            BeanBook book;
+                            SelfLoadingBook book;
                             try {
                                 book = Books.getBook(args[2]);
                             }
@@ -291,11 +290,11 @@ public class Main {
                         }
                         case "list" -> {
                             assertArgsPresent(args, 2);
-                            BeanBook[] books = Books.getAllBooks();//.collect(Collectors.toList());
+                            SelfLoadingBook[] books = Books.getAllBooks();//.collect(Collectors.toList());
                             String[][] strs = new String[books.length][2];
                             int maxBookNameLength = 0;
                             for (int i = 0; i < strs.length; i++) {
-                                BookLocator locator = books[i].getBookLocator();
+                                BookLocator locator = books[i].locator();
                                 if (locator.name().length() > maxBookNameLength)
                                     maxBookNameLength = locator.name().length();
                                 strs[i][0] = locator.name();
@@ -311,8 +310,8 @@ public class Main {
                                 new ResultPrinter().printResults((args[2].equals("-a") || args[2].equals("--all")
                                     ? Arrays.stream(Books.getAllBookNames())
                                     : Arrays.stream(args).skip(2))
-                                    .map(FunctionUtils.unchecked(Books::getBook))
-                                    .map(BeanBook::getValidationResult)
+                                    .map(Books::getBook)
+                                    .map(FunctionUtils.unchecked(SelfLoadingBook::validate))
                                     .toArray(Result[]::new));
 //                                throw new UserErrorException("fuck off");
                             }
@@ -405,14 +404,14 @@ public class Main {
 
     //    private static void BeanBook
 
-    private static BeanBook getMaybeAnonymousBook(String name) throws IOException {
+    private static SelfLoadingBook getMaybeAnonymousBook(String name) throws IOException {
         try {
             return Books.getBook(name);
         }
         catch (NullPointerException ignored) { }
-        catch (BookParserException | URISyntaxException | ClassNotFoundException | NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
+//        catch (BookParserException | URISyntaxException | ClassNotFoundException | NoSuchMethodException e) {
+//            throw new RuntimeException(e);
+//        }
         try {
             return Books.getAnonymousBook(__resolveAnonymousBook(name));
         }
