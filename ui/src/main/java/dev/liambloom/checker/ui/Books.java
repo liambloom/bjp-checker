@@ -14,12 +14,12 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.prefs.BackingStoreException;
-import java.util.prefs.Preferences;
+//import java.util.prefs.Preferences;
 
 public final class Books {
     private static final AtomicInteger anonCount = new AtomicInteger(1);
-    static final Map<String, SelfLoadingBook> loadedBooks = new WeakHashMap<>();
-    static final Preferences prefs = Preferences.userNodeForPackage(Books.class).node("books");
+    private static final Map<String, SelfLoadingBook> loadedBooks = new WeakHashMap<>();
+//    private static final Preferences prefs = Preferences.userNodeForPackage(Books.class).node("books");
 //    private static final Preferences books = prefs.node("books");
 //    private static final Preferences parsers = prefs.node("parsers");
 

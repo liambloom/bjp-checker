@@ -46,25 +46,26 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-        <groupId>dev.liambloom.checker</groupId>
-        <artifactId>checking</artifactId>
-    </dependency>
-    <dependency>
       <groupId>dev.liambloom.checker</groupId>
       <artifactId>checking</artifactId>
-      <version>0.2.0</version>
-      <scope>compile</scope>
+      <version>${project.version}</version>
     </dependency>
+<!--    <dependency>-->
+<!--      <groupId>dev.liambloom.checker</groupId>-->
+<!--      <artifactId>checking</artifactId>-->
+<!--      <version>0.2.0</version>-->
+<!--      <scope>compile</scope>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>dev.liambloom.checker</groupId>
       <artifactId>xmlBook</artifactId>
-      <version>0.2.0</version>
+      <version>${project.version}</version>
     </dependency>
-    <!--    <dependency>-->
-<!--      <groupId>net.harawata</groupId>-->
-<!--      <artifactId>appdirs</artifactId>-->
-<!--      <version>1.2.1</version>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>net.harawata</groupId>
+      <artifactId>appdirs</artifactId>
+      <version>1.2.1</version>
+    </dependency>
   </dependencies>
 
   <build>

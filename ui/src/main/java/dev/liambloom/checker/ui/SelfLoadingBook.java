@@ -13,8 +13,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
 public class SelfLoadingBook {
-    // Should I just have one instance of each possible SelfLoadingBook and use a private constructor and public static method for getting instances?
-    // That would probably be easier and more resource-efficient than having several SelfLoadingBooks with the same fields internally
+    // It would be more memory efficient to use a single map of SelfLoadingBooks (only one instance for each
+    //  set of values), but there would be no efficient way to find in such a map, so this is the more computationally
+    //  efficient method.
     private static final Map<SelfLoadingBook, FutureTask<Book>> books = Collections.synchronizedMap(new HashMap<>());
     private static final Map<SelfLoadingBook, FutureTask<Result<BookValidationStatus>>> validations = Collections.synchronizedMap(new HashMap<>());
     private final BookLocator locator;
