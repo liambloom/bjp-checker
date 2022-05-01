@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This should be automatically generated -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" version="1.0">
+    <xs:element name="books" type="books" />
+
+    <xs:complexType name="books">
+        <xs:sequence>
+            <xs:element name="book" type="book" minOccurs="0" maxOccurs="unbounded">
+                <xs:unique name="digest">
+                    <xs:selector xpath="digest" />
+                    <xs:field xpath="algorithm" />
+                </xs:unique>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="book">
+        <xs:sequence>
+            <xs:element name="name" type="xs:string" />
+            <xs:element name="id" type="uuid" />
+            <xs:element name="digest" type="digest" maxOccurs="unbounded" />
+            <xs:element name="sourceUrl" type="xs:anyURI" />
+            <xs:element name="download" type="xs:boolean" />
+            <xs:element name="parser" type="uuid" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:simpleType name="uuid">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[\da-f]{32}" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="digest">
+        <xs:simpleContent>
+            <xs:extension base="xs:base64Binary">
+                <xs:attribute name="algorithm" type="xs:string" use="required" />
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+</xs:schema>

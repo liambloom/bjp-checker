@@ -5,10 +5,7 @@ import dev.liambloom.checker.books.*;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
@@ -78,5 +75,30 @@ public class SelfLoadingBook {
     @Override
     public int hashCode() {
         return Objects.hash(locator, parser);
+    }
+
+    @Override
+    public String name() {
+        return locator().name();
+    }
+
+    @Override
+    public UUID id() {
+        return ;
+    }
+
+    @Override
+    public Digest[] digest() {
+        return ;
+    }
+
+    @Override
+    public URL sourceUrl() {
+        return locator().url();
+    }
+
+    @Override
+    public boolean download() {
+        return ;
     }
 }

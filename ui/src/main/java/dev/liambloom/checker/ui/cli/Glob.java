@@ -1,12 +1,10 @@
 package dev.liambloom.checker.ui.cli;
 
-import dev.liambloom.checker.ui.UserErrorException;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;

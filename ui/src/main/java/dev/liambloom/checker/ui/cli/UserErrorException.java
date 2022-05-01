@@ -1,4 +1,4 @@
-package dev.liambloom.checker.ui;
+package dev.liambloom.checker.ui.cli;
 
 public class UserErrorException extends RuntimeException {
     public UserErrorException() {

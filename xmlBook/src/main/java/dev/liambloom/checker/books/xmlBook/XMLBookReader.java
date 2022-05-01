@@ -102,7 +102,9 @@ class XMLBookReader {
 //                logger.log(System.Logger.Level.TRACE, "Parsing document");
                 DocumentBuilder db;
                 try {
-                    db = dbf.newDocumentBuilder();
+                    synchronized (dbf) {
+                        db = dbf.newDocumentBuilder();
+                    }
                 }
                 catch (ParserConfigurationException e) {
 //                    logger.log(System.Logger.Level.DEBUG, "Failure to create document builder", e);

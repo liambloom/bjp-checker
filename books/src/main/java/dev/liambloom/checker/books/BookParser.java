@@ -1,10 +1,7 @@
 package dev.liambloom.checker.books;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 public abstract class BookParser {
     public final Book getBook(BookLocator locator) throws IOException, ClassNotFoundException, NoSuchMethodException, URISyntaxException, BookParserException {
@@ -15,6 +12,11 @@ public abstract class BookParser {
 
         if (book.getMeta().resources().length > 0)
             throw new IllegalStateException("Resources are not currently supported");
+
+
+
+
+
         /* TODO This needs to somehow be checked in the validate method
         String base = book.getMeta().resourceBase().normalize().getPath();
         if (!base.endsWith("/"))

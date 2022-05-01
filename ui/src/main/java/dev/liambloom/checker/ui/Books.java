@@ -6,100 +6,147 @@ import dev.liambloom.checker.books.BookParserException;
 import dev.liambloom.checker.books.xmlBook.XMLBookParser;
 import dev.liambloom.util.function.FunctionThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
+import net.harawata.appdirs.AppDirs;
+import net.harawata.appdirs.AppDirsFactory;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.SchemaFactory;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.prefs.BackingStoreException;
 //import java.util.prefs.Preferences;
 
 public final class Books {
-    private static final AtomicInteger anonCount = new AtomicInteger(1);
-    private static final Map<String, SelfLoadingBook> loadedBooks = new WeakHashMap<>();
-//    private static final Preferences prefs = Preferences.userNodeForPackage(Books.class).node("books");
-//    private static final Preferences books = prefs.node("books");
-//    private static final Preferences parsers = prefs.node("parsers");
+//    private static final AtomicInteger anonCount = new AtomicInteger(1);
+//    private static final Map<String, SelfLoadingBook> loadedBooks = new HashMap<>(); // Previously WeakHashMap
+//    private static Document index;
+//    private static List<SelfLoadingBook> list = new ArrayList<>();
+////    private static final Preferences prefs = Preferences.userNodeForPackage(Books.class).node("books");
+////    private static final Preferences books = prefs.node("books");
+////    private static final Preferences parsers = prefs.node("parsers");
+//
+//    private Books() {
+//    }
+//
+//    /**
+//     * Gets a book. No more than 1 instance of a particular book can exist at once, if
+//     * repeated calls are made for the same book, the same instance may be returned. If
+//     * a strong pointer is not kept to the book, and it is cleaned up by the garbage
+//     * collector, this method may construct a new instance.
+//     *
+//     * @param name The name of the book to be retrieved
+//     * @return The book
+//     * @throws NullPointerException If the book does not exist
+//     */
+//    public static SelfLoadingBook getBook(String name) {
+//
+//        return loadedBooks.computeIfAbsent(name, FunctionUtils.unchecked((FunctionThrowsException<String, SelfLoadingBook>) key -> {
+//            prefs.node(name);
+//            String url = prefs.get(name, null);
+//            try {
+//                return new SelfLoadingBook(name, new URL(Objects.requireNonNull(url, "Book \"" + name + "\" does not exist")), new XMLBookParser());
+//            }
+//            catch (MalformedURLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }));
+//    }
+//
+//    public static SelfLoadingBook getAnonymousBook(URL url) throws BookParserException, IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException {
+//        return new SelfLoadingBook("<anonymous book #" + anonCount.getAndIncrement() + ">", url, new XMLBookParser());
+//    }
+//
+//    public static String[] getAllBookNames() throws BackingStoreException {
+//        return prefs.keys();
+//    }
+//
+//    public static SelfLoadingBook[] getAllBooks() throws BackingStoreException {
+//        String[] names = getAllBookNames();
+//        SelfLoadingBook[] books = new SelfLoadingBook[names.length];
+//        for (int i = 0; i < books.length; i++)
+//            books[i] = getBook(names[i]);
+//        return books;
+//    }
+//
+//    /*public static Optional<String> getDefaultBookName() {
+//        return Optional.ofNullable(prefs.get(DEFAULT_BOOK_KEY, null));
+//            //.map(Books::getBook);
+//    }*/
+//
+//    /*public static Optional<BeanBook> getDefaultBook() {
+//        return getDefaultBookName().map(Books::getBook);
+//    }
+//
+//    public static void setDefaultBook(String b) {
+//        if (b == null)
+//            prefs.remove(DEFAULT_BOOK_KEY);
+//        else if (prefs.get(b, null) != null)
+//            prefs.put(DEFAULT_BOOK_KEY, b);
+//        else
+//            throw new NullPointerException("Book \"" + b + "\" does not exist");
+//    }*/
+//
+////    public static void add(String s, URL url) {
+////        if (prefs.get(s, null) != null)
+////            throw new IllegalArgumentException("Book `" + s + "' already exists");
+////        prefs.put(s, url.toString());
+////    }
+////
+////    public static void remove(String name) {
+////        if (prefs.get(name, null) == null)
+////            throw new IllegalArgumentException("Book \"" + name + "\" doesn't exist");
+////        prefs.remove(name);
+////        throw new Error("doesn't work yet");
+//////        Optional.ofNullable(loadedBooks.remove(name)).ifPresent(BeanBook::remove);
+////    }
+//
+//    public static Book newBook(String name, URL url) throws BookParserException, IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException {
+//        return new XMLBookParser().parse(new BookLocator(name, url));
+//    }
 
-    private Books() {
-    }
-
-    /**
-     * Gets a book. No more than 1 instance of a particular book can exist at once, if
-     * repeated calls are made for the same book, the same instance may be returned. If
-     * a strong pointer is not kept to the book, and it is cleaned up by the garbage
-     * collector, this method may construct a new instance.
-     *
-     * @param name The name of the book to be retrieved
-     * @return The book
-     * @throws NullPointerException If the book does not exist
-     */
-    public static SelfLoadingBook getBook(String name) {
-        return loadedBooks.computeIfAbsent(name, FunctionUtils.unchecked((FunctionThrowsException<String, SelfLoadingBook>) key -> {
-            prefs.node(name);
-            String url = prefs.get(name, null);
-            try {
-                return new SelfLoadingBook(name, new URL(Objects.requireNonNull(url, "Book \"" + name + "\" does not exist")), new XMLBookParser());
-            }
-            catch (MalformedURLException e) {
-                throw new RuntimeException(e);
-            }
-        }));
-    }
-
-    public static SelfLoadingBook getAnonymousBook(URL url) throws BookParserException, IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException {
-        return new SelfLoadingBook("<anonymous book #" + anonCount.getAndIncrement() + ">", url, new XMLBookParser());
-    }
-
-    public static String[] getAllBookNames() throws BackingStoreException {
-        return prefs.keys();
-    }
-
-    public static SelfLoadingBook[] getAllBooks() throws BackingStoreException {
-        String[] names = getAllBookNames();
-        SelfLoadingBook[] books = new SelfLoadingBook[names.length];
-        for (int i = 0; i < books.length; i++)
-            books[i] = getBook(names[i]);
-        return books;
-    }
-
-    /*public static Optional<String> getDefaultBookName() {
-        return Optional.ofNullable(prefs.get(DEFAULT_BOOK_KEY, null));
-            //.map(Books::getBook);
-    }*/
-
-    /*public static Optional<BeanBook> getDefaultBook() {
-        return getDefaultBookName().map(Books::getBook);
-    }
-
-    public static void setDefaultBook(String b) {
-        if (b == null)
-            prefs.remove(DEFAULT_BOOK_KEY);
-        else if (prefs.get(b, null) != null)
-            prefs.put(DEFAULT_BOOK_KEY, b);
-        else
-            throw new NullPointerException("Book \"" + b + "\" does not exist");
-    }*/
-
-    public static void add(String s, URL url) {
-        if (prefs.get(s, null) != null)
-            throw new IllegalArgumentException("Book `" + s + "' already exists");
-        prefs.put(s, url.toString());
-    }
-
-    public static void remove(String name) {
-        if (prefs.get(name, null) == null)
-            throw new IllegalArgumentException("Book \"" + name + "\" doesn't exist");
-        prefs.remove(name);
-        throw new Error("doesn't work yet");
-//        Optional.ofNullable(loadedBooks.remove(name)).ifPresent(BeanBook::remove);
-    }
-
-    public static Book newBook(String name, URL url) throws BookParserException, IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException {
-        return new XMLBookParser().parse(new BookLocator(name, url));
-    }
+//    private static Document index() throws IOException {
+//        if (index == null) {
+//            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+//            SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.0");
+//            factory.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
+//            dbf.setSchema(factory.newSchema(
+//                new StreamSource(Books.class.getResourceAsStream("/settings/schemas/books.xsd"))));
+//            dbf.setNamespaceAware(true);
+//            DocumentBuilder db = dbf.newDocumentBuilder();
+//            AppDirs appDirs = AppDirsFactory.getInstance();
+//            Path dir = Path.of(appDirs.getUserDataDir("Checker", null, null, true));
+//            Path file = dir.resolve("books.xml");
+//            if (Files.exists(file))
+//                index = db.parse(Files.newInputStream(file));
+//            else {
+//                index = db.newDocument();
+//                index.appendChild(index.createElement("books"));
+//                save();
+//            }
+//        }
+//        return index;
+//    }
+//
+//    public static void save() {
+//        TransformerFactory tf = TransformerFactory.newInstance();
+//        Transformer transformer = tf.newTransformer();
+//        DOMSource src = new DOMSource(index);
+//        StreamResult out = new StreamResult(Files.newOutputStream(Path.of()))
+//    }
 
 //    public static boolean existsNamed(String n) {
 //        return prefBooks.get(n, null) != null;
