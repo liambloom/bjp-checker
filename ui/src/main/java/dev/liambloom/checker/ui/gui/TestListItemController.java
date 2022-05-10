@@ -1,7 +1,7 @@
 package dev.liambloom.checker.ui.gui;
 
 import dev.liambloom.checker.BookLocator;
-import dev.liambloom.checker.ui.SelfLoadingBook;
+import dev.liambloom.checker.ui.Data;
 import dev.liambloom.checker.ui.Books;
 import dev.liambloom.checker.Result;
 import dev.liambloom.checker.TestValidationStatus;
@@ -42,7 +42,7 @@ public class TestListItemController {
     private boolean isContextMenuButtonActive = false;
     //public AnchorPane node;
     //private ObjectProperty<VBox> listNode = new SimpleObjectProperty<>(new VBox());
-    private final ObjectProperty<SelfLoadingBook> book = new SimpleObjectProperty<>();
+    private final ObjectProperty<Data.BookManager.SelfLoadingBook> book = new SimpleObjectProperty<>();
     private ToggleGroup toggleGroup = new ToggleGroup();
     public final DoubleProperty sidebarWidth = new SimpleDoubleProperty(MainController.INITIAL_SIDEBAR_WIDTH);
     private final ReadOnlyDoubleWrapper nameWidthWrapper = new ReadOnlyDoubleWrapper(0.0);
@@ -60,7 +60,7 @@ public class TestListItemController {
         @Override
         protected String computeValue() {
             return switch ((TestValidationStatus) Optional.ofNullable(book.get())
-                .map(SelfLoadingBook::getValidationResult)
+                .map(Data.BookManager.SelfLoadingBook::getValidationResult)
                 .map(Result::status)
                 .orElse(TestValidationStatus.NOT_FOUND)) {
                 case VALID -> "";
@@ -83,7 +83,7 @@ public class TestListItemController {
         @Override
         protected Color computeValue() {
             return Optional.ofNullable(book.get())
-                .map(SelfLoadingBook::getValidationResult)
+                .map(Data.BookManager.SelfLoadingBook::getValidationResult)
                 .map(Result::status)
                 .orElse(TestValidationStatus.NOT_FOUND)
                 .color()
@@ -135,12 +135,12 @@ public class TestListItemController {
         return toggle;
     }
 
-    public SelfLoadingBook getBook() {
+    public Data.BookManager.SelfLoadingBook getBook() {
         return book.get();
     }
 
     public void setBook(BookLocator book) throws IOException {
-        this.book.set(new SelfLoadingBook(book));
+        this.book.set(new Data.BookManager.SelfLoadingBook(book));
         nameWidthWrapper.bind(new DoubleBinding() {
             {
                 bind(sidebarWidth, TestListItemController.this.book.get().validationResultProperty());
@@ -219,7 +219,7 @@ public class TestListItemController {
                 @Override
                 protected boolean computeValue() {
                     return Optional.ofNullable(TestListItemController.this.getBook())
-                        .map(SelfLoadingBook::getValidationResult)
+                        .map(Data.BookManager.SelfLoadingBook::getValidationResult)
                         .map(Result::status)
                         .map(TestValidationStatus.class::cast)
                         .orElse(TestValidationStatus.NOT_FOUND)
@@ -238,7 +238,7 @@ public class TestListItemController {
             toggle.setSelected(true);
     }
 
-    public ObjectProperty<SelfLoadingBook> bookProperty() {
+    public ObjectProperty<Data.BookManager.SelfLoadingBook> bookProperty() {
         return book;
     }
 

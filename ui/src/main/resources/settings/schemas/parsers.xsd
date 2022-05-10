@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" version="1.0">
-    <xs:element name="books" type="books" />
+    <xs:element name="parsers" type="parsers" />
 
-    <xs:complexType name="books">
+    <xs:complexType name="parsers">
         <xs:sequence>
-            <xs:element name="book" type="book" minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="parser" type="parser" minOccurs="0" maxOccurs="unbounded">
                 <xs:unique name="digest">
                     <xs:selector xpath="digest" />
                     <xs:field xpath="algorithm" />
@@ -13,14 +13,13 @@
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="book">
+    <xs:complexType name="parser">
         <xs:all>
             <xs:element name="name" type="xs:string" />
             <xs:element name="id" type="uuid" />
             <xs:element name="digest" type="digest" />
             <xs:element name="sourceUrl" type="xs:anyURI" />
             <xs:element name="download" type="xs:boolean" />
-            <xs:element name="parser" type="uuid" />
         </xs:all>
     </xs:complexType>
 

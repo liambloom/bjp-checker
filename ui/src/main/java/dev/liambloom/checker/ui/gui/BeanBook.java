@@ -4,7 +4,7 @@ package dev.liambloom.checker.ui.gui;
 import dev.liambloom.checker.books.*;
 import dev.liambloom.checker.books.xmlBook.XMLBookParser;
 import dev.liambloom.checker.ui.Books;
-import dev.liambloom.checker.ui.SelfLoadingBook;
+import dev.liambloom.checker.ui.Data;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.*;
@@ -43,7 +43,7 @@ public class BeanBook {
     public static final long RESULT_VALIDATION_PERIOD = 10_000;
     private static final AtomicInteger anonCount = new AtomicInteger(0);
     private static final Timer timer = new Timer(true);
-    private final System.Logger logger = System.getLogger(SelfLoadingBook.class.getName() + System.identityHashCode(this));
+    private final System.Logger logger = System.getLogger(Data.BookManager.SelfLoadingBook.class.getName() + System.identityHashCode(this));
     private final ObjectBinding<BookLocator> inner;
     public final ReadOnlyStringProperty name;
     public final ReadOnlyObjectProperty<URL> url;
@@ -114,12 +114,12 @@ public class BeanBook {
             }
         };
         validationResult = new ObjectBinding<>() {
-            { bind(SelfLoadingBook.this.inner); }
+            { bind(Data.BookManager.SelfLoadingBook.this.inner); }
 
             @Override
             protected Result<BookValidationStatus> computeValue() {
                 try {
-                    return new XMLBookParser().validate(SelfLoadingBook.this.inner.get());
+                    return new XMLBookParser().validate(Data.BookManager.SelfLoadingBook.this.inner.get());
                 }
                 catch (IOException e) {
                     logger.log(System.Logger.Level.ERROR, "Error validating book", e);
@@ -129,12 +129,12 @@ public class BeanBook {
         };
 
         exists = new BooleanBinding() {
-            { bind(SelfLoadingBook.this.inner); }
+            { bind(Data.BookManager.SelfLoadingBook.this.inner); }
 
             @Override
             protected boolean computeValue() {
                 try {
-                    SelfLoadingBook.this.inner.get().url().openConnection().connect();
+                    Data.BookManager.SelfLoadingBook.this.inner.get().url().openConnection().connect();
                     return true;
                 }
                 catch (FileNotFoundException e) {

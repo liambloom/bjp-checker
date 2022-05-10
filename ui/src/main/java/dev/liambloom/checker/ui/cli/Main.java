@@ -178,7 +178,7 @@ public class Main {
 
                         Stream<Path> paths = new Glob(globArgs).files();
 
-                        SelfLoadingBook book = getMaybeAnonymousBook(testName);
+                        Data.BookManager.SelfLoadingBook book = getMaybeAnonymousBook(testName);
                         Result<TestStatus>[] result;
 //                        BookChecker reader;
 
@@ -278,7 +278,7 @@ public class Main {
                         }
                         case "move" -> {
                             assertArgsPresent(args, 2, "name", "new URL");
-                            SelfLoadingBook book;
+                            Data.BookManager.SelfLoadingBook book;
                             try {
                                 book = Books.getBook(args[2]);
                             }
@@ -290,11 +290,11 @@ public class Main {
                         }
                         case "list" -> {
                             assertArgsPresent(args, 2);
-                            SelfLoadingBook[] books = Books.getAllBooks();//.collect(Collectors.toList());
+                            Data.BookManager.SelfLoadingBook[] books = Books.getAllBooks();//.collect(Collectors.toList());
                             String[][] strs = new String[books.length][2];
                             int maxBookNameLength = 0;
                             for (int i = 0; i < strs.length; i++) {
-                                BookLocator locator = books[i].locator();
+                                BookLocator locator = books[i].getParser();
                                 if (locator.name().length() > maxBookNameLength)
                                     maxBookNameLength = locator.name().length();
                                 strs[i][0] = locator.name();
@@ -311,7 +311,7 @@ public class Main {
                                     ? Arrays.stream(Books.getAllBookNames())
                                     : Arrays.stream(args).skip(2))
                                     .map(Books::getBook)
-                                    .map(FunctionUtils.unchecked(SelfLoadingBook::validate))
+                                    .map(FunctionUtils.unchecked(Data.BookManager.SelfLoadingBook::validate))
                                     .toArray(Result[]::new));
 //                                throw new UserErrorException("fuck off");
                             }
@@ -404,7 +404,7 @@ public class Main {
 
     //    private static void BeanBook
 
-    private static SelfLoadingBook getMaybeAnonymousBook(String name) throws IOException {
+    private static Data.BookManager.SelfLoadingBook getMaybeAnonymousBook(String name) throws IOException {
         try {
             return Books.getBook(name);
         }
