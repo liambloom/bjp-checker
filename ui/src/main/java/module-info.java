@@ -2,6 +2,7 @@ import dev.liambloom.checker.ui.CheckerUILoggerFinder;
 
 module dev.liambloom.checker.ui {
     uses System.LoggerFinder;
+    uses dev.liambloom.checker.books.BookParser;
     requires static java.xml; // why is this static?
     requires java.prefs;
     requires javafx.graphics;

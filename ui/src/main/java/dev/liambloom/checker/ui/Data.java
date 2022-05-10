@@ -8,6 +8,7 @@ import javax.xml.transform.TransformerException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
@@ -97,7 +98,7 @@ public final class Data {
             }
 
             public BookLocator getLocator() {
-                return new BookLocator(getName(), getSourceUrl());
+                return new BookLocator(getName(), /* get url of resource NOT NECESERALLY SOURCE URL */);
             }
 
             public ParserManager.ParserRecord getParser() {
@@ -149,16 +150,18 @@ public final class Data {
         }
 
         @Override
-        protected Element getElement(ParserRecord selfLoadingBook) {
-            return ;
-        }
-
-        @Override
         protected ParserRecord parseElement(BaseResourceData parsed, Element e) {
-            return ;
+            return new ParserRecord(
+                parsed.name(),
+                parsed.id(),
+                parsed.digest(),
+                parsed.sourceUrl(),
+                parsed.download()
+            );
         }
 
         public class ParserRecord extends ParserManager.Resource {
+
             private ParserRecord(String name, URL sourceUrl) { // Parser files MUST BE JARS
                 super(name, sourceUrl);
             }
@@ -168,8 +171,12 @@ public final class Data {
             }
 
             public BookParser getParser() {
+                var classloader = new URLClassLoader(/* url of resource -- NOT NECESERALLY SOURCE URL */);
+                ServiceLoader.load(BookParser.class, classloader) // find and instantiate class `classloader.loadClass(getName())`
                 return ;
             }
+
+            // TODO: invalidation stuff
         }
     }
 }
