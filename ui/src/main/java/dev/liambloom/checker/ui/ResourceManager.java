@@ -34,6 +34,7 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.function.BiConsumer;
 
 public abstract class ResourceManager<T extends ResourceManager<T>.Resource> extends AbstractList<T> {
     private static final SchemaFactory sf = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.0");
@@ -294,6 +295,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
 
         private byte[] sourceDigest;
         private boolean download;
+        private List<ChangeListener> changeListeners = new ArrayList<>();
         // add update() method, add fields for tracking if the downloaded file is problmeatic
         //  or if it neesd to be re-downloaed from the source. Also, *this* class should read
         //  the file, not the resource manager.
@@ -344,7 +346,8 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
         }
 
         protected void setName(String value) {
-            name = value;
+            name = Objects.requireNonNull(value);
+            changed();
         }
 
         public final UUID getId() {
@@ -379,10 +382,11 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
         }
 
         protected void setSourceUrl(URL value) throws IOException {
-            this.sourceUrl = value;
+            this.sourceUrl = Objects.requireNonNull(value);
             download = isNotLocalFile(value);
             this.updateAvailable(true);
-            this.update();
+            if (!this.update())
+                changed();
         }
 
         private byte[] sourceDigest(boolean fresh) throws IOException {
@@ -414,6 +418,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
             Files.copy(resourceUpdatePath, resourcePath);
             expectedDigest = sourceDigest;
             fileDigest = sourceDigest;
+            changed();
             return true;
         }
 
@@ -423,6 +428,28 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
 
         public final boolean download() {
             return download;
+        }
+
+        public void addListener(ChangeListener listener) {
+            changeListeners.add(listener);
+        }
+
+        public boolean removeListener(ChangeListener listener) {
+            return changeListeners.remove(listener);
+        }
+
+        protected void changed() {
+            for (ChangeListener listener : changeListeners)
+                listener.onChange();
+        }
+
+        public URL getResourceUrl() throws ResourceFileInvalidException, IOException {
+            if (!isFileValid())
+                throw new ResourceFileInvalidException();
+            else if (download())
+                return resourcePath.toUri().toURL();
+            else
+                return sourceUrl;
         }
     }
 

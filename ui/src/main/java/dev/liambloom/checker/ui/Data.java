@@ -10,8 +10,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class Data {
@@ -48,7 +46,7 @@ public final class Data {
         protected Element getElement(SelfLoadingBook selfLoadingBook) {
             Element e = super.getElement(selfLoadingBook);
             Element parser = document.createElement("parser");
-            parser.setTextContent(selfLoadingBook.getParser().getId().toString());
+            parser.setTextContent(selfLoadingBook.getParser().map(ParserManager.ParserRecord::getId).orElseGet(UUID::randomUUID).toString());
             e.appendChild(parser);
             return e;
         }
@@ -65,7 +63,15 @@ public final class Data {
             );
         }
 
-        public class SelfLoadingBook extends BookManager.Resource {
+        public void add(String name, URL source, ParserManager.ParserRecord parser) {
+            add(size(), name, source, parser);
+        }
+
+        public void add(int i, String name, URL source, ParserManager.ParserRecord parser) {
+            addResource(i, new SelfLoadingBook(name, source, parser));
+        }
+
+        public class SelfLoadingBook extends ResourceManager<SelfLoadingBook>.Resource {
             private ParserManager.ParserRecord parser;
             private final AtomicReference<Book> book = new AtomicReference<>();
             private final AtomicReference<Result<BookValidationStatus>> validation = new AtomicReference<>();
@@ -75,71 +81,60 @@ public final class Data {
                 this(locator.name(), locator.url(), parser);
             }
 
-            private SelfLoadingBook(String name, URL url, ParserManager.ParserRecord parser) {
-                super(name, url);
-                this.parser = parser;
-                // Problem: Update isn't going to work. Neither are any future setters, such as `rename`
-                //  On the bright side, since I'm not using JFX with all of its complicated whatevers,
-                //  I can simply override setters (which I should make protected in ResourceManager.Resource)
-                //  rather than relying on some super complex listeners and stuff
-//                book = new FutureTask<>(() -> parser.getBook(getLocator()));
-//                validation = new FutureTask<>(() -> parser.validate(getLocator()));
-//
-//                book.runAndReset();
+            private SelfLoadingBook(String name, URL sourceUrl, ParserManager.ParserRecord parser) {
+                this(name, UUID.randomUUID(), null, sourceUrl, isNotLocalFile(sourceUrl), parser);
             }
 
             private SelfLoadingBook(String name, UUID id, Digest digest, URL sourceUrl, boolean download, ParserManager.ParserRecord parser) {
                 super(name, id, digest, sourceUrl, download);
-
-                // Repeated. I don't like it, but I don't think there's much I can do
                 this.parser = parser;
-//                book = new FutureTask<>(() -> parser.getBook(getLocator()));
-//                validation = new FutureTask<>(() -> parser.validate(getLocator()));
-            }
-
-            public BookLocator getLocator() {
-                return new BookLocator(getName(), /* get url of resource NOT NECESERALLY SOURCE URL */);
-            }
-
-            public ParserManager.ParserRecord getParser() {
-                return parser;
-            }
-
-            public void setParser(ParserManager.ParserRecord value) {
-                parser = value;
-                resetParsing();
+                addListener(() -> {
+                    Thread t = new Thread(() -> validation.set(null) );
+                    t.start();
+                    book.set(null);
+                    try {
+                        t.join();
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                if (parser != null)
+                    parser.addListener(this::changed);
             }
 
             @Override
             public void setName(String value) {
                 super.setName(value);
-                resetParsing();
             }
 
             @Override
             public void setSourceUrl(URL value) throws IOException {
                 super.setSourceUrl(value);
-                resetParsing();
             }
 
-            private void resetParsing() {
-                Thread t = new Thread(() -> validation.set(null) );
-                t.start();
-                book.set(null);
-                try {
-                    t.join();
-                }
-                catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+            public BookLocator getLocator() throws ResourceFileInvalidException, IOException {
+                return new BookLocator(getName(), getResourceUrl());
             }
 
-            public Book book() throws BookParserException, IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException {
-                return book.compareAndExchange(null, getParser().getParser().getBook(getLocator()));
+            public Optional<ParserManager.ParserRecord> getParser() {
+                return Optional.ofNullable(parser);
             }
 
-            public Result<BookValidationStatus> validate() throws IOException {
-                return validation.compareAndExchange(null, getParser().getParser().validate(getLocator()));
+            public void setParser(ParserManager.ParserRecord value) {
+                Objects.requireNonNull(value);
+                parser.removeListener(this::changed);
+                parser = value;
+                parser.addListener(this::changed);
+                changed();
+            }
+
+            public Book book() throws BookParserException, IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException, ResourceFileInvalidException {
+                return book.compareAndExchange(null, getParser().orElseThrow().getParser().getBook(getLocator()));
+            }
+
+            public Result<BookValidationStatus> validate() throws IOException, ResourceFileInvalidException {
+                return validation.compareAndExchange(null, getParser().orElseThrow().getParser().validate(getLocator()));
             }
         }
     }
@@ -160,20 +155,38 @@ public final class Data {
             );
         }
 
-        public class ParserRecord extends ParserManager.Resource {
+        public class ParserRecord extends ResourceManager<ParserRecord>.Resource {
+            private final AtomicReference<BookParser> parser = new AtomicReference<>();
 
-            private ParserRecord(String name, URL sourceUrl) { // Parser files MUST BE JARS
-                super(name, sourceUrl);
+            private ParserRecord(String name, URL sourceUrl) {
+                this(validateConstructorArgs(name, sourceUrl), UUID.randomUUID(), null, sourceUrl, isNotLocalFile(sourceUrl));
             }
 
             private ParserRecord(String name, UUID id, Digest digest, URL sourceUrl, boolean download) {
                 super(name, id, digest, sourceUrl, download);
+                addListener(() -> parser.set(null));
             }
 
-            public BookParser getParser() {
-                var classloader = new URLClassLoader(/* url of resource -- NOT NECESERALLY SOURCE URL */);
-                ServiceLoader.load(BookParser.class, classloader) // find and instantiate class `classloader.loadClass(getName())`
-                return ;
+            public BookParser getParser() throws ResourceFileInvalidException, IOException {
+                return parser.compareAndExchange(null, loadBookParser(getName(), getResourceUrl())
+                    .orElseThrow() // TODO: Find a better way of handling this?
+                    .get());
+            }
+
+            private static Optional<ServiceLoader.Provider<BookParser>> loadBookParser(String name, URL url) {
+                return ServiceLoader.load(BookParser.class, new URLClassLoader(new URL[]{url}))
+                    .stream()
+                    .filter(provider -> provider.type().getName().equals(name))
+                    .findAny();
+            }
+
+            private static String validateConstructorArgs(String name, URL sourceUrl) {
+                if (sourceUrl.toString().endsWith("/"))
+                    throw new IllegalArgumentException("URL " + sourceUrl + " refers to a directory; file expected");
+                else if (loadBookParser(name, sourceUrl).isEmpty())
+                    throw new IllegalArgumentException("JAR " + sourceUrl + " did not provide a BookLoader named " + name);
+                else
+                    return name;
             }
 
             // TODO: invalidation stuff

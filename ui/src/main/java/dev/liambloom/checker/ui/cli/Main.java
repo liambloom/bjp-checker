@@ -66,6 +66,8 @@ public class Main {
             if (args.length == 0)
                 args = new String[]{ "-h" };
 
+            Data.initialize();
+
             switch (args[0]) {
                 case "-h", "--help" -> {
                     assertArgsPresent(args, 1);
@@ -242,9 +244,11 @@ public class Main {
                     switch (args[1]) {
                         // TODO: handle errors
                         case "add" -> {
-                            assertArgsPresent(args, 2, "name", "path");
+                            assertArgsPresent(args, 2, "name", "path", "parser");
+                            String parserName = args[4];
                             try {
-                                Books.add(args[2], resolveAnonymousBook(args[3]));
+                                Data.books().add(args[2], resolveAnonymousBook(args[3]),
+                                    Optional.ofNullable(Data.parsers().get(args[4])).orElseThrow(() -> new UserErrorException("Parser `" + parserName + "` doesn't exist")));
                             }
                             catch (IllegalArgumentException e) {
                                 throw new UserErrorException(e.getMessage(), e);
@@ -262,55 +266,56 @@ public class Main {
                         }
                         case "rename" -> {
                             assertArgsPresent(args, 2, "old name", "new name");
-//                            try {
-//                                Books.getBook(args[2]).setName(args[3]);
-//                            }
-//                            catch (NullPointerException | java.lang.IllegalArgumentException e) {
-//                                System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Caught exception when renaming");
-//                                throw new UserErrorException(e.getMessage(), e);
-//                            }
+                            try {
+                                Data.books().get(args[2]).setName(args[3]);
+                            }
+                            catch (NullPointerException | IllegalArgumentException e) {
+                                System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Caught exception when renaming");
+                                throw new UserErrorException(e.getMessage(), e);
+                            }
 
-//                            catch (Throwable e) {
-//                                System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Unexpected exception of type %s thrown when renaming", e.getClass().getName());
-//                                throw e;
-//                            }
-                            throw new UserErrorException("Nope");
+                            catch (Throwable e) {
+                                System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Unexpected exception of type %s thrown when renaming", e.getClass().getName());
+                                throw e;
+                            }
                         }
                         case "move" -> {
                             assertArgsPresent(args, 2, "name", "new URL");
                             Data.BookManager.SelfLoadingBook book;
                             try {
-                                book = Books.getBook(args[2]);
+                                book = Data.books().get(args[2]);
                             }
                             catch (NullPointerException e) {
                                 throw new UserErrorException(e.getMessage(), e);
                             }
-                            throw new UserErrorException("shut up");
-//                            book.setUrl(resolveAnonymousBook(args[3]));
+                            book.setSourceUrl(resolveAnonymousBook(args[3]));
                         }
                         case "list" -> {
                             assertArgsPresent(args, 2);
-                            Data.BookManager.SelfLoadingBook[] books = Books.getAllBooks();//.collect(Collectors.toList());
-                            String[][] strs = new String[books.length][2];
+                            String[][] strs = new String[Data.books().size()][3];
                             int maxBookNameLength = 0;
-                            for (int i = 0; i < strs.length; i++) {
-                                BookLocator locator = books[i].getParser();
-                                if (locator.name().length() > maxBookNameLength)
-                                    maxBookNameLength = locator.name().length();
-                                strs[i][0] = locator.name();
-                                strs[i][1] = locator.url().toString();
+                            int maxSourceUrlLength = 0;
+                            Iterator<Data.BookManager.SelfLoadingBook> iter = Data.books().iterator();
+                            for (int i = 0; iter.hasNext(); i++) {
+                                Data.BookManager.SelfLoadingBook book = iter.next();
+                                if (book.getName().length() > maxBookNameLength)
+                                    maxBookNameLength = book.getName().length();
+                                if (book.getSourceUrl().toString().length() > maxSourceUrlLength)
+                                    maxSourceUrlLength = book.getName().length();
+                                strs[i][0] = book.getName();
+                                strs[i][1] = book.getSourceUrl().toString();
+                                strs[i][2] = book.getParser().map(Data.ParserManager.ParserRecord::getName).orElse("[removed]");
                             }
                             for (String[] book : strs)
-                                System.out.printf("%-" + maxBookNameLength + "s  %s%n", book[0], book[1]);
+                                System.out.printf("%-" + maxBookNameLength + "s  %-" + maxSourceUrlLength + "s  %s%n", book[0], book[1], book[2]);
                         }
                         case "validate" -> {
                             if (args.length == 2)
                                 throw new UserErrorException("Missing argument after validate");
                             try {
                                 new ResultPrinter().printResults((args[2].equals("-a") || args[2].equals("--all")
-                                    ? Arrays.stream(Books.getAllBookNames())
-                                    : Arrays.stream(args).skip(2))
-                                    .map(Books::getBook)
+                                    ? Data.books().stream()
+                                    : Arrays.stream(args).skip(2).map(Data.books()::get))
                                     .map(FunctionUtils.unchecked(Data.BookManager.SelfLoadingBook::validate))
                                     .toArray(Result[]::new));
 //                                throw new UserErrorException("fuck off");
@@ -406,24 +411,26 @@ public class Main {
 
     private static Data.BookManager.SelfLoadingBook getMaybeAnonymousBook(String name) throws IOException {
         try {
-            return Books.getBook(name);
+            return Data.books().get(name);
         }
         catch (NullPointerException ignored) { }
 //        catch (BookParserException | URISyntaxException | ClassNotFoundException | NoSuchMethodException e) {
 //            throw new RuntimeException(e);
 //        }
-        try {
-            return Books.getAnonymousBook(__resolveAnonymousBook(name));
-        }
-        catch (IllegalArgumentException e) {
-            System.getLogger(Main.class.getName()).log(System.Logger.Level.ERROR, "Unable to find saved book " + name);
-            System.exit(1);
-            return null;
-        }
-        catch (BookParserException | URISyntaxException | ClassNotFoundException |
-               NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
+
+//        try {
+            throw new Error("The current version does not support anonymous books");
+//            return Books.getAnonymousBook(__resolveAnonymousBook(name));
+//        }
+//        catch (IllegalArgumentException e) {
+//            System.getLogger(Main.class.getName()).log(System.Logger.Level.ERROR, "Unable to find saved book " + name);
+//            System.exit(1);
+//            return null;
+//        }
+//        catch (BookParserException | URISyntaxException | ClassNotFoundException |
+//               NoSuchMethodException e) {
+//            throw new RuntimeException(e);
+//        }
     }
 
     private static URL resolveAnonymousBook(String src) throws IOException {

@@ -3,7 +3,6 @@ package dev.liambloom.checker.ui.gui;
 //import dev.liambloom.checker.*;
 import dev.liambloom.checker.books.*;
 import dev.liambloom.checker.books.xmlBook.XMLBookParser;
-import dev.liambloom.checker.ui.Books;
 import dev.liambloom.checker.ui.Data;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.ObjectBinding;

@@ -2,7 +2,6 @@ package dev.liambloom.checker.ui.gui;
 
 import dev.liambloom.checker.BookLocator;
 import dev.liambloom.checker.ui.Data;
-import dev.liambloom.checker.ui.Books;
 import dev.liambloom.checker.Result;
 import dev.liambloom.checker.TestValidationStatus;
 import dev.liambloom.util.function.FunctionUtils;
