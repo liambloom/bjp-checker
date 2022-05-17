@@ -68,7 +68,7 @@ public final class Data {
         }
 
         public void add(int i, String name, URL source, ParserManager.ParserRecord parser) {
-            addResource(i, new SelfLoadingBook(name, source, parser));
+            inner.add(i, new SelfLoadingBook(name, source, parser));
         }
 
         public class SelfLoadingBook extends ResourceManager<SelfLoadingBook>.Resource {
@@ -88,7 +88,7 @@ public final class Data {
             private SelfLoadingBook(String name, UUID id, Digest digest, URL sourceUrl, boolean download, ParserManager.ParserRecord parser) {
                 super(name, id, digest, sourceUrl, download);
                 this.parser = parser;
-                addListener(() -> {
+                addChangeListener(() -> {
                     Thread t = new Thread(() -> validation.set(null) );
                     t.start();
                     book.set(null);
@@ -100,7 +100,17 @@ public final class Data {
                     }
                 });
                 if (parser != null)
-                    parser.addListener(this::changed);
+                    addParserListeners();
+            }
+
+            private void onParserRemoved() {
+                this.parser = null;
+                this.changed();
+            }
+
+            private void addParserListeners() {
+                parser.addChangeListener(this::changed);
+                parser.addRemovalListener(this::onParserRemoved);
             }
 
             @Override
@@ -114,26 +124,32 @@ public final class Data {
             }
 
             public BookLocator getLocator() throws ResourceFileInvalidException, IOException {
+                checkRemoved();
                 return new BookLocator(getName(), getResourceUrl());
             }
 
             public Optional<ParserManager.ParserRecord> getParser() {
+                checkRemoved();
                 return Optional.ofNullable(parser);
             }
 
             public void setParser(ParserManager.ParserRecord value) {
+                checkRemoved();
                 Objects.requireNonNull(value);
-                parser.removeListener(this::changed);
+                parser.removeChangeListener(this::changed);
+                parser.removeRemovalListener(this::onParserRemoved);
                 parser = value;
-                parser.addListener(this::changed);
+                addParserListeners();
                 changed();
             }
 
             public Book book() throws BookParserException, IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException, ResourceFileInvalidException {
+                checkRemoved();
                 return book.compareAndExchange(null, getParser().orElseThrow().getParser().getBook(getLocator()));
             }
 
             public Result<BookValidationStatus> validate() throws IOException, ResourceFileInvalidException {
+                checkRemoved();
                 return validation.compareAndExchange(null, getParser().orElseThrow().getParser().validate(getLocator()));
             }
         }
@@ -155,6 +171,14 @@ public final class Data {
             );
         }
 
+        public void add(String name, URL source) {
+            add(size(), name, source);
+        }
+
+        public void add(int i, String name, URL source) {
+            inner.add(i, new ParserRecord(name, source));
+        }
+
         public class ParserRecord extends ResourceManager<ParserRecord>.Resource {
             private final AtomicReference<BookParser> parser = new AtomicReference<>();
 
@@ -164,10 +188,11 @@ public final class Data {
 
             private ParserRecord(String name, UUID id, Digest digest, URL sourceUrl, boolean download) {
                 super(name, id, digest, sourceUrl, download);
-                addListener(() -> parser.set(null));
+                addChangeListener(() -> parser.set(null));
             }
 
             public BookParser getParser() throws ResourceFileInvalidException, IOException {
+                checkRemoved();
                 return parser.compareAndExchange(null, loadBookParser(getName(), getResourceUrl())
                     .orElseThrow() // TODO: Find a better way of handling this?
                     .get());

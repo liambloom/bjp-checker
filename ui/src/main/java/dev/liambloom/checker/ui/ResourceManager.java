@@ -34,9 +34,10 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.function.BiConsumer;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
-public abstract class ResourceManager<T extends ResourceManager<T>.Resource> extends AbstractList<T> {
+public abstract class ResourceManager<T extends ResourceManager<T>.Resource> implements Iterable<T> {
     private static final SchemaFactory sf = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.0");
     private static final TransformerFactory tf = TransformerFactory.newInstance();
     private static final Path userDataDir = Path.of(AppDirsFactory.getInstance().getUserDataDir("Checker", null, null, true));
@@ -52,6 +53,55 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
     private final Path resourceListFile;
     private final String single;
     private final String plural;
+    protected final List<T> inner = new AbstractList<>() {
+        @Override
+        public T get(int i) {
+            if (i < size()) {
+                T t = list.get(i);
+                if (t != null)
+                    return t;
+            }
+
+            list.ensureCapacity(i);
+            for (int j = size(); j < i; j++)
+                list.add(null);
+
+            T e = parseElement(getElementAt(i));
+            list.add(e);
+            return e;
+        }
+
+        @Override
+        public void add(int i, T value) {
+            Element e = getElement(value);
+            if (i == size())
+                document.appendChild(e);
+            else
+                document.insertBefore(e, getElementAt(i));
+
+            list.add(i, value);
+        }
+
+        @Override
+        public T remove(int i) {
+            T e = list.get(i);
+            if (e != null) {
+                try {
+                    e.remove();
+                }
+                catch (IOException ex) {
+                    throw new UncheckedIOException(ex);
+                }
+            }
+            document.removeChild(getElementAt(i));
+            return list.remove(i);
+        }
+
+        @Override
+        public int size() {
+            return document.getDocumentElement().getElementsByTagName(single).getLength(); //list.size();
+        }
+    };
 
     static {
         try {
@@ -61,33 +111,38 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
             throw new RuntimeException(e);
         }
 
+        String appVersionString = ResourceManager.class.getPackage().getImplementationVersion();
         Exception localVersionValidationException = null;
-        try {
-            String appVersionString = ResourceManager.class.getPackage().getImplementationVersion();
-            int[] versions = Arrays.stream(appVersionString.split("\\."))
-                .mapToInt(Integer::parseInt)
-                .toArray();
-            ByteBuffer appVersion = ByteBuffer.allocate(versions.length * 4);
-            for (int version : versions)
-                appVersion.putInt(version);
-            Path versionFile = userDataDir.resolve("version.dat");
-            if (Files.exists(versionFile)) {
-                ByteBuffer settingsVersion = ByteBuffer.wrap(Files.readAllBytes(versionFile));
-
-                if (appVersion.compareTo(settingsVersion) > 0) {
-                    throw IncompatibleSettingsVersionException.cantUpgrade(settingsVersion);
-                }
-                else if (appVersion.compareTo(settingsVersion) < 0) {
-                    throw IncompatibleSettingsVersionException.cantDowngrade(settingsVersion);
-                }
-            }
-            else {
-                Files.createFile(versionFile);
-                Files.write(versionFile, appVersion.array());
-            }
+        if (appVersionString == null) {
+            System.getLogger(ResourceManager.class.getName()).log(System.Logger.Level.WARNING, "Unable to check settings version compatibility");
         }
-        catch (IOException | IncompatibleSettingsVersionException e) {
-            localVersionValidationException = e;
+        else {
+            try {
+                int[] versions = Arrays.stream(appVersionString.split("\\."))
+                    .mapToInt(Integer::parseInt)
+                    .toArray();
+                ByteBuffer appVersion = ByteBuffer.allocate(versions.length * 4);
+                for (int version : versions)
+                    appVersion.putInt(version);
+                Path versionFile = userDataDir.resolve("version.dat");
+                if (Files.exists(versionFile)) {
+                    ByteBuffer settingsVersion = ByteBuffer.wrap(Files.readAllBytes(versionFile));
+
+                    if (appVersion.compareTo(settingsVersion) > 0) {
+                        throw IncompatibleSettingsVersionException.cantUpgrade(settingsVersion);
+                    }
+                    else if (appVersion.compareTo(settingsVersion) < 0) {
+                        throw IncompatibleSettingsVersionException.cantDowngrade(settingsVersion);
+                    }
+                }
+                else {
+                    Files.createFile(versionFile);
+                    Files.write(versionFile, appVersion.array());
+                }
+            }
+                catch(IOException | IncompatibleSettingsVersionException e){
+                localVersionValidationException = e;
+            }
         }
 
         versionValidationException = localVersionValidationException;
@@ -203,24 +258,11 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
     }
 
     private Element getElementAt(int i) {
-        return XMLUtils.streamNodeListElements(document.getChildNodes()).skip(i).findFirst().orElseThrow();
+        return XMLUtils.streamNodeListElements(document.getDocumentElement().getElementsByTagName(single)).skip(i).findFirst().orElseThrow();
     }
 
-    @Override
     public T get(int i) {
-        if (i < size()) {
-            T t = list.get(i);
-            if (t != null)
-                return t;
-        }
-
-        list.ensureCapacity(i);
-        for (int j = size(); j < i; j++)
-            list.add(null);
-
-        T e = parseElement(getElementAt(i));
-        list.add(e);
-        return e;
+        return inner.get(i);
     }
 
     public T get(String name) {
@@ -245,26 +287,24 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
         });
     }
 
-    @Override
     public int size() {
-        return list.size();
+        return inner.size();
     }
 
-
-    protected void addResource(int i, T value) {
-        Element e = getElement(value);
-        if (i == size())
-            document.appendChild(e);
-        else
-            document.insertBefore(e, getElementAt(i));
-
-        list.add(i, value);
+    public T remove(int index) {
+        return inner.remove(index);
     }
 
-    @Override
-    public T remove(int i) {
-        document.removeChild(getElementAt(i));
-        return list.remove(i);
+    public boolean remove(Object o) {
+        return inner.remove(o);
+    }
+
+    public Iterator<T> iterator() {
+        return inner.iterator();
+    }
+
+    public Stream<T> stream() {
+        return inner.stream();
     }
 
     @SuppressWarnings("RedundantThrows")
@@ -295,7 +335,9 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
 
         private byte[] sourceDigest;
         private boolean download;
-        private List<ChangeListener> changeListeners = new ArrayList<>();
+        private final List<ResourceEventListener> changeListeners = Collections.synchronizedList(new ArrayList<>());
+        private final List<ResourceEventListener> removalListeners = Collections.synchronizedList(new ArrayList<>());
+        private final AtomicBoolean removed = new AtomicBoolean(false);
         // add update() method, add fields for tracking if the downloaded file is problmeatic
         //  or if it neesd to be re-downloaed from the source. Also, *this* class should read
         //  the file, not the resource manager.
@@ -342,27 +384,33 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
         }
 
         public String getName() {
+            checkRemoved();
             return name;
         }
 
         protected void setName(String value) {
+            checkRemoved();
             name = Objects.requireNonNull(value);
             changed();
         }
 
         public final UUID getId() {
+            checkRemoved();
             return id;
         }
 
         public byte[] getExpectedDigest() {
+            checkRemoved();
             return expectedDigest;
         }
 
         public String getDigestAlgorithm() {
+            checkRemoved();
             return algorithm;
         }
 
         private byte[] fileDigest(boolean fresh) throws IOException {
+            checkRemoved();
             if (!download)
                 return sourceDigest(fresh);
 
@@ -378,10 +426,12 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
         }
 
         public URL getSourceUrl() {
+            checkRemoved();
             return sourceUrl;
         }
 
         protected void setSourceUrl(URL value) throws IOException {
+            checkRemoved();
             this.sourceUrl = Objects.requireNonNull(value);
             download = isNotLocalFile(value);
             this.updateAvailable(true);
@@ -390,6 +440,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
         }
 
         private byte[] sourceDigest(boolean fresh) throws IOException {
+            checkRemoved();
             if (sourceDigest == null || fresh) {
                 try (InputStream source = sourceUrl.openStream()) {
                     MessageDigest digest = MessageDigest.getInstance(algorithm);
@@ -404,14 +455,17 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
         }
 
         public final boolean isFileValid() throws IOException {
+            checkRemoved();
             return Arrays.equals(expectedDigest, fileDigest(!download));
         }
 
         public final boolean updateAvailable(boolean forceCheck) throws IOException {
+            checkRemoved();
             return Arrays.equals(expectedDigest, sourceDigest(forceCheck));
         }
 
         public final boolean update() throws IOException {
+            checkRemoved();
             if (!updateAvailable(false))
                 return false;
 
@@ -423,33 +477,70 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> ext
         }
 
         public final URL sourceUrl() {
+            checkRemoved();
             return sourceUrl;
         }
 
         public final boolean download() {
+            checkRemoved();
             return download;
         }
 
-        public void addListener(ChangeListener listener) {
+        public void addChangeListener(ResourceEventListener listener) {
+            checkRemoved();
             changeListeners.add(listener);
         }
 
-        public boolean removeListener(ChangeListener listener) {
+        public boolean removeChangeListener(ResourceEventListener listener) {
+            checkRemoved();
             return changeListeners.remove(listener);
         }
 
         protected void changed() {
-            for (ChangeListener listener : changeListeners)
-                listener.onChange();
+            for (ResourceEventListener listener : changeListeners)
+                listener.callback();
+        }
+
+        /**
+         * Adds an event listener that fires immediately before the element is removed
+         *
+         * @param listener The listener to call before removal
+         */
+        public void addRemovalListener(ResourceEventListener listener) {
+            checkRemoved();
+            removalListeners.add(listener);
+        }
+
+        public boolean removeRemovalListener(ResourceEventListener listener) {
+            checkRemoved();
+            return changeListeners.remove(listener);
         }
 
         public URL getResourceUrl() throws ResourceFileInvalidException, IOException {
+            checkRemoved();
             if (!isFileValid())
                 throw new ResourceFileInvalidException();
             else if (download())
                 return resourcePath.toUri().toURL();
             else
                 return sourceUrl;
+        }
+
+        void remove() throws IOException {
+            for (ResourceEventListener listener : removalListeners)
+                listener.callback();
+            removed.setRelease(true);
+            try {
+                Files.delete(resourcePath);
+            }
+            finally {
+                Files.deleteIfExists(resourceUpdatePath);
+            }
+        }
+
+        protected void checkRemoved() {
+            if (removed.getAcquire())
+                throw new IllegalStateException("Cannot use removed book");
         }
     }
 
