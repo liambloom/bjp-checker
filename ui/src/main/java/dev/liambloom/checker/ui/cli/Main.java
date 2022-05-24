@@ -3,8 +3,6 @@ package dev.liambloom.checker.ui.cli;
 //import dev.liambloom.checker.*;
 import dev.liambloom.checker.Checker;
 import dev.liambloom.checker.TestStatus;
-import dev.liambloom.checker.books.BookLocator;
-import dev.liambloom.checker.books.BookParserException;
 import dev.liambloom.checker.books.Result;
 import dev.liambloom.checker.ui.*;
 import dev.liambloom.util.StringUtils;
@@ -247,7 +245,7 @@ public class Main {
                             assertArgsPresent(args, 2, "name", "path", "parser");
                             String parserName = args[4];
                             try {
-                                Data.books().add(args[2], resolveAnonymousBook(args[3]),
+                                Data.books().add(args[2], resolveResource(args[3]),
                                     Optional.ofNullable(Data.parsers().get(args[4])).orElseThrow(() -> new UserErrorException("Parser `" + parserName + "` doesn't exist")));
                             }
                             catch (IllegalArgumentException e) {
@@ -266,11 +264,13 @@ public class Main {
                         }
                         case "rename" -> {
                             assertArgsPresent(args, 2, "old name", "new name");
+                            Data.BookManager.SelfLoadingBook book = Data.books().get(args[2]);
+                            if (book == null)
+                                throw new UserErrorException("Book `" + args[2] + "` does not exist");
                             try {
-                                Data.books().get(args[2]).setName(args[3]);
+                                book.setName(args[3]);
                             }
-                            catch (NullPointerException | IllegalArgumentException e) {
-                                System.getLogger(Main.class.getName()).log(System.Logger.Level.DEBUG, "Caught exception when renaming");
+                            catch (IllegalArgumentException e) {
                                 throw new UserErrorException(e.getMessage(), e);
                             }
 
@@ -288,7 +288,7 @@ public class Main {
                             catch (NullPointerException e) {
                                 throw new UserErrorException(e.getMessage(), e);
                             }
-                            book.setSourceUrl(resolveAnonymousBook(args[3]));
+                            book.setSourceUrl(resolveResource(args[3]));
                         }
                         case "list" -> {
                             assertArgsPresent(args, 2);
@@ -399,7 +399,7 @@ public class Main {
             System.out.write(next);
     }
 
-    private static void assertArgsPresent(String[] args, int i, String... names) {
+    static void assertArgsPresent(String[] args, int i, String... names) {
         int rem = args.length - i;
         if (rem < names.length)
             throw new UserErrorException("Missing argument: " + names[rem]);
@@ -433,17 +433,7 @@ public class Main {
 //        }
     }
 
-    private static URL resolveAnonymousBook(String src) throws IOException {
-        try {
-            return __resolveAnonymousBook(src);
-        }
-        catch (IllegalArgumentException e) {
-            System.exit(1);
-            return null;
-        }
-    }
-
-    private static URL __resolveAnonymousBook(String src) throws IOException {
+    static URL resolveResource(String src) throws IOException {
         // Get URL
         URL url;
         Exception urlError = null;

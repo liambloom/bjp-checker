@@ -35,6 +35,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
 public abstract class ResourceManager<T extends ResourceManager<T>.Resource> implements Iterable<T> {
@@ -46,6 +48,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
     private final ArrayList<T> list = new ArrayList<>();
     private final Map<String, T> nameMap = new HashMap<>();
     private final Map<UUID, T> idMap = new HashMap<>();
+    private final Lock nameChangeLock = new ReentrantLock();
     private final Path resourceDir;
     private final Path resourceUpdatesDir;
     protected final Document document;
@@ -194,6 +197,8 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
         else {
             document = db.newDocument();
             document.appendChild(document.createElement(plural));
+            Files.createDirectories(resourceListFile.getParent());
+            Files.createFile(resourceListFile);
             save();
         }
 
@@ -206,6 +211,14 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
                     "Failed to save some changes to " + plural, e);
             }
         }));
+    }
+
+    public String getSingleName() {
+        return single;
+    }
+
+    public String getPluralName() {
+        return plural;
     }
 
     protected Element getElement(T t) {
@@ -291,12 +304,22 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
         return inner.size();
     }
 
-    public T remove(int index) {
-        return inner.remove(index);
+    public T remove(int index) throws IOException {
+        try {
+            return inner.remove(index);
+        }
+        catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
-    public boolean remove(Object o) {
-        return inner.remove(o);
+    public boolean remove(Object o) throws IOException {
+        try {
+            return inner.remove(o);
+        }
+        catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
     public Iterator<T> iterator() {
@@ -323,7 +346,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
         return updated;
     }
 
-    protected abstract class Resource {
+    public abstract class Resource {
         private String name;
         private final UUID id;
         private final String algorithm;
@@ -356,7 +379,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
         }
 
         protected Resource(String name, UUID id, Digest digest, URL sourceUrl, boolean download) {
-            this.name = name;
+            setName(name);
             this.id = id;
             this.sourceUrl = sourceUrl;
             this.download = download;
@@ -388,9 +411,24 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
             return name;
         }
 
+        /**
+         * Changes the name of the resource
+         *
+         * @param value The new name
+         * @throws NullPointerException if {@code value} is {@code null}
+         * @throws IllegalArgumentException if the name is already taken
+         */
         protected void setName(String value) {
             checkRemoved();
-            name = Objects.requireNonNull(value);
+            nameChangeLock.lock();
+            try {
+                if (ResourceManager.this.get(Objects.requireNonNull(value)) != null)
+                    throw new IllegalArgumentException("Name unavailable");
+                name = value;
+            }
+            finally {
+                nameChangeLock.unlock();
+            }
             changed();
         }
 
@@ -430,7 +468,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
             return sourceUrl;
         }
 
-        protected void setSourceUrl(URL value) throws IOException {
+        public void setSourceUrl(URL value) throws IOException {
             checkRemoved();
             this.sourceUrl = Objects.requireNonNull(value);
             download = isNotLocalFile(value);

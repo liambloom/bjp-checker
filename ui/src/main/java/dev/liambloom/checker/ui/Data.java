@@ -118,11 +118,6 @@ public final class Data {
                 super.setName(value);
             }
 
-            @Override
-            public void setSourceUrl(URL value) throws IOException {
-                super.setSourceUrl(value);
-            }
-
             public BookLocator getLocator() throws ResourceFileInvalidException, IOException {
                 checkRemoved();
                 return new BookLocator(getName(), getResourceUrl());
@@ -212,6 +207,12 @@ public final class Data {
                     throw new IllegalArgumentException("JAR " + sourceUrl + " did not provide a BookLoader named " + name);
                 else
                     return name;
+            }
+
+            @Override
+            public void setSourceUrl(URL value) throws IOException {
+                validateConstructorArgs(getName(), value);
+                super.setSourceUrl(value);
             }
 
             // TODO: invalidation stuff
