@@ -52,7 +52,7 @@ public final class Data {
         }
 
         @Override
-        protected SelfLoadingBook parseElement(BaseResourceData parsed, Element e) {
+        protected SelfLoadingBook parseElement(BaseResourceData parsed, Element e) throws IOException {
             return new SelfLoadingBook(
                 parsed.name(),
                 parsed.id(),
@@ -81,11 +81,11 @@ public final class Data {
                 this(locator.name(), locator.url(), parser);
             }
 
-            private SelfLoadingBook(String name, URL sourceUrl, ParserManager.ParserRecord parser) {
+            private SelfLoadingBook(String name, URL sourceUrl, ParserManager.ParserRecord parser) throws IOException {
                 this(name, UUID.randomUUID(), null, sourceUrl, isNotLocalFile(sourceUrl), parser);
             }
 
-            private SelfLoadingBook(String name, UUID id, Digest digest, URL sourceUrl, boolean download, ParserManager.ParserRecord parser) {
+            private SelfLoadingBook(String name, UUID id, Digest digest, URL sourceUrl, boolean download, ParserManager.ParserRecord parser) throws IOException {
                 super(name, id, digest, sourceUrl, download);
                 this.parser = parser;
                 addChangeListener(() -> {
@@ -182,7 +182,7 @@ public final class Data {
             }
 
             private ParserRecord(String name, UUID id, Digest digest, URL sourceUrl, boolean download) {
-                super(name, id, digest, sourceUrl, download);
+                super(validateConstructorArgs(name, sourceUrl), id, digest, sourceUrl, download);
                 addChangeListener(() -> parser.set(null));
             }
 
@@ -204,7 +204,7 @@ public final class Data {
                 if (sourceUrl.toString().endsWith("/"))
                     throw new IllegalArgumentException("URL " + sourceUrl + " refers to a directory; file expected");
                 else if (loadBookParser(name, sourceUrl).isEmpty())
-                    throw new IllegalArgumentException("JAR " + sourceUrl + " did not provide a BookLoader named " + name);
+                    throw new IllegalArgumentException("JAR " + sourceUrl + " did not provide a BookParser named " + name);
                 else
                     return name;
             }

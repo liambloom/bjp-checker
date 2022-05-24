@@ -55,7 +55,7 @@ public class BookManagerCLI extends ResourceManagerCLI<Data.BookManager, Data.Bo
                     throw new UserErrorException(e.getMessage(), e);
                 }
             }
-            default -> super.evaluate(args, start);
+            default -> super.evaluate(args, start - 1);
         }
     }
 

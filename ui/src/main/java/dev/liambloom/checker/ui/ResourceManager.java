@@ -365,7 +365,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
         //  or if it neesd to be re-downloaed from the source. Also, *this* class should read
         //  the file, not the resource manager.
 
-        protected Resource(String name, URL sourceUrl) {
+        protected Resource(String name, URL sourceUrl) throws IOException {
             this(name, UUID.randomUUID(), null, sourceUrl, isNotLocalFile(sourceUrl));
         }
 
@@ -378,7 +378,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
             }
         }
 
-        protected Resource(String name, UUID id, Digest digest, URL sourceUrl, boolean download) {
+        protected Resource(String name, UUID id, Digest digest, URL sourceUrl, boolean download) throws IOException {
             setName(name);
             this.id = id;
             this.sourceUrl = sourceUrl;
@@ -400,9 +400,13 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
 
                 }
             }
-            assert algorithm != null;
+            if (this.expectedDigest == null) {
+                update();
+                System.out.println("Updated: " + new String(this.expectedDigest));
+            }
+            else
+                System.out.println("foo");
 
-            this.expectedDigest = null;
             this.algorithm = algorithm;
         }
 
