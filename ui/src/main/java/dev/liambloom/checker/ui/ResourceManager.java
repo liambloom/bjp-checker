@@ -6,6 +6,7 @@ import dev.liambloom.util.function.PredicateThrowsException;
 import net.harawata.appdirs.AppDirsFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXNotRecognizedException;
 import org.xml.sax.SAXNotSupportedException;
@@ -28,8 +29,7 @@ import java.net.JarURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -49,6 +49,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
     private final Map<String, T> nameMap = new HashMap<>();
     private final Map<UUID, T> idMap = new HashMap<>();
     private final Lock nameChangeLock = new ReentrantLock();
+    private final AtomicBoolean changed = new AtomicBoolean();
     private final Path resourceDir;
     private final Path resourceUpdatesDir;
     protected final Document document;
@@ -59,7 +60,10 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
     protected final List<T> inner = new AbstractList<>() {
         @Override
         public T get(int i) {
-            if (i < size()) {
+            if (i >= size() || i < 0)
+                throw new IndexOutOfBoundsException("Index " + i + " out of bounds for length " + size());
+
+            if (i < list.size()) {
                 T t = list.get(i);
                 if (t != null)
                     return t;
@@ -70,23 +74,52 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
                 list.add(null);
 
             T e = parseElement(getElementAt(i));
+            e.addChangeListener(() -> changed.setRelease(true));
             list.add(e);
             return e;
         }
 
         @Override
         public void add(int i, T value) {
-            Element e = getElement(value);
-            if (i == size())
-                document.appendChild(e);
-            else
-                document.insertBefore(e, getElementAt(i));
+            changed.setRelease(true);
 
-            list.add(i, value);
+            try {
+                value.update();
+            }
+            catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            value.addChangeListener(() -> changed.setRelease(true));
+
+            Element e = getElement(value);
+
+            nameChangeLock.lock();
+            try {
+                if (Stream.concat(
+                    XMLUtils.streamNodeListElements(document.getElementsByTagName("name"))
+                        .map(Element::getTextContent),
+                    list.stream().map(T::getName))
+                        .anyMatch(value.getName()::equals)) {
+                    throw new IllegalArgumentException("Name unavailable");
+                }
+                else {
+                    if (i == size())
+                        document.getDocumentElement().appendChild(e);
+                    else
+                        document.getDocumentElement().insertBefore(e, getElementAt(i));
+
+                    list.add(i, value);
+                }
+            }
+            finally {
+                nameChangeLock.unlock();
+            }
+
         }
 
         @Override
         public T remove(int i) {
+            changed.setRelease(true);
             T e = list.get(i);
             if (e != null) {
                 try {
@@ -96,7 +129,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
                     throw new UncheckedIOException(ex);
                 }
             }
-            document.removeChild(getElementAt(i));
+            document.getDocumentElement().removeChild(getElementAt(i));
             return list.remove(i);
         }
 
@@ -204,7 +237,9 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                save();
+                if (changed.getAcquire()){
+                    save();
+                }
             }
             catch (IOException | TransformerException e) {
                 System.getLogger(System.identityHashCode(ResourceManager.this) + "-shutdown").log(System.Logger.Level.ERROR,
@@ -265,6 +300,11 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
     protected abstract T parseElement(BaseResourceData parsed, Element e); // this needs to handle digest and download and lots of other complicated stuff I should only write once
 
     public void save() throws IOException, TransformerException {
+        for (T e : list) {
+            if (e == null)
+                continue;
+            e.save();
+        }
         DOMSource src = new DOMSource(document);
         StreamResult out = new StreamResult(Files.newOutputStream(resourceListFile));
         transformer.transform(src, out);
@@ -361,11 +401,12 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
         private final List<ResourceEventListener> changeListeners = Collections.synchronizedList(new ArrayList<>());
         private final List<ResourceEventListener> removalListeners = Collections.synchronizedList(new ArrayList<>());
         private final AtomicBoolean removed = new AtomicBoolean(false);
+        private final AtomicBoolean saved = new AtomicBoolean(true);
         // add update() method, add fields for tracking if the downloaded file is problmeatic
         //  or if it neesd to be re-downloaed from the source. Also, *this* class should read
         //  the file, not the resource manager.
 
-        protected Resource(String name, URL sourceUrl) throws IOException {
+        protected Resource(String name, URL sourceUrl) {
             this(name, UUID.randomUUID(), null, sourceUrl, isNotLocalFile(sourceUrl));
         }
 
@@ -378,8 +419,8 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
             }
         }
 
-        protected Resource(String name, UUID id, Digest digest, URL sourceUrl, boolean download) throws IOException {
-            setName(name);
+        protected Resource(String name, UUID id, Digest digest, URL sourceUrl, boolean download) {
+            this.name = name;
             this.id = id;
             this.sourceUrl = sourceUrl;
             this.download = download;
@@ -400,12 +441,6 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
 
                 }
             }
-            if (this.expectedDigest == null) {
-                update();
-                System.out.println("Updated: " + new String(this.expectedDigest));
-            }
-            else
-                System.out.println("foo");
 
             this.algorithm = algorithm;
         }
@@ -486,7 +521,8 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
             if (sourceDigest == null || fresh) {
                 try (InputStream source = sourceUrl.openStream()) {
                     MessageDigest digest = MessageDigest.getInstance(algorithm);
-                    Files.copy(new DigestInputStream(source, digest), resourceUpdatePath);
+                    Files.createDirectories(resourceUpdatesDir);
+                    Files.copy(new DigestInputStream(source, digest), resourceUpdatePath, StandardCopyOption.REPLACE_EXISTING);
                     sourceDigest = digest.digest();
                 }
                 catch (NoSuchAlgorithmException e) {
@@ -503,7 +539,8 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
 
         public final boolean updateAvailable(boolean forceCheck) throws IOException {
             checkRemoved();
-            return Arrays.equals(expectedDigest, sourceDigest(forceCheck));
+            byte[] sourceDigest = sourceDigest(forceCheck);
+            return !Arrays.equals(expectedDigest, sourceDigest);
         }
 
         public final boolean update() throws IOException {
@@ -511,7 +548,8 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
             if (!updateAvailable(false))
                 return false;
 
-            Files.copy(resourceUpdatePath, resourcePath);
+            Files.createDirectories(resourceDir);
+            Files.copy(resourceUpdatePath, resourcePath, StandardCopyOption.REPLACE_EXISTING);
             expectedDigest = sourceDigest;
             fileDigest = sourceDigest;
             changed();
@@ -541,6 +579,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
         protected void changed() {
             for (ResourceEventListener listener : changeListeners)
                 listener.callback();
+            saved.set(false);
         }
 
         /**
@@ -583,6 +622,19 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
         protected void checkRemoved() {
             if (removed.getAcquire())
                 throw new IllegalStateException("Cannot use removed book");
+        }
+
+        void save() {
+            if (!saved.compareAndExchange(false, true)) {
+                document.getDocumentElement().replaceChild(
+                    getElement((T) this), // If this cast is incorrect, then someone really, REALLY fucked up, and everything is going to break anyway.,
+                    XMLUtils.streamNodeListElements(document.getElementsByTagName("id"))
+                        .filter(e -> e.getTextContent().equals(id.toString()))
+                        .map(Element::getParentNode)
+                        .findAny()
+                        .orElseThrow()
+                );
+            }
         }
     }
 

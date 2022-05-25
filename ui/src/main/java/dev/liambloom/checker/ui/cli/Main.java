@@ -6,7 +6,6 @@ import dev.liambloom.checker.TestStatus;
 import dev.liambloom.checker.books.Result;
 import dev.liambloom.checker.ui.*;
 import dev.liambloom.util.StringUtils;
-import dev.liambloom.util.function.FunctionUtils;
 import javafx.application.Application;
 import org.fusesource.jansi.AnsiConsole;
 
@@ -178,7 +177,7 @@ public class Main {
 
                         Stream<Path> paths = new Glob(globArgs).files();
 
-                        Data.BookManager.SelfLoadingBook book = getMaybeAnonymousBook(testName);
+                        BookManager.SelfLoadingBook book = getMaybeAnonymousBook(testName);
                         Result<TestStatus>[] result;
 //                        BookChecker reader;
 
@@ -309,7 +308,7 @@ public class Main {
 
     //    private static void BeanBook
 
-    private static Data.BookManager.SelfLoadingBook getMaybeAnonymousBook(String name) throws IOException {
+    private static BookManager.SelfLoadingBook getMaybeAnonymousBook(String name) throws IOException {
         try {
             return Data.books().get(name);
         }

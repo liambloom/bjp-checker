@@ -21,7 +21,7 @@ public class ResourceManagerCLI<T extends ResourceManager<E>, E extends Resource
      * @param start The index of the first argument to evaluate
      */
     public void evaluate(String[] args, int start) throws IOException {
-        if (args.length == 0)
+        if (args.length <= start)
             throw new UserErrorException("Missing argument. See `chk " + inner.getPluralName() + " --help' for help.");
         switch (args[start++]) {
             // case "update"
@@ -30,7 +30,11 @@ public class ResourceManagerCLI<T extends ResourceManager<E>, E extends Resource
 //            }
             case "remove" -> {
                 Main.assertArgsPresent(args, start, "name");
-                inner.remove(inner.get(args[start]));
+                if (inner.remove(inner.get(args[start])))
+                    System.out.println(StringUtils.convertCase(inner.getSingleName(), StringUtils.Case.SENTENCE) + " " + args[start] + " removed");
+                else
+                    System.getLogger(this.getClass().getName() + System.identityHashCode(this)).log(System.Logger.Level.ERROR,
+                        StringUtils.convertCase(inner.getSingleName(), StringUtils.Case.SENTENCE) + " " + args[start] + " does not exist");
             }
             case "move" -> {
                 Main.assertArgsPresent(args, 2, "name", "new URL");
@@ -41,7 +45,7 @@ public class ResourceManagerCLI<T extends ResourceManager<E>, E extends Resource
             }
             case "list" -> {
                 Main.assertArgsPresent(args, 2);
-                String[][] strs = new String[Data.books().size()][];
+                String[][] strs = new String[inner.size()][];
                 int[] maxColumnWidth = null;
                 int colCount = 0;
                 Iterator<E> iter = inner.iterator();
@@ -51,7 +55,7 @@ public class ResourceManagerCLI<T extends ResourceManager<E>, E extends Resource
                     String[] properties = new String[additionalProperties.length + 2];
                     System.arraycopy(additionalProperties, 0, properties, 2, additionalProperties.length);
                     if (i == 0) {
-                        colCount = properties.length + 2;
+                        colCount = properties.length;
                         maxColumnWidth = new int[colCount];
                     }
                     else if (properties.length != colCount - 2)
@@ -63,6 +67,8 @@ public class ResourceManagerCLI<T extends ResourceManager<E>, E extends Resource
                         if (properties[j].length() > maxColumnWidth[j])
                             maxColumnWidth[j] = properties[j].length();
                     }
+
+                    strs[i] = properties;
 //                    strs[i][2] = resource.getParser().map(Data.ParserManager.ParserRecord::getName).orElse("[removed]");
                 }
                 for (String[] resource : strs) {
@@ -70,6 +76,8 @@ public class ResourceManagerCLI<T extends ResourceManager<E>, E extends Resource
                         System.out.printf("%-" + maxColumnWidth[i] + "s  ", resource[i]);
                     System.out.println();
                 }
+                if (inner.size() == 0)
+                    System.out.println("No " + inner.getPluralName());
             }
         }
     }

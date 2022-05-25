@@ -1,12 +1,11 @@
 package dev.liambloom.checker.ui.cli;
 
-import dev.liambloom.checker.ui.Data;
+import dev.liambloom.checker.ui.ParserManager;
 
 import java.io.IOException;
-import java.util.Optional;
 
-public class ParserManagerCLI extends ResourceManagerCLI<Data.ParserManager, Data.ParserManager.ParserRecord> {
-    public ParserManagerCLI(Data.ParserManager inner) {
+public class ParserManagerCLI extends ResourceManagerCLI<ParserManager, ParserManager.ParserRecord> {
+    public ParserManagerCLI(ParserManager inner) {
         super(inner);
     }
 
@@ -24,7 +23,7 @@ public class ParserManagerCLI extends ResourceManagerCLI<Data.ParserManager, Dat
             }
         }
         else {
-            super.evaluate(args, start);
+            super.evaluate(args, start - 1);
         }
     }
 }
