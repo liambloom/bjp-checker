@@ -54,7 +54,7 @@ class XMLBookReader {
 
     // Set in parseAndValidateDocument()
     private Document document = null;
-    private ClassLoader classLoader;
+    private URLClassLoader classLoader;
     private Result<BookValidationStatus> result = null;
     private Exception documentParseException;
     private CheckableType<? extends Annotation> chapterType = null;
@@ -289,7 +289,7 @@ class XMLBookReader {
         return checkableTypes;
     }
 
-    public ClassLoader getClassLoader() throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException {
+    public URLClassLoader getClassLoader() throws IOException, ClassNotFoundException, SAXException, NoSuchMethodException {
         parseAndValidateDocument();
         return classLoader;
     }

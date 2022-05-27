@@ -1,0 +1,1 @@
+@chk parsers add dev.liambloom.checker.books.xmlBook.XMLBookParser "C:\Users\liamr\.m2\repository\dev\liambloom\checker\xmlBook\%1\xmlBook-%1.jar"

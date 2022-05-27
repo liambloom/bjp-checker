@@ -22,6 +22,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.SchemaFactory;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -245,6 +246,9 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
                 System.getLogger(System.identityHashCode(ResourceManager.this) + "-shutdown").log(System.Logger.Level.ERROR,
                     "Failed to save some changes to " + plural, e);
             }
+            finally {
+                for ()
+            }
         }));
     }
 
@@ -265,7 +269,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
         id.setTextContent(t.getId().toString());
         e.appendChild(id);
         Element digestElement = document.createElement("digest");
-        digestElement.setTextContent(Base64.getEncoder().encodeToString(t.getExpectedDigest()));
+        digestElement.setTextContent(Optional.ofNullable(t.getExpectedDigest()).map(Base64.getEncoder()::encodeToString).orElse(""));
         digestElement.setAttribute("algorithm", t.getDigestAlgorithm());
         e.appendChild(digestElement);
         Element sourceUrl = document.createElement("sourceUrl");
@@ -512,7 +516,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
             this.sourceUrl = Objects.requireNonNull(value);
             download = isNotLocalFile(value);
             this.updateAvailable(true);
-            if (!this.update())
+            if (this.update())
                 changed();
         }
 
@@ -528,19 +532,36 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
                 catch (NoSuchAlgorithmException e) {
                     throw new RuntimeException(e);
                 }
+                catch (FileNotFoundException e) {
+                    sourceDigest = null;
+                    throw e;
+                }
+                finally {
+                    if (sourceDigest == null || !Arrays.equals(sourceDigest, expectedDigest))
+                        Files.deleteIfExists(resourceUpdatePath);
+                }
             }
             return sourceDigest;
         }
 
         public final boolean isFileValid() throws IOException {
             checkRemoved();
-            return Arrays.equals(expectedDigest, fileDigest(!download));
+            try {
+                return Arrays.equals(expectedDigest, fileDigest(!download));
+            }
+            catch (FileNotFoundException e) {
+                return false;
+            }
         }
 
         public final boolean updateAvailable(boolean forceCheck) throws IOException {
             checkRemoved();
-            byte[] sourceDigest = sourceDigest(forceCheck);
-            return !Arrays.equals(expectedDigest, sourceDigest);
+            try {
+                return !Arrays.equals(expectedDigest, sourceDigest(forceCheck));
+            }
+            catch (FileNotFoundException e) {
+                return true;
+            }
         }
 
         public final boolean update() throws IOException {
@@ -549,7 +570,12 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
                 return false;
 
             Files.createDirectories(resourceDir);
-            Files.copy(resourceUpdatePath, resourcePath, StandardCopyOption.REPLACE_EXISTING);
+            if (Files.exists(resourceUpdatePath)) {
+                Files.copy(resourceUpdatePath, resourcePath, StandardCopyOption.REPLACE_EXISTING);
+                Files.delete(resourceUpdatePath);
+            }
+            else
+                Files.deleteIfExists(resourcePath);
             expectedDigest = sourceDigest;
             fileDigest = sourceDigest;
             changed();

@@ -6,10 +6,13 @@ import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
 import javax.xml.transform.TransformerException;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -156,8 +159,16 @@ public class BookManager extends ResourceManager<BookManager.SelfLoadingBook> {
             checkRemoved();
             validationLock.lock();
             try {
-                if (validation == null)
-                    validation = getParser().orElseThrow().getParser().validate(getLocator());
+                if (validation == null) {
+                    if (getParser().isPresent()) {
+                        validation = getParser().get().getParser().validate(getLocator());
+                    }
+                    else {
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        new PrintStream(baos).print("Parser has been removed");
+                        validation = new Result<>(getName(), BookValidationStatus.OTHER, baos);
+                    }
+                }
             }
             finally {
                 validationLock.unlock();
