@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.UUID;
@@ -55,7 +56,7 @@ public class ParserManager extends ResourceManager<ParserManager.ParserRecord> {
         }
 
         private ParserRecord(String name, UUID id, Digest digest, URL sourceUrl, boolean download) {
-            super(validateConstructorArgs(name, sourceUrl), id, digest, sourceUrl, download);
+            super(name, id, digest, sourceUrl, download);
             addChangeListener(() -> {
                 parserLock.lock();
                 try {
@@ -83,13 +84,30 @@ public class ParserManager extends ResourceManager<ParserManager.ParserRecord> {
         }
 
         private static Optional<ServiceLoader.Provider<BookParser>> loadBookParser(String name, URL url) {
-            return ServiceLoader.load(BookParser.class, new URLClassLoader(new URL[]{ url }))
-                .stream()
-                .filter(provider -> provider.type().getName().equals(name))
-                .findAny();
+            ClassLoader classLoader = new URLClassLoader(new URL[]{ url }, ClassLoader.getSystemClassLoader());
+
+            try {
+                var bookParserClass = classLoader.loadClass(BookParser.class.getName());
+                var implClass = classLoader.loadClass(name);
+//                System.out.println("SystemClassLaoder " + (BookParser.class.getClassLoader() == ClassLoader.getSystemClassLoader()));
+//                System.out.println("Impl: " + implClass.getName());
+//                System.out.println("Impl implements BookParser" + bookParserClass.isAssignableFrom(implClass));
+                return ServiceLoader.load(bookParserClass, classLoader)
+                    .stream()
+//                    .peek(e -> {
+//                        System.out.println("foo: " + e);
+//                    })
+                    .filter(provider -> provider.type().getName().equals(name))
+                    .findAny()
+                    .map(e -> (ServiceLoader.Provider<BookParser>) e);
+            }
+            catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         private static String validateConstructorArgs(String name, URL sourceUrl) {
+//            System.out.println("Exists: " + sourceUrl);
             if (sourceUrl.toString().endsWith("/"))
                 throw new IllegalArgumentException("URL " + sourceUrl + " refers to a directory; file expected");
             else if (loadBookParser(name, sourceUrl).isEmpty())

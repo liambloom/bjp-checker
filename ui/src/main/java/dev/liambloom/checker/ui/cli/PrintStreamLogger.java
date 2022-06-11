@@ -34,7 +34,7 @@ public class PrintStreamLogger implements System.Logger {
     @Override
     public void log(Level level, ResourceBundle bundle, String msg, Throwable throwable) {
         String throwableMessage;
-        if (true || isLoggable(Level.TRACE)) {
+        if (isLoggable(Level.TRACE)) {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             throwable.printStackTrace(new PrintStream(os));
             throwableMessage = os.toString();

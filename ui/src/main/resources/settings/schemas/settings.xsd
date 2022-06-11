@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" version="1.0">
+    <xs:element name="settings" type="settings" />
+
+    <xs:complexType name="settings">
+        <xs:all>
+            <xs:element name="theme" type="themes" default="system" minOccurs="0" />
+            <xs:element name="autoUpdate" type="xs:boolean" default="false" minOccurs="0" />
+        </xs:all>
+    </xs:complexType>
+
+    <xs:simpleType name="themes">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="light" />
+            <xs:enumeration value="dark" />
+            <xs:enumeration value="system" />
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>

@@ -1,5 +1,3 @@
-import dev.liambloom.checker.ui.CheckerUILoggerFinder;
-
 module dev.liambloom.checker.ui {
     uses System.LoggerFinder;
     uses dev.liambloom.checker.books.BookParser;
@@ -10,7 +8,7 @@ module dev.liambloom.checker.ui {
     requires javafx.fxml;
 //    requires dev.liambloom.checker.internal;
     requires com.google.auto.service;
-    requires dev.liambloom.checker.books.xmlBook;
+    requires dev.liambloom.checker.books.xmlBook; // TODO: remove this without breaking everything
 //    requires dev.liambloom.checker.books;
     requires org.fusesource.jansi;
     requires dev.liambloom.util.function;

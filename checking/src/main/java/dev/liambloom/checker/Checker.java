@@ -139,6 +139,9 @@ public class Checker {
         catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
+        catch (NullPointerException e) {
+            throw (NullPointerException) e.getCause(); // for some reason, when an exception is thrown in the stream
+        }
         finally {
             System.setIn(prevIn);
             System.setOut(prevOut);

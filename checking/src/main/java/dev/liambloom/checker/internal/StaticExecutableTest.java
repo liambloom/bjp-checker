@@ -21,6 +21,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import static java.lang.System.Logger.Level;
 
 public class StaticExecutableTest implements Test {
     private static final Pattern TRAILING_SPACES_AND_NEWLINE = Pattern.compile("\\s*\\R");
@@ -87,8 +88,11 @@ public class StaticExecutableTest implements Test {
                 };
                 final Executable executable;
                 final ExecutableInvocation invoke;
-                if (filteredTargets.isEmpty())
+                if (filteredTargets.isEmpty()) {
+                    System.getLogger(System.identityHashCode(this) + "")
+                        .log(Level.TRACE, "All targets filtered out for static executable %s %s", targetLocator.type());
                     return _cond -> () -> CompletableFuture.completedFuture(new Result<>(getName(), TestStatus.INCOMPLETE));
+                }
                 else if (filteredTargets.size() == 1) {
                     AnnotatedElement target = filteredTargets.iterator().next();
                     if (target instanceof Class<?> c) {
@@ -302,6 +306,17 @@ public class StaticExecutableTest implements Test {
         if (lines[0].isEmpty())
             linesStream = linesStream.skip(1);
         return linesStream
-            .collect(Collectors.joining(System.lineSeparator()));
+            .map(String::stripTrailing)
+            .collect(Collectors.joining(System.lineSeparator()))
+            .replace('\u2013', '-')
+            .replace('\u2019', '\'')
+            .replace('\u2018', '\'')
+            .replace('\u201B', '\'')
+            .replace('\u201C', '"')
+            .replace('\u201F', '"')
+            .replace('\u201D', '"')
+            .replace('\u301D', '"')
+            .replace('\u301E', '"')
+            .replace('\u201A', ',');
     }
 }

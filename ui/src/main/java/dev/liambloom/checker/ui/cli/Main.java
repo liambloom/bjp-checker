@@ -168,7 +168,7 @@ public class Main {
                         if (preCheckables.isEmpty())
                             throw new UserErrorException("No exercises or programming projects specified");
                         if (testName == null) {
-                            testName = Config.get(Config.Property.BOOK);
+                            testName = Data.userConfig().getDefaultBook().orElse(null);
                                 if (testName == null)
                                     throw new UserErrorException("Either provide book argument (`-b') or set a default book");
                         }
@@ -229,35 +229,43 @@ public class Main {
 
                         new ResultPrinter().printResults(result);
                     }
-                    catch (/*BookParserException |*/ ClassNotFoundException | IllegalArgumentException e) {
+                    catch (NullPointerException | ClassNotFoundException | IllegalArgumentException e) {
                         throw new UserErrorException(e);
                     }
                 }
                 case "submit" -> throw new UserErrorException("Command `submit' not supported in current checker version");
                 // break;
-                case "books" -> new BookManagerCLI(Data.books()).evaluate(args, 1);
-                case "parsers" -> new ParserManagerCLI(Data.parsers()).evaluate(args, 1);
+                case "books" -> {
+                    if (!new BookManagerCLI(Data.books()).evaluate(args, 1))
+                        throw new UserErrorException("Unknown command: `" + args[1] + "'");
+                }
+                case "parsers" -> {
+                    if (!new ParserManagerCLI(Data.parsers()).evaluate(args, 1))
+                        throw new UserErrorException("Unknown command: `" + args[1] + "'");
+                }
                 case "config" -> {
                     if (args.length == 1)
                         throw new UserErrorException("Missing argument: expected one of: get, set, unset");
                     if (args.length == 2)
                         throw new UserErrorException("Missing argument: property");
-                    if (!Config.propertyExists(args[2]))
+                    if (!UserConfig.propertyExists(args[2]))
                         throw new UserErrorException("Configuration property \"" + args[2] + "\" does not exist");
+                    UserConfig.Property property = UserConfig.getProperty(args[2]);
                     switch (args[1]) {
-                        case "get" -> {
-                            assertArgsPresent(args, 3);
-                            System.out.println(Config.get(args[2]));
-                        }
-                        case "set" -> {
+                        case "set":
                             assertArgsPresent(args, 3, "value");
-                            Config.set(args[2], args[3]);
-                        }
-                        case "unset" -> {
+                            Data.userConfig().set(property, args[3]);
+                        case "get":
+                            if (args[1].equals("get"))
+                                assertArgsPresent(args, 3);
+                            System.out.println(property.name + "=" + Data.userConfig().get(property));
+                            break;
+                        case "unset":
                             assertArgsPresent(args, 3);
-                            Config.unset(args[2]);
-                        }
-                        default -> throw new UserErrorException("Command `config " + args[1] + "' not recognized. See `checker config --help; for a list of subcommands.");
+                            Data.userConfig().unset(property);
+                            break;
+                        default:
+                            throw new UserErrorException("Command `config " + args[1] + "' not recognized. See `checker config --help; for a list of subcommands.");
                     }
                 }
                 case "gui" -> Application.launch(dev.liambloom.checker.ui.gui.Main.class, Arrays.copyOfRange(args, 1, args.length));

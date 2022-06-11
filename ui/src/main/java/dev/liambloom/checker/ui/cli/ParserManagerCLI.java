@@ -10,7 +10,7 @@ public class ParserManagerCLI extends ResourceManagerCLI<ParserManager, ParserMa
     }
 
     @Override
-    public void evaluate(String[] args, int start) throws IOException {
+    public boolean evaluate(String[] args, int start) throws IOException {
         if (args.length == 0)
             throw new UserErrorException("Missing argument. See `chk " + inner.getPluralName() + " --help' for help.");
         if ("add".equals(args[start++])) {
@@ -21,9 +21,11 @@ public class ParserManagerCLI extends ResourceManagerCLI<ParserManager, ParserMa
             catch (IllegalArgumentException e) {
                 throw new UserErrorException(e.getMessage(), e);
             }
+
+            return true;
         }
         else {
-            super.evaluate(args, start - 1);
+            return super.evaluate(args, start - 1);
         }
     }
 }

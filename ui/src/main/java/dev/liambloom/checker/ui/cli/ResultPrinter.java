@@ -45,7 +45,6 @@ public class ResultPrinter {
             }
             System.out.printf("---- %s ----%n", fullName);
             r.logs().ifPresent(l -> {
-                debugLogger.log(System.Logger.Level.DEBUG, "Logs are present");
                 l.logTo(logger);
 //                r.consoleOutput().ifPresent(c -> System.out.println());
             });

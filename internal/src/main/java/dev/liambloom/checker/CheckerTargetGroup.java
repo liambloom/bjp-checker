@@ -59,6 +59,7 @@ class CheckerTargetGroup<T extends Annotation> {
 //                System.getLogger(Long.toString(System.identityHashCode(this))).log(System.Logger.Level.TRACE, "Applying tests to %s with targets %s", testName, targets[i]);
 
                 if (targets[i].isEmpty()) {
+
                     builder.add(Test.withFixedResult(new Result<>(testName, TestStatus.INCOMPLETE)));
                 }
                 else {

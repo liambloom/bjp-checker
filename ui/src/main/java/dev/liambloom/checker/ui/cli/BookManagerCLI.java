@@ -16,7 +16,7 @@ public class BookManagerCLI extends ResourceManagerCLI<BookManager, BookManager.
     }
 
     @Override
-    public void evaluate(String[] args, int start) throws IOException {
+    public boolean evaluate(String[] args, int start) throws IOException {
         if (args.length == 0)
             throw new UserErrorException("Missing argument. See `chk " + inner.getPluralName() + " --help' for help.");
         switch (args[start++]) {
@@ -57,8 +57,12 @@ public class BookManagerCLI extends ResourceManagerCLI<BookManager, BookManager.
                     throw new UserErrorException(e.getMessage(), e);
                 }
             }
-            default -> super.evaluate(args, start - 1);
+            default -> {
+                return super.evaluate(args, start - 1);
+            }
         }
+
+        return true;
     }
 
     @Override

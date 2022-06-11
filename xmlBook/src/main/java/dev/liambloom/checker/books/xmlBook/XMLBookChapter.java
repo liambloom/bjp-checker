@@ -10,6 +10,7 @@ import org.w3c.dom.Node;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
+import java.util.Objects;
 
 public class XMLBookChapter implements Chapter {
     private final XPath xpath = XMLBook.getXPath();
@@ -25,8 +26,9 @@ public class XMLBookChapter implements Chapter {
     public synchronized Checkable getCheckable(CheckableType<?> type, int number) {
         Element e;
         try {
-            e = (Element) ((Node) xpath
-                .evaluate(String.format("checkable[@type='%s'][@num='%d']", type.name(), number), element, XPathConstants.NODE))
+            e = (Element) Objects.requireNonNull(((Node) xpath
+                    .evaluate(String.format("checkable[@type='%s'][@num='%d']", type.name(), number), element, XPathConstants.NODE)),
+                    type.name() + " " + number + " does not exist")
                 .cloneNode(true);
         }
         catch (XPathExpressionException ex) {

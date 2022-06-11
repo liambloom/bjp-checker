@@ -20,7 +20,7 @@ public class ResourceManagerCLI<T extends ResourceManager<E>, E extends Resource
      * @param args The arguments that specify what to do
      * @param start The index of the first argument to evaluate
      */
-    public void evaluate(String[] args, int start) throws IOException {
+    public boolean evaluate(String[] args, int start) throws IOException {
         if (args.length <= start)
             throw new UserErrorException("Missing argument. See `chk " + inner.getPluralName() + " --help' for help.");
         switch (args[start++]) {
@@ -37,14 +37,14 @@ public class ResourceManagerCLI<T extends ResourceManager<E>, E extends Resource
                         StringUtils.convertCase(inner.getSingleName(), StringUtils.Case.SENTENCE) + " " + args[start] + " does not exist");
             }
             case "move" -> {
-                Main.assertArgsPresent(args, 2, "name", "new URL");
+                Main.assertArgsPresent(args, start, "name", "new URL");
                 E resource = inner.get(args[start]);
                 if (resource == null)
                     throw new UserErrorException(StringUtils.convertCase(inner.getSingleName(), StringUtils.Case.SENTENCE) + " `" + args[start] + "` does not exist");
                 resource.setSourceUrl(Main.resolveResource(args[start + 1]));
             }
             case "list" -> {
-                Main.assertArgsPresent(args, 2);
+                Main.assertArgsPresent(args, start);
                 String[][] strs = new String[inner.size()][];
                 int[] maxColumnWidth = null;
                 int colCount = 0;
@@ -79,7 +79,18 @@ public class ResourceManagerCLI<T extends ResourceManager<E>, E extends Resource
                 if (inner.size() == 0)
                     System.out.println("No " + inner.getPluralName());
             }
+            case "update" -> {
+                Main.assertArgsPresent(args, start, "name");
+                if (Data.books().get(args[start]).update())
+                    System.out.println("Updated");
+                else
+                    System.out.println("No updates available");
+            }
+            default -> {
+                return false;
+            }
         }
+        return true;
     }
 
     /**

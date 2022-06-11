@@ -10,6 +10,7 @@ public final class Data {
 
     private static BookManager books;
     private static ParserManager parsers;
+    private static UserConfig userConfig;
 
     public static BookManager books() {
         if (books == null)
@@ -23,10 +24,17 @@ public final class Data {
         return parsers;
     }
 
+    public static UserConfig userConfig() {
+        if (userConfig == null)
+            throw new IllegalStateException("Data is not yet initialized");
+        return userConfig;
+    }
+
     public static synchronized void initialize() throws IOException, TransformerException, SAXException, IncompatibleSettingsVersionException {
         if (books != null)
             throw new IllegalStateException("Data already initialized");
         books = new BookManager();
         parsers = new ParserManager();
+        userConfig = new UserConfig();
     }
 }

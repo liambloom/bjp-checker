@@ -3,25 +3,17 @@ package dev.liambloom.checker.ui;
 import dev.liambloom.util.XMLUtils;
 import dev.liambloom.util.function.FunctionUtils;
 import dev.liambloom.util.function.PredicateThrowsException;
-import net.harawata.appdirs.AppDirsFactory;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
-import org.xml.sax.SAXNotRecognizedException;
-import org.xml.sax.SAXNotSupportedException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-import javax.xml.validation.SchemaFactory;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,7 +21,6 @@ import java.io.UncheckedIOException;
 import java.net.JarURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.nio.file.*;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
@@ -40,24 +31,14 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
-public abstract class ResourceManager<T extends ResourceManager<T>.Resource> implements Iterable<T> {
-    private static final SchemaFactory sf = SchemaFactory.newInstance("http://www.w3.org/XML/XMLSchema/v1.0");
-    private static final TransformerFactory tf = TransformerFactory.newInstance();
-    private static final Path userDataDir = Path.of(AppDirsFactory.getInstance().getUserDataDir("Checker", null, null, true));
-    private static final Path globalUpdatesDir = userDataDir.resolve("updates");
-    private static final Exception versionValidationException;
+public abstract class ResourceManager<T extends ResourceManager<T>.Resource> extends PersistentData implements Iterable<T> {
     private final ArrayList<T> list = new ArrayList<>();
     private final Map<String, T> nameMap = new HashMap<>();
     private final Map<UUID, T> idMap = new HashMap<>();
     private final Lock nameChangeLock = new ReentrantLock();
-    private final AtomicBoolean changed = new AtomicBoolean();
-    private final Path resourceDir;
-    private final Path resourceUpdatesDir;
-    protected final Document document;
-    private final Transformer transformer;
-    private final Path resourceListFile;
     private final String single;
-    private final String plural;
+    protected final Path resourceDir;
+    protected final Path resourceUpdatesDir;
     protected final List<T> inner = new AbstractList<>() {
         @Override
         public T get(int i) {
@@ -140,114 +121,31 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
         }
     };
 
-    static {
-        try {
-            sf.setFeature("http://apache.org/xml/features/validation/cta-full-xpath-checking", true);
-        }
-        catch (SAXNotRecognizedException | SAXNotSupportedException e) {
-            throw new RuntimeException(e);
-        }
-
-        String appVersionString = ResourceManager.class.getPackage().getImplementationVersion();
-        Exception localVersionValidationException = null;
-        if (appVersionString == null) {
-            System.getLogger(ResourceManager.class.getName()).log(System.Logger.Level.WARNING, "Unable to check settings version compatibility");
-        }
-        else {
-            try {
-                int[] versions = Arrays.stream(appVersionString.split("\\."))
-                    .mapToInt(Integer::parseInt)
-                    .toArray();
-                ByteBuffer appVersion = ByteBuffer.allocate(versions.length * 4);
-                for (int version : versions)
-                    appVersion.putInt(version);
-                Path versionFile = userDataDir.resolve("version.dat");
-                if (Files.exists(versionFile)) {
-                    ByteBuffer settingsVersion = ByteBuffer.wrap(Files.readAllBytes(versionFile));
-
-                    if (appVersion.compareTo(settingsVersion) > 0) {
-                        throw IncompatibleSettingsVersionException.cantUpgrade(settingsVersion);
-                    }
-                    else if (appVersion.compareTo(settingsVersion) < 0) {
-                        throw IncompatibleSettingsVersionException.cantDowngrade(settingsVersion);
-                    }
-                }
-                else {
-                    Files.createFile(versionFile);
-                    Files.write(versionFile, appVersion.array());
-                }
-            }
-                catch(IOException | IncompatibleSettingsVersionException e){
-                localVersionValidationException = e;
-            }
-        }
-
-        versionValidationException = localVersionValidationException;
-    }
-
     ResourceManager(String single) throws IOException, TransformerException, SAXException, IncompatibleSettingsVersionException {
         this(single, single + "s");
     }
 
     ResourceManager(String single, String plural) throws IOException, SAXException, TransformerException, IncompatibleSettingsVersionException {
-        if (versionValidationException != null) {
-            if (versionValidationException instanceof IOException e)
-                throw e;
-            else if (versionValidationException instanceof IncompatibleSettingsVersionException e)
-                throw e;
-            else
-                throw new IllegalStateException("Version validation threw unexpected exception", versionValidationException);
-        }
+        super(plural);
 
         this.single = single;
-        this.plural = plural;
         resourceDir = userDataDir.resolve(plural);
         resourceUpdatesDir = globalUpdatesDir.resolve(plural);
 
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        DocumentBuilder db;
-
-        try {
-            synchronized (sf) {
-                dbf.setSchema(sf.newSchema(
-                    new StreamSource(ResourceManager.class.getResourceAsStream("/settings/schemas/" + plural + ".xsd"))));
-            }
-            dbf.setNamespaceAware(true);
-            db = dbf.newDocumentBuilder();
-
-            synchronized (tf) {
-                transformer = tf.newTransformer();
-            }
-        }
-        catch (SAXException | ParserConfigurationException | TransformerConfigurationException e) {
-            throw new RuntimeException(e);
-        }
-
-        resourceListFile = userDataDir.resolve(plural + ".xml");
-
-        if (Files.exists(resourceListFile)) {
-            document = db.parse(Files.newInputStream(resourceListFile));
-        }
-        else {
-            document = db.newDocument();
-            document.appendChild(document.createElement(plural));
-            Files.createDirectories(resourceListFile.getParent());
-            Files.createFile(resourceListFile);
-            save();
-        }
-
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                if (changed.getAcquire()){
-                    save();
+                if (changed.getAcquire()) {
+                    if (Files.exists(resourceUpdatesDir)) {
+                        try (Stream<Path> update = Files.list(resourceUpdatesDir)) {
+                            update.forEach(FunctionUtils.unchecked(Files::delete));
+                        }
+                        Files.delete(resourceUpdatesDir);
+                    }
                 }
             }
-            catch (IOException | TransformerException e) {
-                System.getLogger(System.identityHashCode(ResourceManager.this) + "-shutdown").log(System.Logger.Level.ERROR,
-                    "Failed to save some changes to " + plural, e);
-            }
-            finally {
-                for ()
+            catch (IOException e) {
+                System.getLogger(ResourceManager.class.getName() + System.identityHashCode(this) + "-shutdown").log(System.Logger.Level.WARNING,
+                    "Temporary " + single + " files not deleted successfully", e);
             }
         }));
     }
@@ -257,7 +155,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
     }
 
     public String getPluralName() {
-        return plural;
+        return name;
     }
 
     protected Element getElement(T t) {
@@ -284,10 +182,14 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
     private T parseElement(Element e) {
         try {
             Element digestElement = (Element) e.getElementsByTagName("digest").item(0);
+            var digest = new Digest(digestElement.getAttribute("algorithm"), Base64.getDecoder().decode(digestElement.getTextContent()));
+//            System.out.println("Saved:    " + Base64.getEncoder().encodeToString(digest.digest()));
+//            System.out.println(getTag(e, "id"));
+            //new Error().printStackTrace();
             return parseElement(new BaseResourceData(
                 getTag(e, "name"),
                 UUID.fromString(getTag(e, "id")),
-                new Digest(digestElement.getAttribute("algorithm"), Base64.getDecoder().decode(digestElement.getTextContent())),
+                digest,
                 new URL(getTag(e, "sourceUrl")),
                 Boolean.parseBoolean(getTag(e, "download"))
                 ), e);
@@ -297,21 +199,16 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
         }
     }
 
-    private static String getTag(Element e, String tag) {
-        return e.getElementsByTagName(tag).item(0).getTextContent();
-    }
-
     protected abstract T parseElement(BaseResourceData parsed, Element e); // this needs to handle digest and download and lots of other complicated stuff I should only write once
 
-    public void save() throws IOException, TransformerException {
+    @Override
+    public void save() throws IOException, TransformerException, SAXException {
         for (T e : list) {
             if (e == null)
                 continue;
             e.save();
         }
-        DOMSource src = new DOMSource(document);
-        StreamResult out = new StreamResult(Files.newOutputStream(resourceListFile));
-        transformer.transform(src, out);
+        super.save();
     }
 
     private Element getElementAt(int i) {
@@ -429,7 +326,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
             this.sourceUrl = sourceUrl;
             this.download = download;
             String fileName = id + ".dat";
-            this.resourcePath = resourceDir.resolve(fileName);
+            this.resourcePath = download ? resourceDir.resolve(fileName) : null;
             resourceUpdatePath = resourceUpdatesDir.resolve(fileName);
             String algorithm = null;
             for (Digest d : new Digest[]{ digest, new Digest("SHA-512", null), new Digest("SHA-256", null) }) {
@@ -546,7 +443,12 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
 
         public final boolean isFileValid() throws IOException {
             checkRemoved();
+
+            if (Data.userConfig().getAutoUpdate())
+                update();
+
             try {
+//                System.out.printf("Expected: %s%nActual:   %s%n", new String(Base64.getEncoder().encode(expectedDigest)), new String(Base64.getEncoder().encode(fileDigest(!download))));
                 return Arrays.equals(expectedDigest, fileDigest(!download));
             }
             catch (FileNotFoundException e) {
@@ -569,13 +471,15 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
             if (!updateAvailable(false))
                 return false;
 
-            Files.createDirectories(resourceDir);
-            if (Files.exists(resourceUpdatePath)) {
-                Files.copy(resourceUpdatePath, resourcePath, StandardCopyOption.REPLACE_EXISTING);
-                Files.delete(resourceUpdatePath);
+            if (download()) {
+                Files.createDirectories(resourceDir);
+                if (Files.exists(resourceUpdatePath)) {
+                    Files.copy(resourceUpdatePath, resourcePath, StandardCopyOption.REPLACE_EXISTING);
+                    Files.delete(resourceUpdatePath);
+                }
+                else
+                    Files.deleteIfExists(resourcePath);
             }
-            else
-                Files.deleteIfExists(resourcePath);
             expectedDigest = sourceDigest;
             fileDigest = sourceDigest;
             changed();
@@ -626,7 +530,7 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
         public URL getResourceUrl() throws ResourceFileInvalidException, IOException {
             checkRemoved();
             if (!isFileValid())
-                throw new ResourceFileInvalidException();
+                throw new ResourceFileInvalidException(name);
             else if (download())
                 return resourcePath.toUri().toURL();
             else
@@ -638,7 +542,8 @@ public abstract class ResourceManager<T extends ResourceManager<T>.Resource> imp
                 listener.callback();
             removed.setRelease(true);
             try {
-                Files.delete(resourcePath);
+                if (download) // Using the `download()` getter WILL BREAK
+                    Files.delete(resourcePath);
             }
             finally {
                 Files.deleteIfExists(resourceUpdatePath);
