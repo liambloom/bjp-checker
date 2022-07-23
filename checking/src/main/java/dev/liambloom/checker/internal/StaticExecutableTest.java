@@ -222,7 +222,9 @@ public class StaticExecutableTest implements Test {
         return executor.submit(() -> {
             lock.lock();
             try {
-                System.setIn(conditions.in() == null ? InputStream.nullInputStream(): conditions.in());
+                try (InputStream in = conditions.in()) {
+                    System.setIn(in == null ? InputStream.nullInputStream() : in);
+                }
                 ByteArrayOutputStream actualOut = conditions.expectedOut() == null ? null : new ByteArrayOutputStream();
                 PrintStream ps = new PrintStream(conditions.expectedOut() == null ? OutputStream.nullOutputStream() : actualOut);
                 System.setOut(ps);

@@ -44,15 +44,20 @@ public class CheckerTargetGroup<T extends Annotation> {
 
             String testName = checkableType.name() + ' ' + i;
 
-            if (targets[i].isEmpty()) {
-                System.getLogger(System.identityHashCode(this) + "").log(System.Logger.Level.TRACE, "Checker target group %s has no targets", testName);
-                builder.add(Test.of(testName, TestStatus.INCOMPLETE));
+            StaticExecutableTest.Factory factory = new StaticExecutableTest.Factory(targets[i]);
+            Test test;
+            try {
+                test = Test.multi(testName,
+                    Arrays.stream(ch.getCheckable(checkableType, i).tests()).map(factory::newInstance));
+                if (targets[i].isEmpty()) {
+                    System.getLogger(System.identityHashCode(this) + "").log(System.Logger.Level.TRACE, "Checker target group %s has no targets", testName);
+                    test = Test.of(testName, TestStatus.INCOMPLETE);
+                }
             }
-            else {
-                StaticExecutableTest.Factory factory = new StaticExecutableTest.Factory(targets[i]);
-                builder.add(Test.multi(testName, Arrays.stream(ch.getCheckable(checkableType, i).tests())
-                    .map(factory::newInstance)));
+            catch (NullPointerException e) {
+                test = Test.of(testName, TestStatus.NO_SUCH_TEST);
             }
+            builder.add(test);
         }
 
         return builder.build();

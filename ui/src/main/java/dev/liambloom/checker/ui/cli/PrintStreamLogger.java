@@ -1,6 +1,7 @@
 package dev.liambloom.checker.ui.cli;
 
 import dev.liambloom.checker.books.Color;
+import dev.liambloom.checker.ui.ColorMap;
 import org.fusesource.jansi.AnsiConsole;
 
 import java.io.ByteArrayOutputStream;
@@ -47,7 +48,7 @@ public class PrintStreamLogger implements System.Logger {
     @Override
     public void log(Level level, ResourceBundle bundle, String msg, Object... params) {
         if (isLoggable(level))
-            out.printf("\u001b[" + color(level).ansi() + "m[" + level.name().toLowerCase(Locale.ROOT) + "]\u001b[0m "  + String.join(System.lineSeparator() + " ".repeat(level.name().length() + 3), msg.split("\\R")) + "%n", params);
+            out.printf("\u001b[" + ColorMap.ansi(color(level)) + "m[" + level.name().toLowerCase(Locale.ROOT) + "]\u001b[0m "  + String.join(System.lineSeparator() + " ".repeat(level.name().length() + 3), msg.split("\\R")) + "%n", params);
     }
 
     private Color color(Level level) {

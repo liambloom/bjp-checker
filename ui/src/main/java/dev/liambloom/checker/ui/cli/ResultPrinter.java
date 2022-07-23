@@ -1,6 +1,7 @@
 package dev.liambloom.checker.ui.cli;
 
 import dev.liambloom.checker.books.Result;
+import dev.liambloom.checker.ui.ColorMap;
 import dev.liambloom.util.StringUtils;
 import dev.liambloom.util.function.ConsumerThrowsException;
 import dev.liambloom.util.function.FunctionUtils;
@@ -30,7 +31,7 @@ public class ResultPrinter {
     }
 
     private void printResultSimple(Result<?> r, int level) {
-        System.out.printf("%s%s ... \u001b[%sm%s\u001b[0m%n", "\t".repeat(level), r.name(), r.status().color().ansi(), StringUtils.convertCase(r.status().toString(), StringUtils.Case.SPACE));
+        System.out.printf("%s%s ... \u001b[%sm%s\u001b[0m%n", "\t".repeat(level), r.name(), ColorMap.ansi(r.status().color()), StringUtils.convertCase(r.status().toString(), StringUtils.Case.SPACE));
         for (Result<?> sub : r.subResults())
             printResultSimple(sub, level + 1);
     }
