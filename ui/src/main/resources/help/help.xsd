@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" version="1.0">
+    <xs:element name="command" type="command" />
+
+    <xs:complexType name="command">
+        <xs:sequence>
+            <xs:element name="name" type="xs:string" maxOccurs="unbounded" />
+            <xs:element name="description" type="xs:string" />
+            <xs:element name="command" type="command" minOccurs="0" maxOccurs="unbounded" />
+            <xs:element name="arguments" type="arguments" minOccurs="0" />
+            <xs:element name="option" type="option" minOccurs="0" maxOccurs="unbounded" />
+            <xs:element name="note" type="xs:string" minOccurs="0" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="arguments">
+        <xs:sequence>
+            <xs:element name="argument" type="argument" maxOccurs="unbounded" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="argument">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="help" type="xs:anyURI" />
+                <xs:attribute name="minOccurs" type="lowerBound" />
+                <xs:attribute name="maxOccurs" type="upperBound" />
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="option">
+        <xs:sequence>
+            <xs:element name="flag" type="xs:string" maxOccurs="unbounded" />
+            <xs:element name="description" type="xs:string" />
+            <xs:element name="colon" type="colon" minOccurs="0" />
+            <xs:element name="arguments" type="arguments" minOccurs="0" />
+        </xs:sequence>
+        <xs:attribute name="required" type="xs:boolean" />
+        <xs:attribute name="waterfalls" type="xs:boolean" />
+    </xs:complexType>
+
+    <xs:complexType name="colon">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="required" type="xs:boolean" />
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:simpleType name="lowerBound">
+        <xs:restriction base="xs:integer">
+            <xs:minInclusive value="0" />
+            <xs:maxInclusive value="1" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="upperBound">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="unbounded|0*[1-9]\d*" />
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>

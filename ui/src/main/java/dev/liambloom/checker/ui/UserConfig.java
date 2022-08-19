@@ -10,14 +10,11 @@ import java.util.Optional;
 
 public class UserConfig extends PersistentData {
     public enum Property {
-        AUTO_UPDATE("autoUpdate", "false"),
-        DEFAULT_BOOK("defaultBook", null);
-
-        public final String name;
+        AUTO_UPDATE("false"),
+        DEFAULT_BOOK(null);
         public final String defaultValue;
 
-        Property(String name, String defaultValue) {
-            this.name = name;
+        Property(String defaultValue) {
             this.defaultValue = defaultValue;
         }
     }
@@ -27,7 +24,7 @@ public class UserConfig extends PersistentData {
     }
 
     private Optional<Node> getNode(Property property) {
-        return Optional.ofNullable(document.getDocumentElement().getElementsByTagName(property.name).item(0));
+        return Optional.ofNullable(document.getDocumentElement().getElementsByTagName(StringUtils.convertCase(property.name(), StringUtils.Case.CAMEL)).item(0));
     }
 
     public String get(Property property) {
@@ -38,7 +35,7 @@ public class UserConfig extends PersistentData {
         changed.setRelease(true);
         getNode(property)
             .orElseGet(() -> {
-                Node e = document.createElement(property.name);
+                Node e = document.createElement(StringUtils.convertCase(property.name(), StringUtils.Case.CAMEL));
                 document.getDocumentElement().appendChild(e);
                 return e;
             })

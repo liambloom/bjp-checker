@@ -319,6 +319,7 @@ public class StaticExecutableTest implements Test {
             .replace('\u201D', '"')
             .replace('\u301D', '"')
             .replace('\u301E', '"')
-            .replace('\u201A', ',');
+            .replace('\u201A', ',')
+            .replace('\u2227', '^');
     }
 }

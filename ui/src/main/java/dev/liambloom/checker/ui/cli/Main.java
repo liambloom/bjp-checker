@@ -9,6 +9,8 @@ import dev.liambloom.util.StringUtils;
 import javafx.application.Application;
 import org.fusesource.jansi.AnsiConsole;
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathFactory;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -65,11 +67,13 @@ public class Main {
 
             Data.initialize();
 
+            String lastArg = args[args.length - 1];
+            if (lastArg.equals("-h") || lastArg.equals("--help")) {
+                System.out.println("Help is not yet supported");
+                return;
+            }
+
             switch (args[0]) {
-                case "-h", "--help" -> {
-                    assertArgsPresent(args, 1);
-                    printHelp("checker");
-                }
                 case "-v", "--version" -> {
                     assertArgsPresent(args, 1);
                     System.out.println(Main.class.getPackage().getImplementationVersion());
@@ -245,7 +249,12 @@ public class Main {
                 }
                 case "config" -> {
                     if (args.length == 1)
-                        throw new UserErrorException("Missing argument: expected one of: get, set, unset");
+                        throw new UserErrorException("Missing argument: expected one of: get, set, unset, list");
+                    if (args[1].equals("list")) {
+                        assertArgsPresent(args, 2);
+                        for (UserConfig.Property p : UserConfig.Property.values())
+                            System.out.println(StringUtils.convertCase(p.name(), StringUtils.Case.CAMEL));
+                    }
                     if (args.length == 2)
                         throw new UserErrorException("Missing argument: property");
                     if (!UserConfig.propertyExists(args[2]))
@@ -258,7 +267,7 @@ public class Main {
                         case "get":
                             if (args[1].equals("get"))
                                 assertArgsPresent(args, 3);
-                            System.out.println(property.name + "=" + Data.userConfig().get(property));
+                            System.out.println(StringUtils.convertCase(property.name(), StringUtils.Case.CAMEL) + "=" + Data.userConfig().get(property));
                             break;
                         case "unset":
                             assertArgsPresent(args, 3);

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<command
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="file:./help.xsd">
+    <name>chk</name>
+    <description>foo</description>
+    <command>
+        <name>-v</name>
+        <name>--version</name>
+        <description>Prints the version number of the checker</description>
+    </command>
+    <command>
+        <name>check</name>
+        <description>Checks programs</description>
+        <arguments>
+            <argument help="./help/glob.txt">glob</argument>
+        </arguments>
+        <option required="true">
+            <flag>-c</flag>
+            <flag>--chapter</flag>
+            <description>The chapter number to check</description>
+            <arguments>
+                <argument>chapter number</argument>
+            </arguments>
+        </option>
+        <option required="true">
+            <flag>-t</flag>
+            <flag>--target</flag>
+            <description>The target checkable type and number(s) to check</description>
+            <colon required="true">checkable type</colon>
+            <arguments>
+                <argument maxOccurs="unbounded">number(s)</argument>
+            </arguments>
+        </option>
+        <option required="true">
+            <flag>-b</flag>
+            <flag>--book</flag>
+            <description>The book to use</description>
+            <arguments>
+                <argument>book name</argument>
+            </arguments>
+        </option>
+    </command>
+    <command>
+        <name>books</name>
+        <description>Book-related commands</description>
+        <command>
+            <name>add</name>
+            <description>Add a book</description>
+            <arguments>
+                <argument>name</argument>
+                <argument>source</argument>
+                <argument>parser</argument>
+            </arguments>
+        </command>
+        <command>
+            <name>rename</name>
+            <description>Rename a book</description>
+            <arguments>
+                <argument>old name</argument>
+                <argument>new name</argument>
+            </arguments>
+        </command>
+        <command>
+            <name>validate</name>
+            <description>Validate book(s)</description>
+            <arguments>
+                <argument maxOccurs="unbounded">book</argument>
+            </arguments>
+            <note>You can use `-a' or `--all' instead of book names to check all books</note>
+        </command>
+        <command>
+            <name>remove</name>
+            <description>Remove a book</description>
+            <arguments>
+                <argument>name</argument>
+            </arguments>
+        </command>
+        <command>
+            <name>move</name>
+            <description>Change the URL of a book</description>
+            <arguments>
+                <argument>name</argument>
+                <argument>new URL</argument>
+            </arguments>
+        </command>
+        <command>
+            <name>list</name>
+            <description>List all books</description>
+        </command>
+        <command>
+            <name>update</name>
+            <description>Update a book from its source</description>
+            <arguments>
+                <argument>name</argument>
+            </arguments>
+        </command>
+    </command>
+    <command>
+        <name>parsers</name>
+        <description>Parser-related commands</description>
+        <command>
+            <name>add</name>
+            <description>Add a book parser</description>
+            <arguments>
+                <argument>name</argument>
+                <argument>source</argument>
+            </arguments>
+        </command>
+        <command>
+            <name>remove</name>
+            <description>Remove a book parser</description>
+            <arguments>
+                <argument>name</argument>
+            </arguments>
+        </command>
+        <command>
+            <name>move</name>
+            <description>Change the URL of a book parser</description>
+            <arguments>
+                <argument>name</argument>
+                <argument>new URL</argument>
+            </arguments>
+        </command>
+        <command>
+            <name>list</name>
+            <description>List all book parsers</description>
+        </command>
+        <command>
+            <name>update</name>
+            <description>Update a book parser from its source</description>
+            <arguments>
+                <argument>name</argument>
+            </arguments>
+        </command>
+    </command>
+    <command>
+        <name>config</name>
+        <description>Configuration/settings</description>
+        <command>
+            <name>get</name>
+            <description>Retrieves the value of a configuration value</description>
+            <arguments>
+                <argument>property</argument>
+            </arguments>
+        </command>
+        <command>
+            <name>set</name>
+            <description>Sets the value of a configuration value</description>
+            <arguments>
+                <argument>property</argument>
+                <argument>value</argument>
+            </arguments>
+        </command>
+        <command>
+            <name>unset</name>
+            <description>Resets the value of a configuration value to the default value</description>
+            <arguments>
+                <argument>property</argument>
+            </arguments>
+        </command>
+        <command>
+            <name>list</name>
+            <description>Lists all configurable values</description>
+        </command>
+    </command>
+    <option waterfalls="true">
+        <flag>-h</flag>
+        <flag>--help</flag>
+        <description>Provides help for a command or subcommand</description>
+    </option>
+</command>
